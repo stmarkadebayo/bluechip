@@ -1,0 +1,31 @@
+{
+  "source": "Hugging Face mirror of McAuley Lab Amazon Reviews 2023",
+  "source_url": "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023",
+  "categories": [
+    "All_Beauty",
+    "Digital_Music",
+    "Magazine_Subscriptions",
+    "Gift_Cards",
+    "Subscription_Boxes"
+  ],
+  "review_url_template": "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023/resolve/main/raw/review_categories/{category}.jsonl?download=true",
+  "metadata_url_template": "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023/resolve/main/raw/meta_categories/meta_{category}.jsonl?download=true",
+  "expected_review_bytes": {
+    "All_Beauty": 326611506,
+    "Digital_Music": 78823304,
+    "Magazine_Subscriptions": 33297013,
+    "Gift_Cards": 50231035,
+    "Subscription_Boxes": 8953020
+  },
+  "expected_metadata_bytes": {
+    "All_Beauty": 212990142,
+    "Digital_Music": 67097002,
+    "Magazine_Subscriptions": 4096541,
+    "Gift_Cards": 2038189,
+    "Subscription_Boxes": 1399864
+  },
+  "notes": [
+    "The UCSD dataset host did not resolve from the local shell during this session.",
+    "Yelp's direct dataset tarball returned HTTP 403, so Yelp requires its official accepted download flow."
+  ]
+}
