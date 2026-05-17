@@ -1,0 +1,23 @@
+[project]
+name = "bluechip-user-intelligence-agent"
+version = "0.1.0"
+description = "Scalable user modeling and recommendation scaffold for the DSN x BCT LLM Agent Challenge."
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi>=0.111.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0",
+  "ruff>=0.5.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
