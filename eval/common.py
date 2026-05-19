@@ -111,6 +111,27 @@ def write_report(report_path: Path, payload: dict) -> None:
     lines.append("| --- | ---: |")
     for metric, value in payload["metrics"].items():
         lines.append(f"| {metric} | {value} |")
+    if payload.get("slices"):
+        lines.extend(["", "## Slices", ""])
+        for slice_name, metrics in payload["slices"].items():
+            lines.extend([f"### {slice_name}", "", "| Metric | Value |", "| --- | ---: |"])
+            for metric, value in metrics.items():
+                lines.append(f"| {metric} | {value} |")
+            lines.append("")
+    if payload.get("retrieval_sources"):
+        lines.extend(["", "## Retrieval Sources", "", "| Source | Count |", "| --- | ---: |"])
+        for source, count in payload["retrieval_sources"].items():
+            lines.append(f"| {source} | {count} |")
+    if payload.get("miss_analysis"):
+        lines.extend(["", "## Miss Analysis", ""])
+        for key, value in payload["miss_analysis"].items():
+            if isinstance(value, dict):
+                lines.extend([f"### {key}", "", "| Value | Count |", "| --- | ---: |"])
+                for name, count in value.items():
+                    lines.append(f"| {name} | {count} |")
+                lines.append("")
+            else:
+                lines.append(f"- `{key}`: {value}")
     if payload.get("notes"):
         lines.extend(["", "## Notes", ""])
         lines.extend(f"- {note}" for note in payload["notes"])
