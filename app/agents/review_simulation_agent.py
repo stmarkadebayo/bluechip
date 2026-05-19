@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import time
+
 from app.models.schemas import AgentTraceStep, SimulateReviewRequest, SimulateReviewResponse
 from app.services.generation.generator import generate_review
+from app.services.generation.providers import generation_provider_name
 from app.services.profiling.item_profile import build_item_profile
 from app.services.profiling.user_profile import build_user_profile
 from app.services.ranking.rating import predict_rating
 from app.services.validation.critic import validate_review_simulation
+from app.stores.trace_store import trace_store
 
 
 class ReviewSimulationAgent:
@@ -16,6 +20,7 @@ class ReviewSimulationAgent:
     """
 
     def run(self, request: SimulateReviewRequest) -> SimulateReviewResponse:
+        started = time.perf_counter()
         trace: list[AgentTraceStep] = []
 
         user_profile = build_user_profile(
@@ -40,12 +45,19 @@ class ReviewSimulationAgent:
             )
         )
 
-        rating_result = predict_rating(user_profile=user_profile, item_profile=item_profile)
+        rating_result = predict_rating(
+            user_profile=user_profile,
+            item_profile=item_profile,
+            user_id=request.user_id,
+        )
         trace.append(
             AgentTraceStep(
                 step="predict_rating",
                 status="ok",
-                detail=f"predicted {rating_result.predicted_rating}/5",
+                detail=(
+                    f"predicted {rating_result.predicted_rating}/5"
+                    f" using {rating_result.model_name or 'default rating model'}"
+                ),
             )
         )
 
@@ -69,14 +81,23 @@ class ReviewSimulationAgent:
                 detail=", ".join(validation.issues) if validation.issues else "no issues",
             )
         )
+        trace_record = trace_store.append(
+            endpoint="simulate-review",
+            latency_ms=(time.perf_counter() - started) * 1000,
+            steps=trace,
+            generation_provider=generation_provider_name(),
+            estimated_generation_tokens=max(len(review) // 4, 1),
+        )
 
         return SimulateReviewResponse(
+            trace_id=trace_record.trace_id,
             predicted_rating=rating_result.predicted_rating,
+            predicted_score=rating_result.predicted_score,
             review=review,
             confidence=rating_result.confidence,
+            model_name=rating_result.model_name,
             user_signals=rating_result.user_signals,
             item_signals=rating_result.item_signals,
             validation=validation,
             agent_trace=trace,
         )
-

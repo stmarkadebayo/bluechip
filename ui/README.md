@@ -1,16 +1,23 @@
-# UI Placeholder
+# UI Demo
 
-The first UI should be a simple two-tab demo:
+The demo is a dependency-free static browser UI mounted by FastAPI at `/ui/`.
 
-- Simulate Review
-- Recommend
+Tabs:
 
-Each tab should call the FastAPI endpoints and show:
+- Simulate Review: calls `POST /api/simulate-review`.
+- Recommend: calls `POST /api/recommend`.
+- Metrics: calls `GET /api/metrics` and `GET /api/traces`.
 
-- request inputs
-- structured JSON output
-- human-readable result
-- user and item signals used by the system
+Each tab shows request inputs, structured JSON output, a human-readable summary, traces, and ranking score components when available.
 
-Keep the first version operational and dense. Avoid marketing pages.
+Run it with:
 
+```bash
+uvicorn app.main:app --reload
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000/ui/
+```

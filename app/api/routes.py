@@ -9,11 +9,14 @@ from app.models.schemas import (
     ProfileUserRequest,
     RecommendationRequest,
     RecommendationResponse,
+    RuntimeMetrics,
     SimulateReviewRequest,
     SimulateReviewResponse,
+    TraceRecord,
     UserProfileResponse,
 )
 from app.services.profiling.user_profile import build_user_profile
+from app.stores.trace_store import trace_store
 
 router = APIRouter()
 
@@ -41,3 +44,13 @@ def simulate_review(request: SimulateReviewRequest) -> SimulateReviewResponse:
 @router.post("/recommend", response_model=RecommendationResponse)
 def recommend(request: RecommendationRequest) -> RecommendationResponse:
     return RecommendationAgent().run(request)
+
+
+@router.get("/metrics", response_model=RuntimeMetrics)
+def metrics() -> RuntimeMetrics:
+    return trace_store.metrics()
+
+
+@router.get("/traces", response_model=list[TraceRecord])
+def traces(limit: int = 20) -> list[TraceRecord]:
+    return trace_store.recent(limit=max(1, min(limit, 100)))
