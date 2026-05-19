@@ -1,0 +1,35 @@
+# Task A Human Evaluation Table
+
+Score 1-5 for each generated review:
+- `rating_fit`: rating matches the user's likely preference.
+- `voice_fit`: review sounds consistent with the user's prior review style.
+- `groundedness`: claims are supported by user history and item facts.
+- `specificity`: review is concrete rather than generic.
+
+| example_id | user_id | item_id | category | rating_fit_1_5 | voice_fit_1_5 | groundedness_1_5 | specificity_1_5 | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A-001 | AGKHLEW2SOWHNMFQIJGBECAF7INQ | B00YQ6X8EO | All_Beauty |  |  |  |  |  |
+| A-002 | AFQLNQNQYFWQZPJQZS6V3NZU4QBQ | B09JS339BZ | All_Beauty |  |  |  |  |  |
+| A-003 | AFSKPY37N3C43SOI5IEXEK5JSIYA | B08P2DZB4X | All_Beauty |  |  |  |  |  |
+| A-004 | AHGAOIZVODNHYMNCBV4DECZH42UQ | B082QX2HP6 | All_Beauty |  |  |  |  |  |
+| A-005 | AFGEM6BXCYHUILEOA3P2ZYBEF2TA | B0055JSYHC | Digital_Music |  |  |  |  |  |
+| A-006 | AHZ6XMOLEWA67S3TX7IWEXXGWSOA | B083BDVS36 | All_Beauty |  |  |  |  |  |
+| A-007 | AFZUK3MTBIBEDQOPAK3OATUOUKLA | B0BFR5WF1R | All_Beauty |  |  |  |  |  |
+| A-008 | AFKNVFEXRGUGJAGMENCOWLVDYVCQ | B00023J4AW | All_Beauty |  |  |  |  |  |
+| A-009 | AGF42GID7QWDCNFTJRCTMKAITJJA | B07KDNK11M | All_Beauty |  |  |  |  |  |
+| A-010 | AGVVUU3QRQBHNASSGI5YQLPYOI2Q | B09FF97RHL | All_Beauty |  |  |  |  |  |
+| A-011 | AGG3LLILZEGKCA4SAS4Q7X2Y7ISQ | B07Y5QX37B | All_Beauty |  |  |  |  |  |
+| A-012 | AH4O5W3EM4CKQGHMBVTSPCJRYF7Q | B07YYWDPSM | Specialty Cards |  |  |  |  |  |
+| A-013 | AHSAUHUTLVNKJ72GUIPGI5XZH6ZA | B0040NQBAG | All_Beauty |  |  |  |  |  |
+| A-014 | AH4CGRSYSW5CWLRGQYRZKNJBUPAA | B095SC4J8T | All_Beauty |  |  |  |  |  |
+| A-015 | AHATA6X6MYTC3VNBFJ3WIYVK257A | B09CQ4PXLN | All_Beauty |  |  |  |  |  |
+| A-016 | AFA26DYXVLJYTYZ3KET77GE27N2A | B08CXFDDV8 | All_Beauty |  |  |  |  |  |
+| A-017 | AHV6QCNBJNSGLATP56JAWJ3C4G2A | B0B8DZ7H5F | All_Beauty |  |  |  |  |  |
+| A-018 | AG7WKTZINOFIXMZJYIPKIB7PV7NQ | B088838886 | All_Beauty |  |  |  |  |  |
+| A-019 | AGPOZ62Q3ULTH7RLBK4BIJ75T2KQ | B00EIL38WO | All_Beauty |  |  |  |  |  |
+| A-020 | AGTHQ6ANUEV7VOOVAEFWVMFIILUA | B01N070HWY | All_Beauty |  |  |  |  |  |
+| A-021 | AFJBKPK5W56XWSNPQU2WW66ISWYQ | B0BP2Y6QY4 | All_Beauty |  |  |  |  |  |
+| A-022 | AGQKBA5POXDOUO4U43YF2LNEZPLA | B07DSQ3NWM | All_Beauty |  |  |  |  |  |
+| A-023 | AFDMZ4TRX3HXQQUGWAHJQTIF65BQ | B00BXLW5QC | Restaurants |  |  |  |  |  |
+| A-024 | AEINWALDRYT4NTF3M5NC2WZ5YQNA | B00IX1I3G6 | For Him |  |  |  |  |  |
+| A-025 | AFPHKIJFGIU4G4POXRFCEF5RJJHA | B01M1OFZOG | All_Beauty |  |  |  |  |  |
