@@ -1,10 +1,49 @@
 from __future__ import annotations
 
-import math
+import json
 import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Union
 
 from app.models.schemas import Item, RecommendationItem, UserProfile
+from app.services.ranking.features import FEATURE_NAMES, matched_terms, ranker_features, weighted_score
 from app.services.profiling.item_profile import build_item_profile
+
+
+RankerWeights = Union["RecommendationWeights", dict[str, float]]
+
+
+@dataclass(frozen=True)
+class RecommendationWeights:
+    preference: float = 0.24
+    context: float = 0.16
+    category: float = 0.18
+    vector: float = 0.18
+    quality: float = 0.14
+    popularity: float = 0.18
+    novelty: float = 0.06
+    confidence: float = 0.04
+    collaborative: float = 0.22
+    retrieval: float = 0.06
+    source_diversity: float = 0.04
+    dislike_penalty: float = 0.30
+
+    def as_feature_weights(self) -> dict[str, float]:
+        return {
+            "preference_match": self.preference,
+            "context_match": self.context,
+            "category_match": self.category,
+            "vector_match": self.vector,
+            "item_quality": self.quality,
+            "popularity": self.popularity,
+            "novelty": self.novelty,
+            "confidence": self.confidence,
+            "collaborative_match": self.collaborative,
+            "retrieval_match": self.retrieval,
+            "source_diversity": self.source_diversity,
+            "dislike_match": -self.dislike_penalty,
+        }
 
 
 def rank_candidates(
@@ -12,43 +51,58 @@ def rank_candidates(
     context: str,
     candidate_items: list[Item],
     limit: int,
+    weights: RankerWeights | None = None,
+    candidate_sources: dict[str, list[str]] | None = None,
+    candidate_source_scores: dict[str, dict[str, float]] | None = None,
 ) -> list[RecommendationItem]:
+    weights = weights or RecommendationWeights()
+    feature_weights = _feature_weights(weights)
+    candidate_sources = candidate_sources or {}
+    candidate_source_scores = candidate_source_scores or {}
     ranked = []
     context_terms = _terms(context)
     profiled_items = [(item, build_item_profile(item)) for item in candidate_items]
     max_popularity = max((profile.popularity for _, profile in profiled_items), default=0)
-    personalization_weight = min(max((user_profile.confidence - 0.25) / 0.70, 0.05), 0.85)
+    personalization_weight = min(max((user_profile.confidence - 0.45) / 0.80, 0.02), 0.65)
 
     for item, profile in profiled_items:
-        preference_match = _overlap(
+        features = ranker_features(
+            user_profile=user_profile,
+            item_profile=profile,
+            context_terms=context_terms,
+            max_popularity=max_popularity,
+            seen_item_ids=_seen_item_ids(user_profile),
+            source_scores=candidate_source_scores.get(item.item_id, {}),
+        )
+        matched_signals = matched_terms(
             user_profile.preferred_terms + user_profile.positive_aspects,
             profile.terms + profile.positive_aspects,
         )
-        matched_signals = _matched_terms(
-            user_profile.preferred_terms + user_profile.positive_aspects,
-            profile.terms + profile.positive_aspects,
-        )
-        dislike_match = _overlap(
-            user_profile.disliked_terms + user_profile.negative_aspects,
-            profile.terms + profile.negative_aspects,
-        )
-        context_match = _overlap(context_terms, profile.terms + profile.positive_aspects)
-        item_quality = profile.quality_score
-        popularity = _popularity_score(profile.popularity, max_popularity)
-        category_match = _category_match(user_profile, profile.category)
-        novelty = 0.65 if item.item_id not in _seen_item_ids(user_profile) else 0.1
 
-        base_score = 0.85 * popularity + 0.10 * item_quality + 0.05 * novelty
-        personalized_score = (
-            0.35 * preference_match
-            + 0.25 * context_match
-            + 0.25 * category_match
-            + 0.15 * item_quality
-            - 0.25 * dislike_match
+        base_score = (
+            0.85 * features["popularity"]
+            + 0.10 * features["item_quality"]
+            + 0.05 * features["novelty"]
         )
+        personalized_score = weighted_score(features, feature_weights)
+        context_penalty = _context_penalty(context_terms, item, profile.negative_aspects)
+        context_category_penalty = _context_category_penalty(context_terms, item)
+        context_category_boost = _context_category_boost(context_terms, item)
         score = (
             (1 - personalization_weight) * base_score
             + personalization_weight * personalized_score
+            + context_category_boost
+            - context_penalty
+            - context_category_penalty
+        )
+        score_components = {name: round(value, 4) for name, value in features.items()}
+        score_components.update(
+            {
+                "context_penalty": round(context_penalty, 4),
+                "context_category_penalty": round(context_category_penalty, 4),
+                "context_category_boost": round(context_category_boost, 4),
+                "personalization_weight": round(personalization_weight, 4),
+            }
         )
 
         tradeoffs = "No major tradeoff detected from available metadata."
@@ -67,6 +121,12 @@ def rank_candidates(
                 tradeoffs=tradeoffs,
                 signals=profile.signals,
                 matched_signals=matched_signals,
+                candidate_sources=candidate_sources.get(item.item_id, []),
+                retrieval_scores={
+                    name: round(value, 4)
+                    for name, value in candidate_source_scores.get(item.item_id, {}).items()
+                },
+                score_components=score_components,
             )
         )
 
@@ -77,38 +137,88 @@ def rank_candidates(
     return limited
 
 
+def load_recommendation_weights(path: str | Path | None) -> dict[str, float] | None:
+    if not path:
+        return None
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    raw_weights = payload.get("weights", payload)
+    if not isinstance(raw_weights, dict):
+        return None
+    weights = {
+        name: float(raw_weights[name])
+        for name in FEATURE_NAMES
+        if name in raw_weights and isinstance(raw_weights[name], (int, float))
+    }
+    return weights or None
+
+
+def _feature_weights(weights: RankerWeights) -> dict[str, float]:
+    if isinstance(weights, RecommendationWeights):
+        return weights.as_feature_weights()
+    return {name: float(weights.get(name, 0.0)) for name in FEATURE_NAMES}
+
+
 def _terms(text: str) -> list[str]:
     return re.findall(r"[a-zA-Z][a-zA-Z0-9_-]{2,}", text.lower())
 
 
-def _overlap(left: list[str], right: list[str]) -> float:
-    if not left or not right:
+def _context_penalty(context_terms: list[str], item: Item, negative_aspects: list[str]) -> float:
+    terms = set(context_terms)
+    penalty = 0.0
+    price = str(item.metadata.get("price") or "").lower()
+    if "expensive" in terms and price in {"high", "premium", "expensive"}:
+        penalty += 0.25
+    if terms & {"conversation", "conversation-friendly", "quiet", "calm"}:
+        if set(negative_aspects) & {"loud", "noisy", "crowded", "busy"}:
+            penalty += 0.25
+    return min(penalty, 0.5)
+
+
+def _context_category_penalty(context_terms: list[str], item: Item) -> float:
+    hinted_category = _context_category_hint(context_terms)
+    if not hinted_category or item.category == hinted_category:
         return 0.0
-    right_set = set(right)
-    return min(sum(1 for term in left if term in right_set) / max(len(left), 1), 1.0)
-
-
-def _matched_terms(left: list[str], right: list[str], limit: int = 5) -> list[str]:
-    right_set = set(right)
-    seen = []
-    for term in left:
-        if term in right_set and term not in seen:
-            seen.append(term)
-        if len(seen) >= limit:
-            break
-    return seen
-
-
-def _category_match(user_profile: UserProfile, category: str) -> float:
-    if category in user_profile.preferred_categories:
-        return 1.0
-    return max(user_profile.category_affinity.get(category, 0.0), 0.0)
-
-
-def _popularity_score(popularity: int, max_popularity: int) -> float:
-    if popularity <= 0 or max_popularity <= 0:
+    if hinted_category == "gift" and _is_gift_category(item.category):
         return 0.0
-    return math.log1p(popularity) / math.log1p(max_popularity)
+    return 0.42
+
+
+def _context_category_boost(context_terms: list[str], item: Item) -> float:
+    hinted_category = _context_category_hint(context_terms)
+    if not hinted_category:
+        return 0.0
+    if item.category == hinted_category:
+        return 0.14
+    if hinted_category == "gift" and _is_gift_category(item.category):
+        return 0.14
+    return 0.0
+
+
+def _context_category_hint(context_terms: list[str]) -> str | None:
+    terms = set(context_terms)
+    if terms & {
+        "beauty",
+        "hair",
+        "makeup",
+        "manicure",
+        "nail",
+        "skincare",
+        "skin",
+        "styling",
+    }:
+        return "All_Beauty"
+    if terms & {"music", "playlist", "replay", "song", "songs"}:
+        return "Digital_Music"
+    if terms & {"gift", "gifting", "low-risk"}:
+        return "gift"
+    return None
+
+
+def _is_gift_category(category: str) -> bool:
+    return category in {"For Him", "For Her", "Gift Cards", "Restaurants", "Specialty Cards"}
 
 
 def _seen_item_ids(user_profile: UserProfile) -> set[str]:
