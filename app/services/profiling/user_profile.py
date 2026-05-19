@@ -4,6 +4,7 @@ import re
 from collections import Counter
 
 from app.models.schemas import UserHistoryItem, UserProfile
+from app.services.retrieval.embeddings import embedding_text, hashed_embedding
 
 STOPWORDS = {
     "and",
@@ -87,20 +88,51 @@ def build_user_profile(
 ) -> UserProfile:
     ratings = [item.rating for item in history]
     average_rating = sum(ratings) / len(ratings) if ratings else 3.5
+    recent_average_rating = _recent_average_rating(history, fallback=average_rating)
+    rating_std = _rating_std(ratings)
+    positive_rating_share = _rating_share(ratings, lower_bound=4)
+    negative_rating_share = _rating_share(ratings, upper_bound=2)
+    rating_trend = _rating_trend(history)
 
     positive_text = " ".join(item.review for item in history if item.rating >= 4)
     negative_text = " ".join(item.review for item in history if item.rating <= 2)
+    positive_item_text = " ".join(
+        f"{item.item_name} {item.category or ''}" for item in history if item.rating >= 4
+    )
+    negative_item_text = " ".join(
+        f"{item.item_name} {item.category or ''}" for item in history if item.rating <= 2
+    )
     persona_terms = _extract_terms(persona)
 
-    preferred_terms = _top_terms(positive_text, fallback=persona_terms)
-    disliked_terms = _top_terms(negative_text, fallback=[])
+    preferred_terms = _top_terms(
+        f"{positive_text} {positive_item_text}",
+        fallback=persona_terms,
+    )
+    disliked_terms = _top_terms(f"{negative_text} {negative_item_text}", fallback=[])
     preferred_categories = _preferred_categories(history)
     category_affinity = _category_affinity(history)
-    positive_aspects = _aspect_terms(positive_text + " " + persona, POSITIVE_ASPECT_HINTS)
-    negative_aspects = _aspect_terms(negative_text + " " + persona, NEGATIVE_ASPECT_HINTS)
+    positive_aspects = _aspect_terms(
+        f"{positive_text} {positive_item_text} {persona}",
+        POSITIVE_ASPECT_HINTS,
+    )
+    negative_aspects = _aspect_terms(
+        f"{negative_text} {negative_item_text} {persona}",
+        NEGATIVE_ASPECT_HINTS,
+    )
     recent_terms = _recent_terms(history)
     review_length_mean = _review_length_mean(history)
     confidence = _confidence(history, persona)
+    embedding = hashed_embedding(
+        embedding_text(
+            persona,
+            positive_text,
+            positive_item_text,
+            preferred_terms,
+            preferred_categories,
+            positive_aspects,
+            recent_terms,
+        )
+    )
 
     strictness = "balanced"
     if average_rating < 3.2:
@@ -125,6 +157,11 @@ def build_user_profile(
     return UserProfile(
         locale=locale,
         average_rating=round(average_rating, 2),
+        recent_average_rating=recent_average_rating,
+        rating_std=rating_std,
+        positive_rating_share=positive_rating_share,
+        negative_rating_share=negative_rating_share,
+        rating_trend=rating_trend,
         rating_strictness=strictness,
         seen_item_ids=seen_item_ids,
         preferred_terms=preferred_terms,
@@ -135,6 +172,7 @@ def build_user_profile(
         negative_aspects=negative_aspects,
         recent_terms=recent_terms,
         review_length_mean=review_length_mean,
+        embedding=embedding,
         evidence_count=len(history),
         confidence=confidence,
         voice_style=voice_style,
@@ -190,7 +228,11 @@ def _recent_terms(history: list[UserHistoryItem], limit: int = 8) -> list[str]:
     if not history:
         return []
     ordered = sorted(history, key=lambda item: item.timestamp or 0)
-    recent_text = " ".join(item.review for item in ordered[-3:] if item.rating >= 3)
+    recent_text = " ".join(
+        f"{item.item_name} {item.category or ''} {item.review}"
+        for item in ordered[-3:]
+        if item.rating >= 3
+    )
     return _top_terms(recent_text, fallback=[], limit=limit)
 
 
@@ -198,6 +240,48 @@ def _review_length_mean(history: list[UserHistoryItem]) -> float:
     if not history:
         return 0.0
     return round(sum(len(item.review.split()) for item in history) / len(history), 2)
+
+
+def _recent_average_rating(history: list[UserHistoryItem], fallback: float) -> float:
+    if not history:
+        return round(fallback, 2)
+    ordered = sorted(history, key=lambda item: item.timestamp or 0)
+    recent = [item.rating for item in ordered[-3:]]
+    return round(sum(recent) / len(recent), 2)
+
+
+def _rating_std(ratings: list[float]) -> float:
+    if len(ratings) < 2:
+        return 0.0
+    mean = sum(ratings) / len(ratings)
+    variance = sum((rating - mean) ** 2 for rating in ratings) / len(ratings)
+    return round(variance ** 0.5, 3)
+
+
+def _rating_share(
+    ratings: list[float],
+    lower_bound: float | None = None,
+    upper_bound: float | None = None,
+) -> float:
+    if not ratings:
+        return 0.0
+    count = 0
+    for rating in ratings:
+        if lower_bound is not None and rating >= lower_bound:
+            count += 1
+        elif upper_bound is not None and rating <= upper_bound:
+            count += 1
+    return round(count / len(ratings), 3)
+
+
+def _rating_trend(history: list[UserHistoryItem]) -> float:
+    if len(history) < 4:
+        return 0.0
+    ordered = sorted(history, key=lambda item: item.timestamp or 0)
+    midpoint = len(ordered) // 2
+    early = [item.rating for item in ordered[:midpoint]]
+    late = [item.rating for item in ordered[midpoint:]]
+    return round((sum(late) / len(late)) - (sum(early) / len(early)), 3)
 
 
 def _seen_item_ids(history: list[UserHistoryItem]) -> list[str]:

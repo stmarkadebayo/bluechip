@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from app.models.schemas import Item, ItemProfile
+from app.services.retrieval.embeddings import embedding_text, hashed_embedding
 
 POSITIVE_HINTS = {
     "affordable",
@@ -30,12 +31,13 @@ NEGATIVE_HINTS = {
 
 
 def build_item_profile(item: Item) -> ItemProfile:
-    text = " ".join([item.name, item.category, item.summary, " ".join(map(str, item.metadata.values()))])
+    text = embedding_text(item.name, item.category, item.summary, item.metadata)
     terms = _extract_terms(text)
     quality_score = _quality_score(item)
     positive_aspects = [term for term in terms if term in POSITIVE_HINTS]
     negative_aspects = [term for term in terms if term in NEGATIVE_HINTS]
     popularity = int(item.metadata.get("rating_number") or item.metadata.get("review_count") or 0)
+    embedding = hashed_embedding(text)
 
     signals = [f"category: {item.category}", f"quality score: {quality_score:.2f}"]
     if item.average_rating:
@@ -55,6 +57,7 @@ def build_item_profile(item: Item) -> ItemProfile:
         negative_aspects=negative_aspects,
         average_rating=item.average_rating,
         popularity=popularity,
+        embedding=embedding,
         signals=signals,
         metadata=item.metadata,
     )
