@@ -8,12 +8,49 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-CATEGORIES = (
+DEFAULT_CATEGORIES = (
     "All_Beauty",
     "Digital_Music",
     "Magazine_Subscriptions",
     "Gift_Cards",
     "Subscription_Boxes",
+)
+
+CATEGORIES = (
+    "All_Beauty",
+    "Amazon_Fashion",
+    "Appliances",
+    "Arts_Crafts_and_Sewing",
+    "Automotive",
+    "Baby_Products",
+    "Beauty_and_Personal_Care",
+    "Books",
+    "CDs_and_Vinyl",
+    "Cell_Phones_and_Accessories",
+    "Clothing_Shoes_and_Jewelry",
+    "Digital_Music",
+    "Electronics",
+    "Gift_Cards",
+    "Grocery_and_Gourmet_Food",
+    "Handmade_Products",
+    "Health_and_Household",
+    "Health_and_Personal_Care",
+    "Home_and_Kitchen",
+    "Industrial_and_Scientific",
+    "Kindle_Store",
+    "Magazine_Subscriptions",
+    "Movies_and_TV",
+    "Musical_Instruments",
+    "Office_Products",
+    "Patio_Lawn_and_Garden",
+    "Pet_Supplies",
+    "Software",
+    "Sports_and_Outdoors",
+    "Subscription_Boxes",
+    "Tools_and_Home_Improvement",
+    "Toys_and_Games",
+    "Unknown",
+    "Video_Games",
 )
 
 REVIEW_BYTES = {
@@ -56,7 +93,12 @@ def main() -> None:
         description="Download and validate selected Amazon Reviews 2023 categories from Hugging Face."
     )
     parser.add_argument("--output-dir", default="data/raw")
-    parser.add_argument("--categories", nargs="*", choices=CATEGORIES, default=list(CATEGORIES))
+    parser.add_argument("--categories", nargs="*", choices=CATEGORIES, default=list(DEFAULT_CATEGORIES))
+    parser.add_argument(
+        "--all-categories",
+        action="store_true",
+        help="Download every Amazon Reviews 2023 review category. This is hundreds of GB.",
+    )
     parser.add_argument("--with-metadata", action="store_true")
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument("--strict", action="store_true", help="Exit non-zero if any target is incomplete.")
@@ -71,14 +113,15 @@ def main() -> None:
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
-    targets = build_targets(output_dir, args.categories, include_metadata=args.with_metadata)
+    categories = list(CATEGORIES) if args.all_categories else args.categories
+    targets = build_targets(output_dir, categories, include_metadata=args.with_metadata)
 
     incomplete = []
     for target in targets:
         status = status_for(target)
         print(format_status(target, status))
         if args.check_only:
-            if status != "complete":
+            if not _is_usable_status(status):
                 incomplete.append(target)
             continue
 
@@ -89,7 +132,7 @@ def main() -> None:
             max_seconds_per_file=args.max_seconds_per_file,
         )
         print(format_status(target, final_status))
-        if final_status != "complete":
+        if not _is_usable_status(final_status):
             incomplete.append(target)
 
     if incomplete and args.strict:
@@ -109,7 +152,7 @@ def build_targets(
                 kind="reviews",
                 url=REVIEW_URL.format(category=category),
                 path=output_dir / f"{category}.jsonl",
-                expected_bytes=REVIEW_BYTES[category],
+                expected_bytes=REVIEW_BYTES.get(category, 0),
             )
         )
         if include_metadata:
@@ -119,7 +162,7 @@ def build_targets(
                     kind="metadata",
                     url=METADATA_URL.format(category=category),
                     path=output_dir / f"meta_{category}.jsonl",
-                    expected_bytes=METADATA_BYTES[category],
+                    expected_bytes=METADATA_BYTES.get(category, 0),
                 )
             )
     return targets
@@ -129,6 +172,8 @@ def status_for(target: DownloadTarget) -> str:
     if not target.path.exists():
         return "missing"
     size = target.path.stat().st_size
+    if target.expected_bytes <= 0:
+        return f"present_unverified:{size}"
     if size == target.expected_bytes:
         return "complete"
     if size > target.expected_bytes:
@@ -145,7 +190,7 @@ def download_target(
     target.path.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(1, retries + 1):
         status = status_for(target)
-        if status == "complete" or status.startswith("oversized:"):
+        if _is_usable_status(status):
             return status
 
         try:
@@ -188,6 +233,10 @@ def _download_once(
 
 def format_status(target: DownloadTarget, status: str) -> str:
     return f"{target.category} {target.kind}: {status} -> {target.path}"
+
+
+def _is_usable_status(status: str) -> bool:
+    return status == "complete" or status.startswith(("oversized:", "present_unverified:"))
 
 
 if __name__ == "__main__":
