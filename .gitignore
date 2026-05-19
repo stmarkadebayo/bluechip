@@ -1,10 +1,17 @@
 .DS_Store
 .env
+.env.*
+!.env.example
 .venv/
+*.egg-info/
 __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+*.sqlite
+*.sqlite3
 runs/*
 !runs/.gitkeep
 data/raw/*

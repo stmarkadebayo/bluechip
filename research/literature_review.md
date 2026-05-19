@@ -98,9 +98,11 @@ Design decision:
 ```text
 Runtime Task B flow:
   1. retrieve 200-500 candidates cheaply
-  2. filter hard mismatches
-  3. rank with hybrid score
-  4. optionally LLM-rerank/explain top 10 only
+  2. blend collaborative, lexical, vector, category, and popularity sources
+  3. filter hard mismatches and previously seen items
+  4. rank with hybrid score
+  5. evaluate candidate recall before tuning final rank quality
+  6. optionally LLM-rerank/explain top 10 only
 ```
 
 ## Useful Open-Source Repositories
