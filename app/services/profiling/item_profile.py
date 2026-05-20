@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from app.models.schemas import Item, ItemProfile
+from app.services.intelligence.aspects import item_aspect_evidence
 from app.services.retrieval.embeddings import embedding_text, hashed_embedding
 
 POSITIVE_HINTS = {
@@ -33,9 +34,16 @@ NEGATIVE_HINTS = {
 def build_item_profile(item: Item) -> ItemProfile:
     text = embedding_text(item.name, item.category, item.summary, item.metadata)
     terms = _extract_terms(text)
+    aspect_evidence = item_aspect_evidence(item)
     quality_score = _quality_score(item)
-    positive_aspects = [term for term in terms if term in POSITIVE_HINTS]
-    negative_aspects = [term for term in terms if term in NEGATIVE_HINTS]
+    positive_aspects = _merge_terms(
+        aspect_evidence.positive_aspects,
+        [term for term in terms if term in POSITIVE_HINTS],
+    )
+    negative_aspects = _merge_terms(
+        aspect_evidence.negative_aspects,
+        [term for term in terms if term in NEGATIVE_HINTS],
+    )
     popularity = int(item.metadata.get("rating_number") or item.metadata.get("review_count") or 0)
     embedding = hashed_embedding(text)
 
@@ -55,6 +63,8 @@ def build_item_profile(item: Item) -> ItemProfile:
         terms=terms,
         positive_aspects=positive_aspects,
         negative_aspects=negative_aspects,
+        aspect_scores=aspect_evidence.aspect_scores,
+        nigerian_context=aspect_evidence.nigerian_context,
         average_rating=item.average_rating,
         popularity=popularity,
         embedding=embedding,
@@ -78,3 +88,14 @@ def _extract_terms(text: str, limit: int = 16) -> list[str]:
         if len(seen) >= limit:
             break
     return seen
+
+
+def _merge_terms(*groups: list[str], limit: int = 8) -> list[str]:
+    output = []
+    for group in groups:
+        for term in group:
+            if term not in output:
+                output.append(term)
+            if len(output) >= limit:
+                return output
+    return output

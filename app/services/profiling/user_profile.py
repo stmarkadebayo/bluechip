@@ -4,6 +4,7 @@ import re
 from collections import Counter
 
 from app.models.schemas import UserHistoryItem, UserProfile
+from app.services.intelligence.aspects import user_aspect_evidence
 from app.services.retrieval.embeddings import embedding_text, hashed_embedding
 
 STOPWORDS = {
@@ -111,13 +112,20 @@ def build_user_profile(
     disliked_terms = _top_terms(f"{negative_text} {negative_item_text}", fallback=[])
     preferred_categories = _preferred_categories(history)
     category_affinity = _category_affinity(history)
-    positive_aspects = _aspect_terms(
-        f"{positive_text} {positive_item_text} {persona}",
-        POSITIVE_ASPECT_HINTS,
+    aspect_evidence = user_aspect_evidence(persona, history)
+    positive_aspects = _merge_terms(
+        aspect_evidence.positive_aspects,
+        _aspect_terms(
+            f"{positive_text} {positive_item_text} {persona}",
+            POSITIVE_ASPECT_HINTS,
+        ),
     )
-    negative_aspects = _aspect_terms(
-        f"{negative_text} {negative_item_text} {persona}",
-        NEGATIVE_ASPECT_HINTS,
+    negative_aspects = _merge_terms(
+        aspect_evidence.negative_aspects,
+        _aspect_terms(
+            f"{negative_text} {negative_item_text} {persona}",
+            NEGATIVE_ASPECT_HINTS,
+        ),
     )
     recent_terms = _recent_terms(history)
     review_length_mean = _review_length_mean(history)
@@ -170,6 +178,8 @@ def build_user_profile(
         category_affinity=category_affinity,
         positive_aspects=positive_aspects,
         negative_aspects=negative_aspects,
+        aspect_scores=aspect_evidence.aspect_scores,
+        nigerian_context=aspect_evidence.nigerian_context,
         recent_terms=recent_terms,
         review_length_mean=review_length_mean,
         embedding=embedding,
@@ -222,6 +232,17 @@ def _aspect_terms(text: str, hints: set[str], limit: int = 8) -> list[str]:
     if hinted:
         return list(dict.fromkeys(hinted))[:limit]
     return []
+
+
+def _merge_terms(*groups: list[str], limit: int = 8) -> list[str]:
+    output = []
+    for group in groups:
+        for term in group:
+            if term not in output:
+                output.append(term)
+            if len(output) >= limit:
+                return output
+    return output
 
 
 def _recent_terms(history: list[UserHistoryItem], limit: int = 8) -> list[str]:
