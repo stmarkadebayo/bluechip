@@ -11,6 +11,7 @@ from app.services.retrieval.item_similarity import (  # noqa: E402
     build_item_neighbors_from_reviews,
     build_review_term_retrieval_index,
 )
+from app.services.retrieval.evidence_graph import build_evidence_graph_index  # noqa: E402
 from scripts.data_utils import read_jsonl, write_json  # noqa: E402
 
 
@@ -52,6 +53,8 @@ def main() -> None:
         max_items_per_term=args.review_term_max_items_per_term,
     )
     write_json(output_dir / "review_term_retrieval.json", review_terms)
+    evidence_graph = build_evidence_graph_index(train=train, items=items, top_k=args.top_k)
+    write_json(output_dir / "evidence_graph_retrieval.json", evidence_graph)
 
 
 if __name__ == "__main__":
