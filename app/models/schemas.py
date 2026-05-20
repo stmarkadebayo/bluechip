@@ -43,6 +43,8 @@ class UserProfile(BaseModel):
     category_affinity: dict[str, float] = Field(default_factory=dict)
     positive_aspects: list[str] = Field(default_factory=list)
     negative_aspects: list[str] = Field(default_factory=list)
+    aspect_scores: dict[str, float] = Field(default_factory=dict)
+    nigerian_context: list[str] = Field(default_factory=list)
     recent_terms: list[str] = Field(default_factory=list)
     review_length_mean: float = 0.0
     embedding: list[float] = Field(default_factory=list)
@@ -60,6 +62,8 @@ class ItemProfile(BaseModel):
     terms: list[str]
     positive_aspects: list[str] = Field(default_factory=list)
     negative_aspects: list[str] = Field(default_factory=list)
+    aspect_scores: dict[str, float] = Field(default_factory=dict)
+    nigerian_context: list[str] = Field(default_factory=list)
     average_rating: Optional[float] = None
     popularity: int = 0
     embedding: list[float] = Field(default_factory=list)
@@ -153,9 +157,17 @@ class CandidateDiagnostics(BaseModel):
 class RuntimeMetrics(BaseModel):
     requests: int
     by_endpoint: dict[str, int] = Field(default_factory=dict)
+    by_generation_provider: dict[str, int] = Field(default_factory=dict)
     average_latency_ms: float = 0.0
     estimated_generation_tokens: int = 0
     estimated_generation_cost_usd: float = 0.0
+    validation_failures: int = 0
+    validation_failure_rate: float = 0.0
+    fallback_count: int = 0
+    fallback_rate: float = 0.0
+    retrieval_source_counts: dict[str, int] = Field(default_factory=dict)
+    model_version_counts: dict[str, int] = Field(default_factory=dict)
+    index_version_counts: dict[str, int] = Field(default_factory=dict)
 
 
 class TraceRecord(BaseModel):
@@ -166,6 +178,11 @@ class TraceRecord(BaseModel):
     generation_provider: str
     estimated_generation_tokens: int
     estimated_generation_cost_usd: float
+    model_versions: dict[str, str] = Field(default_factory=dict)
+    index_versions: dict[str, str] = Field(default_factory=dict)
+    retrieval_source_counts: dict[str, int] = Field(default_factory=dict)
+    validation_status: str = ""
+    fallback_reason: str | None = None
     steps: list[AgentTraceStep] = Field(default_factory=list)
 
 

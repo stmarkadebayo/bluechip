@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.agents.recommendation_agent import RecommendationAgent
-from app.agents.review_simulation_agent import ReviewSimulationAgent
 from app.models.schemas import (
     HealthResponse,
     ProfileUserRequest,
@@ -15,6 +13,10 @@ from app.models.schemas import (
     TraceRecord,
     UserProfileResponse,
 )
+from app.platform.feature_store import get_feature_store
+from app.platform.model_registry import get_model_registry
+from app.serving.orchestrators.recommendation import RecommendationAgent
+from app.serving.orchestrators.review_simulation import ReviewSimulationAgent
 from app.services.profiling.user_profile import build_user_profile
 from app.stores.trace_store import trace_store
 
@@ -54,3 +56,20 @@ def metrics() -> RuntimeMetrics:
 @router.get("/traces", response_model=list[TraceRecord])
 def traces(limit: int = 20) -> list[TraceRecord]:
     return trace_store.recent(limit=max(1, min(limit, 100)))
+
+
+@router.get("/runtime/registry")
+def runtime_registry() -> dict:
+    return get_model_registry().payload()
+
+
+@router.get("/runtime/feature-store")
+def runtime_feature_store() -> dict:
+    summary = get_feature_store().summary()
+    return {
+        "root": summary.root,
+        "version": summary.version,
+        "available": summary.available,
+        "artifacts": summary.artifacts,
+        "counts": summary.counts,
+    }
