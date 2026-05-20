@@ -8,6 +8,7 @@ from app.services.generation.providers import (
     generation_provider_name,
     get_generation_provider,
 )
+from app.services.generation.review_plan import build_review_plan, fallback_review_from_plan
 
 
 @dataclass(frozen=True)
@@ -36,24 +37,8 @@ def generate_review_result(
     predicted_rating: int,
     strict_provider: bool = False,
 ) -> GeneratedText:
-    tone = "practical"
-    if user_profile.locale and user_profile.locale.lower() == "nigeria":
-        tone = "natural Nigerian English"
-
-    positive_signal = (item_profile.signals[-1] if item_profile.signals else item_profile.name).rstrip(".")
-    if predicted_rating >= 4:
-        verdict = "it fits what I usually look for"
-    elif predicted_rating == 3:
-        verdict = "it has some useful strengths, but I would be selective about recommending it"
-    else:
-        verdict = "it misses too many of the things I care about"
-
-    fallback = (
-        f"I would rate {item_profile.name} {predicted_rating} out of 5. "
-        f"Based on the available details, {positive_signal}. "
-        f"For my preferences, {verdict}. "
-        f"The tone should stay {tone}, {user_profile.voice_style}, and grounded in the facts provided."
-    )
+    plan = build_review_plan(user_profile, item_profile, predicted_rating)
+    fallback = fallback_review_from_plan(item_profile, plan)
     provider = get_generation_provider()
     provider_name = generation_provider_name()
     if isinstance(provider, TemplateGenerationProvider):
@@ -61,12 +46,12 @@ def generate_review_result(
 
     instructions = (
         "You generate concise personalized reviews. Ground every claim in the provided "
-        "user profile, item profile, and predicted rating. Do not invent item facts. "
+        "user profile, item profile, review plan, and predicted rating. Do not invent item facts. "
         "The first sentence must explicitly state the target item and rating in the form "
         "'I would rate <item> <rating> out of 5.'"
     )
     prompt = (
-        f"Predicted rating: {predicted_rating}/5\n"
+        f"{plan.prompt_block()}\n"
         f"User voice: {user_profile.voice_style}\n"
         f"User signals: {user_profile.signals}\n"
         f"Item: {item_profile.name}\n"
@@ -117,7 +102,7 @@ def _repair_review_contract(
     if not mentions_item or not mentions_rating:
         review = f"{required} {review}"
     if user_profile.locale and user_profile.locale.lower() == "nigeria" and "Nigerian" not in review:
-        review = f"{review} The tone is natural Nigerian English."
+        review = f"{review} It still sounds practical for a Nigerian shopper."
     return review
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.models.schemas import ItemProfile, UserProfile, ValidationResult
+from app.services.validation.evidence_critic import review_evidence_issues
 
 
 def validate_review_simulation(
@@ -25,5 +26,7 @@ def validate_review_simulation(
 
     if user_profile.locale and user_profile.locale.lower() == "nigeria" and "Nigerian" not in review:
         issues.append("locale was requested but not reflected in the generation contract")
+
+    issues.extend(review_evidence_issues(review, user_profile, item_profile))
 
     return ValidationResult(is_consistent=not issues, issues=issues)
