@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.models.schemas import ItemProfile, UserProfile
+from app.services.intelligence.aspects import aspect_overlap
 from app.services.retrieval.embeddings import cosine_similarity
 
 
@@ -14,6 +15,10 @@ FEATURE_NAMES = [
     "novelty",
     "confidence",
     "dislike_match",
+    "aspect_match",
+    "sequential_match",
+    "evidence_graph_match",
+    "nigerian_context_match",
     "collaborative_match",
     "retrieval_match",
     "source_diversity",
@@ -38,10 +43,25 @@ def ranker_features(
         item_profile.terms + item_profile.negative_aspects,
     )
     context_match = overlap(context_terms, item_profile.terms + item_profile.positive_aspects)
+    aspect_match = aspect_overlap(user_profile.aspect_scores, item_profile.aspect_scores)
+    sequential_match = max(
+        source_scores.get("sequential_transition", 0.0),
+        source_scores.get("category_transition", 0.0),
+    )
+    evidence_graph_match = max(
+        source_scores.get("aspect_evidence_graph", 0.0),
+        source_scores.get("category_aspect_graph", 0.0),
+        sequential_match,
+    )
+    nigerian_context_match = overlap(
+        user_profile.nigerian_context,
+        item_profile.nigerian_context + item_profile.terms,
+    )
     collaborative_match = max(
         source_scores.get("co_visitation", 0.0),
         source_scores.get("user_neighbor", 0.0),
         source_scores.get("graph_walk", 0.0),
+        sequential_match,
     )
     retrieval_match = max(source_scores.values(), default=0.0)
     return {
@@ -54,6 +74,10 @@ def ranker_features(
         "novelty": 0.65 if item_profile.item_id not in seen_item_ids else 0.1,
         "confidence": user_profile.confidence,
         "dislike_match": dislike_match,
+        "aspect_match": aspect_match,
+        "sequential_match": sequential_match,
+        "evidence_graph_match": evidence_graph_match,
+        "nigerian_context_match": nigerian_context_match,
         "collaborative_match": collaborative_match,
         "retrieval_match": retrieval_match,
         "source_diversity": min(len(source_scores) / 4, 1.0),

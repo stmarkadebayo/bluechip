@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Union
 
 from app.models.schemas import Item, RecommendationItem, UserProfile
-from app.services.ranking.features import FEATURE_NAMES, matched_terms, ranker_features, weighted_score
+from app.services.ranking.features import matched_terms, ranker_features, weighted_score
 from app.services.profiling.item_profile import build_item_profile
-
-
-RankerWeights = Union["RecommendationWeights", dict[str, float]]
 
 
 @dataclass(frozen=True)
@@ -24,6 +18,10 @@ class RecommendationWeights:
     popularity: float = 0.18
     novelty: float = 0.06
     confidence: float = 0.04
+    aspect: float = 0.16
+    sequential: float = 0.12
+    evidence_graph: float = 0.12
+    nigerian_context: float = 0.04
     collaborative: float = 0.22
     retrieval: float = 0.06
     source_diversity: float = 0.04
@@ -39,6 +37,10 @@ class RecommendationWeights:
             "popularity": self.popularity,
             "novelty": self.novelty,
             "confidence": self.confidence,
+            "aspect_match": self.aspect,
+            "sequential_match": self.sequential,
+            "evidence_graph_match": self.evidence_graph,
+            "nigerian_context_match": self.nigerian_context,
             "collaborative_match": self.collaborative,
             "retrieval_match": self.retrieval,
             "source_diversity": self.source_diversity,
@@ -51,15 +53,15 @@ def rank_candidates(
     context: str,
     candidate_items: list[Item],
     limit: int,
-    weights: RankerWeights | None = None,
+    weights: RecommendationWeights | None = None,
     candidate_sources: dict[str, list[str]] | None = None,
     candidate_source_scores: dict[str, dict[str, float]] | None = None,
 ) -> list[RecommendationItem]:
     weights = weights or RecommendationWeights()
-    feature_weights = _feature_weights(weights)
+    feature_weights = weights.as_feature_weights()
     candidate_sources = candidate_sources or {}
     candidate_source_scores = candidate_source_scores or {}
-    ranked = []
+    ranked: list[tuple[float, RecommendationItem]] = []
     context_terms = _terms(context)
     profiled_items = [(item, build_item_profile(item)) for item in candidate_items]
     max_popularity = max((profile.popularity for _, profile in profiled_items), default=0)
@@ -111,54 +113,36 @@ def rank_candidates(
         elif profile.negative_aspects:
             tradeoffs = "Potential mismatch: " + ", ".join(profile.negative_aspects[:3])
 
+        display_score = round(min(max(score, 0), 1), 2)
+        score_components["raw_score"] = round(score, 4)
+
         ranked.append(
-            RecommendationItem(
-                rank=0,
-                item_id=item.item_id,
-                name=item.name,
-                score=round(min(max(score, 0), 1), 2),
-                reason="",
-                tradeoffs=tradeoffs,
-                signals=profile.signals,
-                matched_signals=matched_signals,
-                candidate_sources=candidate_sources.get(item.item_id, []),
-                retrieval_scores={
-                    name: round(value, 4)
-                    for name, value in candidate_source_scores.get(item.item_id, {}).items()
-                },
-                score_components=score_components,
+            (
+                score,
+                RecommendationItem(
+                    rank=0,
+                    item_id=item.item_id,
+                    name=item.name,
+                    score=display_score,
+                    reason="",
+                    tradeoffs=tradeoffs,
+                    signals=profile.signals,
+                    matched_signals=matched_signals,
+                    candidate_sources=candidate_sources.get(item.item_id, []),
+                    retrieval_scores={
+                        name: round(value, 4)
+                        for name, value in candidate_source_scores.get(item.item_id, {}).items()
+                    },
+                    score_components=score_components,
+                ),
             )
         )
 
-    ranked.sort(key=lambda item: item.score, reverse=True)
-    limited = ranked[:limit]
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    limited = [item for _, item in ranked[:limit]]
     for index, item in enumerate(limited, start=1):
         item.rank = index
     return limited
-
-
-def load_recommendation_weights(path: str | Path | None) -> dict[str, float] | None:
-    if not path:
-        return None
-    try:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    raw_weights = payload.get("weights", payload)
-    if not isinstance(raw_weights, dict):
-        return None
-    weights = {
-        name: float(raw_weights[name])
-        for name in FEATURE_NAMES
-        if name in raw_weights and isinstance(raw_weights[name], (int, float))
-    }
-    return weights or None
-
-
-def _feature_weights(weights: RankerWeights) -> dict[str, float]:
-    if isinstance(weights, RecommendationWeights):
-        return weights.as_feature_weights()
-    return {name: float(weights.get(name, 0.0)) for name in FEATURE_NAMES}
 
 
 def _terms(text: str) -> list[str]:

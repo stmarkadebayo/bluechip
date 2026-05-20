@@ -6,6 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.models.schemas import ItemProfile, RatingPrediction, UserProfile
+from app.platform.model_registry import get_model_registry
 from app.services.ranking.rating_features import (
     build_rating_stats,
     clamp_rating,
@@ -131,19 +132,10 @@ def _predict_with_serving_head(
 
 @lru_cache(maxsize=1)
 def _runtime_rating_assets() -> tuple[object | None, object | None]:
+    registry = get_model_registry()
     configured_stats_path = (os.getenv("TASK_A_STATS_PATH") or "").strip()
-    model_path = _first_existing_path(
-        (os.getenv("TASK_A_MODEL_PATH") or "").strip(),
-        "data/processed/all_categories/task_a_model_rmse.json",
-        "data/processed/all_categories/task_a_model.json",
-        "data/processed/task_a_model_rmse.json",
-        "data/processed/task_a_model.json",
-    )
-    stats_path = _first_existing_path(
-        configured_stats_path,
-        "data/processed/all_categories/task_a_rating_stats.json",
-        "data/processed/task_a_rating_stats.json",
-    )
+    model_path = registry.resolve_path("task_a_model")
+    stats_path = registry.resolve_path("task_a_rating_stats")
     if not model_path or not stats_path:
         return None, None
     model = load_task_a_model(model_path)
@@ -165,11 +157,7 @@ def _runtime_serving_head() -> str:
     configured = (os.getenv("TASK_A_SERVING_HEAD") or "").strip()
     if configured:
         return configured
-    policy_path = _first_existing_path(
-        (os.getenv("TASK_A_SERVING_POLICY") or "").strip(),
-        "data/processed/all_categories/task_a_serving_policy.json",
-        "data/processed/task_a_serving_policy.json",
-    )
+    policy_path = get_model_registry().resolve_path("task_a_serving_policy")
     if not policy_path:
         return "trained_model_raw"
     try:
@@ -178,16 +166,6 @@ def _runtime_serving_head() -> str:
         return "trained_model_raw"
     head = str(payload.get("serving_head") or "").strip()
     return head or "trained_model_raw"
-
-
-def _first_existing_path(*candidates: str) -> Path | None:
-    for candidate in candidates:
-        if not candidate:
-            continue
-        path = Path(candidate)
-        if path.exists():
-            return path
-    return None
 
 
 def _read_jsonl(path: Path) -> list[dict]:
