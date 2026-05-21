@@ -179,6 +179,57 @@ def test_candidate_pool_uses_review_term_sources_for_lexical_neighbors() -> None
     }
 
 
+def test_candidate_pool_includes_beauty_taxonomy_source() -> None:
+    history = [
+        UserHistoryItem(
+            item_id="seen_skin_cream",
+            item_name="Gentle Skin Cream",
+            rating=5,
+            review="Gentle cream calmed sensitive skin without fragrance.",
+            category="All_Beauty",
+        )
+    ]
+    user_profile = build_user_profile("Needs gentle beauty products for skin care.", history)
+    items = [
+        Item(
+            item_id="seen_skin_cream",
+            name="Gentle Skin Cream",
+            category="All_Beauty",
+            summary="Fragrance free cream for sensitive skin.",
+            average_rating=4.8,
+            metadata={"review_count": 120},
+        ),
+        Item(
+            item_id="taxonomy_skin_serum",
+            name="Hyaluronic Face Serum",
+            category="All_Beauty",
+            summary="Light hyaluronic serum for face care.",
+            average_rating=4.7,
+            metadata={"review_count": 40},
+        ),
+        Item(
+            item_id="nail_art_kit",
+            name="Nail Rhinestone Kit",
+            category="All_Beauty",
+            summary="Acrylic nail art rhinestones and polish tools.",
+            average_rating=4.6,
+            metadata={"review_count": 80},
+        ),
+    ]
+
+    pool = generate_candidate_pool(
+        user_profile=user_profile,
+        history=history,
+        items=items,
+        context="",
+        limit=3,
+    )
+
+    assert "taxonomy_skin_serum" in {item.item_id for item in pool.items}
+    assert "beauty_taxonomy_aspect" in pool.sources["taxonomy_skin_serum"]
+    assert pool.source_scores["taxonomy_skin_serum"]["beauty_taxonomy_aspect"] > 0
+
+
 def test_candidate_pool_uses_category_affinity_source() -> None:
     history = [
         UserHistoryItem(
@@ -227,6 +278,78 @@ def test_candidate_pool_uses_category_affinity_source() -> None:
     assert "category_affinity_popular" in pool.sources["book_new"]
 
 
+def test_candidate_pool_preserves_global_popularity_floor() -> None:
+    history = [
+        UserHistoryItem(
+            item_id="seen_beauty",
+            item_name="Hair Styling Cream",
+            rating=5,
+            review="Useful hair cream for daily styling.",
+            category="All_Beauty",
+        )
+    ]
+    user_profile = build_user_profile("Needs practical beauty products.", history)
+    items = [
+        Item(
+            item_id="seen_beauty",
+            name="Hair Styling Cream",
+            category="All_Beauty",
+            summary="Useful hair cream for daily styling.",
+            metadata={"review_count": 2000},
+            average_rating=4.8,
+        ),
+        *[
+            Item(
+                item_id=f"higher_popular_{index}",
+                name=f"Very Popular Gift {index}",
+                category="Specialty Cards",
+                metadata={"review_count": 2000 - index},
+                average_rating=3.2,
+            )
+            for index in range(14)
+        ],
+        Item(
+            item_id="popular_cross_domain",
+            name="Popular Cross Domain Gift",
+            category="Specialty Cards",
+            metadata={"review_count": 1500},
+            average_rating=3.2,
+        ),
+        *[
+            Item(
+                item_id=f"high_quality_tail_{index}",
+                name=f"High Quality Tail Gift {index}",
+                category="Specialty Cards",
+                metadata={"review_count": 100 - index},
+                average_rating=5.0,
+            )
+            for index in range(30)
+        ],
+        *[
+            Item(
+                item_id=f"beauty_candidate_{index}",
+                name=f"Hair Brush Styling Tool {index}",
+                category="All_Beauty",
+                summary="Hair brush styling tool for daily hair care.",
+                metadata={"review_count": 120 + index},
+                average_rating=4.8,
+            )
+            for index in range(120)
+        ],
+    ]
+
+    pool = generate_candidate_pool(
+        user_profile=user_profile,
+        history=history,
+        items=items,
+        context="",
+        limit=100,
+    )
+
+    assert "popular_cross_domain" in {item.item_id for item in pool.items}
+    assert pool.sources["popular_cross_domain"] == ["global_popular"]
+
+
 def test_context_category_guard_keeps_contextual_recommendations_on_topic() -> None:
     history = [
         UserHistoryItem(
@@ -263,6 +386,56 @@ def test_context_category_guard_keeps_contextual_recommendations_on_topic() -> N
     assert ranked[0].item_id == "hair_brush"
     assert ranked[0].score_components["context_category_boost"] > 0
     assert ranked[1].score_components["context_category_penalty"] > 0
+
+
+def test_ranker_sorts_by_raw_score_not_rounded_display_score() -> None:
+    history = [
+        UserHistoryItem(
+            item_id=f"seen_{index}",
+            item_name="Calm Study Manual",
+            rating=5 if index % 2 else 4,
+            review="calm useful practical reliable quiet",
+            category="books",
+            timestamp=index,
+        )
+        for index in range(8)
+    ]
+    user_profile = build_user_profile(
+        "A user who likes calm useful practical reliable books for study.",
+        history,
+    )
+
+    ranked = rank_candidates(
+        user_profile=user_profile,
+        context="",
+        candidate_items=[
+            Item(
+                item_id="lower_raw",
+                name="Useful Calm Guide",
+                category="books",
+                summary="calm useful practical reliable study",
+                metadata={"review_count": 100},
+                average_rating=4.5,
+            ),
+            Item(
+                item_id="higher_raw",
+                name="Useful Calm Guide",
+                category="books",
+                summary="calm useful practical reliable study",
+                metadata={"review_count": 100},
+                average_rating=4.5,
+            ),
+        ],
+        limit=2,
+        candidate_source_scores={
+            "lower_raw": {"review_term_profile": 0.90},
+            "higher_raw": {"review_term_profile": 0.94},
+        },
+    )
+
+    assert ranked[0].item_id == "higher_raw"
+    assert ranked[0].score == ranked[1].score
+    assert ranked[0].score_components["raw_score"] > ranked[1].score_components["raw_score"]
 
 
 def test_temporal_split_holds_out_latest_review() -> None:
