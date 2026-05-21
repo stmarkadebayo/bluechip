@@ -30,6 +30,28 @@ def main() -> None:
     parser.add_argument("--model-path", default="", help="Optional trained Task A rating model.")
     parser.add_argument("--max-examples", type=int, default=25)
     parser.add_argument(
+        "--bert-score",
+        action="store_true",
+        help="Compute BERTScore with the optional bert-score dependency.",
+    )
+    parser.add_argument(
+        "--bert-score-model",
+        default="distilbert-base-uncased",
+        help="Transformer model used when --bert-score is enabled.",
+    )
+    parser.add_argument(
+        "--bert-score-batch-size",
+        type=int,
+        default=8,
+        help="Batch size used when --bert-score is enabled.",
+    )
+    parser.add_argument(
+        "--bert-score-num-layers",
+        type=int,
+        default=0,
+        help="Optional transformer layer count for custom/local BERTScore models.",
+    )
+    parser.add_argument(
         "--strict-provider",
         action="store_true",
         help="Fail each generation on provider errors instead of using deterministic fallback.",
@@ -135,7 +157,15 @@ def main() -> None:
             }
         )
 
+    bert_score_metrics = _bert_score_metrics(
+        scored=scored,
+        enabled=args.bert_score,
+        model_type=args.bert_score_model,
+        batch_size=args.bert_score_batch_size,
+        num_layers=args.bert_score_num_layers or None,
+    )
     metrics = _metrics(scored=scored, failures=failures, total=len(test_a))
+    metrics.update(bert_score_metrics)
     payload = {
         "task": "Task A Generation",
         "dataset": str(Path(args.processed_dir)),
@@ -151,6 +181,7 @@ def main() -> None:
             "Consistency checks verify rating mention, target item grounding, and basic rating-sentiment alignment.",
             "Use --strict-provider for DeepSeek/OpenRouter/OpenAI runs so provider failures are visible instead of hidden by fallback text.",
             "External providers default to deny for non-sample datasets; redact mode sends synthetic prompts only.",
+            "BERTScore is optional because it requires bert-score, torch, transformers, and a local/downloaded model.",
         ],
     }
     write_report(Path(args.output), payload)
@@ -245,6 +276,59 @@ def _metrics(scored: list[dict], failures: list[dict], total: int) -> dict[str, 
         "sentiment_alignment_rate": rounded(_mean([row["sentiment_aligned"] for row in scored])),
         "rouge_l_f1": rounded(_mean([row["rouge_l_f1"] for row in scored])),
         "unigram_f1": rounded(_mean([row["unigram_f1"] for row in scored])),
+    }
+
+
+def _bert_score_metrics(
+    scored: list[dict],
+    enabled: bool,
+    model_type: str,
+    batch_size: int,
+    num_layers: int | None,
+) -> dict[str, float | str]:
+    if not enabled:
+        return {}
+    examples = [
+        row
+        for row in scored
+        if row.get("reference_review") and row.get("generated_review")
+    ]
+    if not examples:
+        return {
+            "bertscore_examples": 0,
+            "bertscore_precision": 0.0,
+            "bertscore_recall": 0.0,
+            "bertscore_f1": 0.0,
+            "bertscore_model": model_type,
+        }
+    try:
+        from bert_score import score as bert_score  # type: ignore
+    except ImportError as exc:
+        raise SystemExit(
+            "BERTScore requires optional dependencies. Install with "
+            "`python -m pip install bert-score` and rerun with --bert-score."
+        ) from exc
+
+    precision, recall, f1 = bert_score(
+        [row["generated_review"] for row in examples],
+        [row["reference_review"] for row in examples],
+        lang="en",
+        model_type=model_type,
+        num_layers=num_layers,
+        batch_size=max(batch_size, 1),
+        verbose=False,
+    )
+    precision_values = [float(value) for value in precision.tolist()]
+    recall_values = [float(value) for value in recall.tolist()]
+    f1_values = [float(value) for value in f1.tolist()]
+    for row, value in zip(examples, f1_values):
+        row["bertscore_f1"] = rounded(value)
+    return {
+        "bertscore_examples": len(examples),
+        "bertscore_precision": rounded(_mean(precision_values)),
+        "bertscore_recall": rounded(_mean(recall_values)),
+        "bertscore_f1": rounded(_mean(f1_values)),
+        "bertscore_model": model_type,
     }
 
 
