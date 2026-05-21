@@ -30,6 +30,48 @@ from app.services.retrieval.text import BM25Retriever  # noqa: E402
 from app.services.retrieval.vector_store import LocalVectorRetriever  # noqa: E402
 
 
+SOURCE_FAMILY_ORDER = (
+    "collaborative_co_engagement",
+    "lexical_review_term",
+    "semantic_vector",
+    "aspect_evidence",
+    "popularity_fallback",
+    "other",
+)
+SOURCE_FAMILY_LABELS = {
+    "collaborative_co_engagement": "collaborative/co-engagement",
+    "lexical_review_term": "lexical/review-term",
+    "semantic_vector": "semantic/vector",
+    "aspect_evidence": "aspect/evidence",
+    "popularity_fallback": "popularity/fallback",
+    "other": "other",
+}
+SOURCE_FAMILY_BY_SOURCE = {
+    "co_visitation": "collaborative_co_engagement",
+    "user_neighbor": "collaborative_co_engagement",
+    "graph_walk": "collaborative_co_engagement",
+    "sequential_transition": "collaborative_co_engagement",
+    "category_transition": "collaborative_co_engagement",
+    "review_term_profile": "lexical_review_term",
+    "beauty_review_term_profile": "lexical_review_term",
+    "lexical_item_neighbor": "lexical_review_term",
+    "beauty_lexical_item_neighbor": "lexical_review_term",
+    "bm25_profile": "lexical_review_term",
+    "vector_profile": "semantic_vector",
+    "aspect_profile": "aspect_evidence",
+    "beauty_aspect_profile": "aspect_evidence",
+    "aspect_evidence_graph": "aspect_evidence",
+    "category_aspect_graph": "aspect_evidence",
+    "beauty_taxonomy_aspect": "aspect_evidence",
+    "beauty_taxonomy_window": "aspect_evidence",
+    "category_affinity_popular": "popularity_fallback",
+    "category_popular": "popularity_fallback",
+    "global_popular": "popularity_fallback",
+    "sparse_category_tail": "popularity_fallback",
+    "beauty_sparse_tail": "popularity_fallback",
+}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate Task B recommendation baselines.")
     parser.add_argument("--reviews", default="data/sample/reviews.jsonl")
@@ -145,8 +187,26 @@ def main() -> None:
             recall_at_k(rankings["hybrid_candidate_recall"], positives, recall_k)
         )
 
-    slices = _slice_metrics(test_b, history_map, positives, hybrid_ranked_ids, args.k)
+    slices = _slice_metrics(
+        test_b=test_b,
+        history_map=history_map,
+        positives=positives,
+        ranked_ids=hybrid_ranked_ids,
+        candidate_ids=rankings["hybrid_candidate_recall"],
+        k=args.k,
+        candidate_k=args.candidate_limit,
+    )
     source_counts = _aggregate_source_counts(hybrid_pools)
+    source_diagnostics = _source_diagnostics(
+        pools=hybrid_pools,
+        positives=positives,
+        k=args.candidate_limit,
+    )
+    source_family_diagnostics = _source_family_diagnostics(
+        pools=hybrid_pools,
+        positives=positives,
+        k=args.candidate_limit,
+    )
     miss_report = _build_miss_report(
         test_b=test_b,
         history_map=history_map,
@@ -166,7 +226,6 @@ def main() -> None:
             json.dumps(miss_report, ensure_ascii=True, indent=2) + "\n",
             encoding="utf-8",
         )
-
     payload = {
         "task": "Task B",
         "dataset": str(Path(args.processed_dir) if Path(args.processed_dir).exists() else Path(args.reviews)),
@@ -174,14 +233,16 @@ def main() -> None:
         "metrics": metrics,
         "slices": slices,
         "retrieval_sources": source_counts,
+        "retrieval_source_diagnostics": source_diagnostics,
+        "retrieval_source_families": source_family_diagnostics,
         "miss_analysis": miss_report["summary"],
         "notes": [
             "Positive item is the held-out next review for each eligible user.",
             "Filtered popularity removes items already seen in the user's training history.",
             "Candidate recall measures whether retrieval surfaced the held-out item before ranking.",
-            "Hybrid candidates blend co-visitation, user-neighbor CF, BM25, vector, category-affinity, and popularity sources when artifacts are available.",
+            "Hybrid candidates blend co-visitation, user-neighbor CF, review-term, evidence graph, BM25, vector, category-affinity, and popularity sources when artifacts are available.",
             "Cold-start persona-only uses the derived persona without history items.",
-            "Hybrid ranker uses preference, context, category, vector, collaborative, quality, novelty, and confidence signals.",
+            "Hybrid ranker uses preference, context, category, aspect, sequential, evidence graph, vector, collaborative, quality, novelty, and confidence signals.",
         ],
     }
     write_report(Path(args.output), payload)
@@ -325,9 +386,9 @@ def _load_collaborative_index(args: argparse.Namespace, train: list[dict]) -> di
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        if payload.get("item_neighbors"):
+        if "item_neighbors" in payload:
             return _attach_review_term_index(payload, path)
-        if payload.get("items"):
+        if "items" in payload:
             return _attach_review_term_index(
                 {"type": "legacy_item_neighbors", "item_neighbors": payload["items"]},
                 path,
@@ -340,14 +401,28 @@ def _load_collaborative_index(args: argparse.Namespace, train: list[dict]) -> di
 def _attach_review_term_index(payload: dict, source_path: Path) -> dict:
     review_term_path = source_path.parent / "review_term_retrieval.json"
     if not review_term_path.exists():
-        return payload
+        return _attach_evidence_graph_index(payload, source_path)
     try:
         review_term_payload = json.loads(review_term_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return payload
+        return _attach_evidence_graph_index(payload, source_path)
     if review_term_payload.get("term_items"):
         payload = dict(payload)
         payload["review_term_retrieval"] = review_term_payload
+    return _attach_evidence_graph_index(payload, source_path)
+
+
+def _attach_evidence_graph_index(payload: dict, source_path: Path) -> dict:
+    evidence_graph_path = source_path.parent / "evidence_graph_retrieval.json"
+    if not evidence_graph_path.exists():
+        return payload
+    try:
+        evidence_graph_payload = json.loads(evidence_graph_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return payload
+    if evidence_graph_payload.get("type") == "evidence_graph":
+        payload = dict(payload)
+        payload["evidence_graph_retrieval"] = evidence_graph_payload
     return payload
 
 
@@ -482,7 +557,7 @@ def _miss_causes(
         causes.append("no_review_term_path")
     if base_rank is None:
         causes.append("base_retrieval_miss")
-    return causes or ["ranker_or_budget_miss"]
+    return causes or ["ranker_miss"]
 
 
 def _slice_metrics(
@@ -491,6 +566,8 @@ def _slice_metrics(
     positives: list[str],
     ranked_ids: list[list[str]],
     k: int,
+    candidate_ids: list[list[str]] | None = None,
+    candidate_k: int = 0,
 ) -> dict[str, dict[str, float]]:
     slice_indices = {
         "sparse_history_1_2": [],
@@ -511,7 +588,14 @@ def _slice_metrics(
             slice_indices["cross_domain"].append(index)
 
     return {
-        name: _metrics_for_indices(indices, positives, ranked_ids, k)
+        name: _metrics_for_indices(
+            indices=indices,
+            positives=positives,
+            ranked_ids=ranked_ids,
+            k=k,
+            candidate_ids=candidate_ids,
+            candidate_k=candidate_k,
+        )
         for name, indices in slice_indices.items()
         if indices
     }
@@ -522,14 +606,22 @@ def _metrics_for_indices(
     positives: list[str],
     ranked_ids: list[list[str]],
     k: int,
+    candidate_ids: list[list[str]] | None = None,
+    candidate_k: int = 0,
 ) -> dict[str, float]:
     sliced_rankings = [ranked_ids[index] for index in indices]
     sliced_positives = [positives[index] for index in indices]
-    return {
+    metrics = {
         "examples": len(indices),
         f"hybrid_ranker_hit_rate@{k}": rounded(hit_rate_at_k(sliced_rankings, sliced_positives, k)),
         f"hybrid_ranker_ndcg@{k}": rounded(ndcg_at_k(sliced_rankings, sliced_positives, k)),
     }
+    if candidate_ids is not None and candidate_k > 0:
+        sliced_candidates = [candidate_ids[index] for index in indices]
+        metrics[f"hybrid_candidate_recall@{candidate_k}"] = rounded(
+            recall_at_k(sliced_candidates, sliced_positives, candidate_k)
+        )
+    return metrics
 
 
 def _is_cross_domain(row: dict, history: list) -> bool:
@@ -545,6 +637,119 @@ def _aggregate_source_counts(pools: list[CandidatePool]) -> dict[str, int]:
     for pool in pools:
         counts.update(pool.source_counts())
     return dict(sorted(counts.items()))
+
+
+def _source_diagnostics(
+    pools: list[CandidatePool],
+    positives: list[str],
+    k: int,
+) -> dict[str, dict]:
+    sources = sorted(
+        {
+            source
+            for pool in pools
+            for source_names in pool.sources.values()
+            for source in source_names
+        }
+    )
+    source_counts = Counter()
+    source_rankings = {source: [] for source in sources}
+
+    for pool in pools:
+        pool_source_ids = {source: [] for source in sources}
+        for item in pool.items[:k]:
+            for source in sorted(pool.sources.get(item.item_id, [])):
+                if source in pool_source_ids:
+                    pool_source_ids[source].append(item.item_id)
+        for source in sources:
+            source_rankings[source].append(pool_source_ids[source])
+        for source_names in pool.sources.values():
+            source_counts.update(source_names)
+
+    return {
+        source: _diagnostic_payload(
+            count=source_counts[source],
+            rankings=source_rankings[source],
+            positives=positives,
+            k=k,
+            extra={"family": _source_family(source)},
+        )
+        for source in sources
+    }
+
+
+def _source_family_diagnostics(
+    pools: list[CandidatePool],
+    positives: list[str],
+    k: int,
+) -> dict[str, dict]:
+    family_counts = Counter()
+    family_source_counts = {family: Counter() for family in SOURCE_FAMILY_ORDER}
+    family_rankings = {family: [] for family in SOURCE_FAMILY_ORDER}
+
+    for pool in pools:
+        pool_family_ids = {family: [] for family in SOURCE_FAMILY_ORDER}
+        for item in pool.items[:k]:
+            item_families = {
+                _source_family(source)
+                for source in pool.sources.get(item.item_id, [])
+            }
+            for family in sorted(item_families):
+                pool_family_ids[family].append(item.item_id)
+
+        for family in SOURCE_FAMILY_ORDER:
+            family_rankings[family].append(pool_family_ids[family])
+
+        for source_names in pool.sources.values():
+            for source in source_names:
+                family = _source_family(source)
+                family_counts[family] += 1
+                family_source_counts[family][source] += 1
+
+    return {
+        family: {
+            "label": SOURCE_FAMILY_LABELS[family],
+            **_diagnostic_payload(
+                count=family_counts[family],
+                rankings=family_rankings[family],
+                positives=positives,
+                k=k,
+            ),
+            "sources": dict(sorted(family_source_counts[family].items())),
+        }
+        for family in SOURCE_FAMILY_ORDER
+    }
+
+
+def _diagnostic_payload(
+    count: int,
+    rankings: list[list[str]],
+    positives: list[str],
+    k: int,
+    extra: dict | None = None,
+) -> dict:
+    hits = _hit_count_at_k(rankings, positives, k)
+    payload = {
+        "count": count,
+        f"hits@{k}": hits,
+        f"misses@{k}": max(len(positives) - hits, 0),
+        f"candidate_recall@{k}": rounded(recall_at_k(rankings, positives, k)),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def _hit_count_at_k(ranked_ids: list[list[str]], positives: list[str], k: int) -> int:
+    return sum(
+        1
+        for ranking, positive in zip(ranked_ids, positives)
+        if positive in ranking[:k]
+    )
+
+
+def _source_family(source: str) -> str:
+    return SOURCE_FAMILY_BY_SOURCE.get(source, "other")
 
 
 if __name__ == "__main__":
