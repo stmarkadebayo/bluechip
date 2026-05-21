@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import heapq
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
 from app.models.schemas import Item, UserHistoryItem, UserProfile
 from app.services.retrieval.embeddings import embedding_text, terms
+from app.services.retrieval.evidence_graph import candidate_ids_from_evidence_graph
 from app.services.retrieval.item_similarity import (
     candidate_ids_from_lexical_item_neighbors,
     candidate_ids_from_review_terms,
@@ -19,12 +21,17 @@ from app.services.retrieval.vector_store import LocalVectorRetriever
 SOURCE_PRIORITIES = {
     "beauty_review_term_profile": 0.87,
     "beauty_lexical_item_neighbor": 0.86,
+    "category_aspect_graph": 0.855,
+    "sequential_transition": 0.845,
     "beauty_aspect_profile": 0.84,
+    "aspect_evidence_graph": 0.835,
+    "category_transition": 0.825,
     "review_term_profile": 0.82,
     "lexical_item_neighbor": 0.81,
     "aspect_profile": 0.80,
+    "beauty_taxonomy_aspect": 0.812,
+    "beauty_taxonomy_window": 0.805,
     "beauty_sparse_tail": 0.79,
-    "beauty_taxonomy_aspect": 0.775,
     "sparse_category_tail": 0.77,
     "category_affinity_popular": 0.83,
     "category_popular": 0.81,
@@ -40,7 +47,14 @@ EXPLORATION_SOURCES = {
     "beauty_aspect_profile",
     "beauty_sparse_tail",
     "beauty_taxonomy_aspect",
+    "beauty_taxonomy_window",
     "sparse_category_tail",
+}
+BEAUTY_EXPLORATION_SOURCES = {
+    "beauty_aspect_profile",
+    "beauty_sparse_tail",
+    "beauty_taxonomy_aspect",
+    "beauty_taxonomy_window",
 }
 
 BEAUTY_CATEGORIES = {"All_Beauty"}
@@ -150,28 +164,99 @@ BEAUTY_ASPECT_GROUPS = {
         "vegan",
         "vitamin",
     },
+    "bath_body": {
+        "bath",
+        "body",
+        "butter",
+        "exfoliating",
+        "lotion",
+        "salt",
+        "scrub",
+        "soap",
+        "wash",
+    },
+    "fragrance_body": {
+        "body",
+        "cologne",
+        "deodorant",
+        "fragrance",
+        "mist",
+        "perfume",
+        "scent",
+        "scented",
+    },
+    "men_grooming": {
+        "beard",
+        "razor",
+        "shave",
+        "shaving",
+        "trimmer",
+    },
 }
 ASPECT_STOPWORDS = {
     "all_beauty",
+    "about",
+    "after",
     "amazon",
+    "are",
+    "been",
     "brand",
+    "but",
+    "can",
     "count",
+    "could",
     "description",
     "dimensions",
     "discontinued",
+    "does",
+    "doesn",
+    "for",
+    "from",
+    "had",
+    "has",
+    "have",
+    "her",
+    "him",
+    "his",
+    "how",
+    "into",
+    "its",
     "item",
     "items",
+    "just",
+    "like",
+    "much",
+    "need",
     "manufacturer",
     "number",
+    "only",
+    "order",
+    "out",
     "package",
     "product",
     "products",
     "rating",
+    "really",
     "review",
     "reviews",
+    "she",
+    "that",
+    "them",
+    "then",
+    "these",
+    "they",
     "unknown",
+    "use",
+    "very",
+    "was",
+    "what",
+    "when",
+    "will",
     "with",
     "without",
+    "would",
+    "you",
+    "your",
 }
 
 
@@ -286,6 +371,9 @@ def generate_candidate_pool(
     review_term_index = (
         collaborative_index.get("review_term_retrieval") if collaborative_index else None
     )
+    evidence_graph_index = (
+        collaborative_index.get("evidence_graph_retrieval") if collaborative_index else None
+    )
 
     if item_neighbors:
         neighbor_budget = max(1, int(limit * 0.35))
@@ -342,6 +430,25 @@ def generate_candidate_pool(
                 )
                 add_candidate(item, source, score)
 
+    if evidence_graph_index:
+        graph_budget = max(1, int(limit * (0.48 if len(history) <= 2 else 0.36)))
+        graph_added = 0
+        for item_id, score, source in candidate_ids_from_evidence_graph(
+            user_profile=user_profile,
+            history=history,
+            context=context,
+            evidence_graph=evidence_graph_index,
+            limit=max(limit, graph_budget * 2),
+        ):
+            item = by_id.get(item_id)
+            if item:
+                had_source = source in sources.get(item.item_id, [])
+                add_candidate(item, source, score)
+                if item.item_id not in history_item_ids and not had_source:
+                    graph_added += 1
+            if graph_added >= graph_budget:
+                break
+
     search_limit = min(len(items), limit + len(history_item_ids))
     bm25_target = max(1, int(limit * 0.35))
     retriever = bm25_retriever or BM25Retriever.from_items(items)
@@ -365,7 +472,11 @@ def generate_candidate_pool(
         if vector_added >= vector_target:
             break
 
-    aspect_budget = max(1, int(limit * (0.26 if len(history) <= 2 else 0.16)))
+    use_beauty_exploration = _should_use_beauty_taxonomy(user_profile, query_terms, history)
+    aspect_share = 0.26 if len(history) <= 2 else 0.16
+    if use_beauty_exploration:
+        aspect_share = max(aspect_share, 0.30 if len(history) <= 2 else 0.22)
+    aspect_budget = max(1, int(limit * aspect_share))
     aspect_added = 0
     for item, score, source in _aspect_profile_candidates(
         user_profile=user_profile,
@@ -378,6 +489,41 @@ def generate_candidate_pool(
         if item.item_id not in history_item_ids and not had_source:
             aspect_added += 1
         if aspect_added >= aspect_budget:
+            break
+
+    taxonomy_budget = _beauty_taxonomy_budget(limit=limit, history_size=len(history))
+    taxonomy_added = 0
+    for item, score in _beauty_taxonomy_candidates(
+        user_profile=user_profile,
+        catalog=catalog,
+        query_terms=query_terms,
+        history=history,
+        limit=limit,
+    ):
+        had_source = "beauty_taxonomy_aspect" in sources.get(item.item_id, [])
+        add_candidate(item, "beauty_taxonomy_aspect", score)
+        if item.item_id not in history_item_ids and not had_source:
+            taxonomy_added += 1
+        if taxonomy_added >= taxonomy_budget:
+            break
+
+    taxonomy_window_budget = _beauty_taxonomy_window_budget(
+        limit=limit,
+        history_size=len(history),
+    )
+    taxonomy_window_added = 0
+    for item, score in _beauty_taxonomy_window_candidates(
+        user_profile=user_profile,
+        catalog=catalog,
+        query_terms=query_terms,
+        history=history,
+        limit=limit,
+    ):
+        had_source = "beauty_taxonomy_window" in sources.get(item.item_id, [])
+        add_candidate(item, "beauty_taxonomy_window", score)
+        if item.item_id not in history_item_ids and not had_source:
+            taxonomy_window_added += 1
+        if taxonomy_window_added >= taxonomy_window_budget:
             break
 
     if len(history) <= 2:
@@ -417,7 +563,7 @@ def generate_candidate_pool(
                 break
 
     fallback = catalog.global_popular
-    fallback_budget = min(len(fallback), max(limit, int(limit * 0.50)))
+    fallback_budget = min(len(fallback), max(limit * 2, int(limit * 0.50)))
     for index, item in enumerate(fallback[:fallback_budget]):
         rank_score = 1.0 - (index / max(fallback_budget, 1))
         add_candidate(item, "global_popular", max(rank_score, _quality_popularity_score(item)))
@@ -591,6 +737,16 @@ def _sparse_category_tail_candidates(
     return output
 
 
+def _beauty_taxonomy_budget(limit: int, history_size: int) -> int:
+    share = 0.16 if history_size <= 2 else 0.12
+    return min(180, max(6, int(limit * share)))
+
+
+def _beauty_taxonomy_window_budget(limit: int, history_size: int) -> int:
+    share = 0.12 if history_size <= 2 else 0.08
+    return min(140, max(8, int(limit * share)))
+
+
 def _beauty_taxonomy_candidates(
     user_profile: UserProfile,
     catalog: CandidateCatalog,
@@ -605,13 +761,7 @@ def _beauty_taxonomy_candidates(
     if not token_index:
         return []
 
-    evidence_terms = set(query_terms)
-    for item in history:
-        if item.rating >= 3:
-            evidence_terms.update(
-                token for token in terms(embedding_text(item.item_name, item.category, item.review))
-            )
-    evidence_terms.update(_phrase_terms(evidence_terms))
+    evidence_terms = _beauty_evidence_terms(query_terms, history)
 
     active_groups = _active_beauty_groups(evidence_terms)
     if not active_groups and "All_Beauty" in user_profile.preferred_categories:
@@ -666,6 +816,170 @@ def _beauty_taxonomy_candidates(
         scored.append((item, round(min(max(score, 0.0), 1.0), 4)))
     scored.sort(key=lambda row: (row[1], _popularity_quality_key(row[0])), reverse=True)
     return scored
+
+
+def _beauty_taxonomy_window_candidates(
+    user_profile: UserProfile,
+    catalog: CandidateCatalog,
+    query_terms: list[str],
+    history: list[UserHistoryItem],
+    limit: int,
+) -> list[tuple[Item, float]]:
+    if not _should_use_beauty_taxonomy(user_profile, query_terms, history):
+        return []
+
+    token_index = catalog.by_category_token_index.get("All_Beauty", {})
+    if not token_index:
+        return []
+
+    evidence_terms = _beauty_evidence_terms(query_terms, history)
+    active_groups = _active_beauty_groups(evidence_terms)
+    if not active_groups and "All_Beauty" in user_profile.preferred_categories:
+        active_groups = {
+            "hair_care": 0.28,
+            "skin_care": 0.28,
+            "makeup_color": 0.22,
+            "tools_accessories": 0.20,
+            "bath_body": 0.18,
+            "natural_ingredients": 0.18,
+        }
+    if not active_groups:
+        return []
+
+    windows = _beauty_taxonomy_windows(limit)
+    candidate_scores: Counter[str] = Counter()
+    candidate_items: dict[str, Item] = {}
+    candidate_groups: dict[str, set[str]] = defaultdict(set)
+    candidate_windows: dict[str, set[int]] = defaultdict(set)
+    max_depth = max(stop for _, stop, _ in windows)
+    per_window_take = max(4, min(18, int(limit * 0.018) or 4))
+
+    for group_name, group_weight in active_groups.items():
+        group_terms = BEAUTY_ASPECT_GROUPS[group_name]
+        group_tokens = _beauty_group_window_tokens(
+            group_terms=group_terms,
+            evidence_terms=evidence_terms,
+            query_terms=query_terms,
+        )
+        for token in group_tokens:
+            postings = _top_popularity_items(token_index.get(token, []), max_depth)
+            if not postings:
+                continue
+            token_weight = 1.25 if token in evidence_terms else 0.62
+            token_weight *= _beauty_token_boost(token)
+            for window_index, (start, stop, window_weight) in enumerate(windows):
+                if start >= len(postings):
+                    continue
+                window_postings = _sample_window_items(postings, start, stop, per_window_take)
+                for local_rank, item in enumerate(window_postings):
+                    candidate_items[item.item_id] = item
+                    candidate_groups[item.item_id].add(group_name)
+                    candidate_windows[item.item_id].add(window_index)
+                    candidate_scores[item.item_id] += (
+                        group_weight * token_weight * window_weight / math.sqrt(local_rank + 1)
+                    )
+
+    if not candidate_scores:
+        return []
+
+    max_raw = max(candidate_scores.values(), default=1.0)
+    scored = []
+    for item_id, raw_score in candidate_scores.items():
+        item = candidate_items[item_id]
+        item_terms = catalog.item_terms.get(item_id, set())
+        overlap = len(item_terms & evidence_terms) / max(len(evidence_terms), 1)
+        quality = (item.average_rating or 3.5) / 5
+        popularity = int(item.metadata.get("rating_number") or item.metadata.get("review_count") or 0)
+        popularity_score = min(math.log1p(popularity) / math.log1p(1000), 1.0) if popularity else 0.0
+        group_diversity = min(len(candidate_groups[item_id]) / 3, 1.0)
+        window_diversity = min(len(candidate_windows[item_id]) / 2, 1.0)
+        score = (
+            0.42 * min(raw_score / max_raw, 1.0)
+            + 0.18 * min(overlap, 1.0)
+            + 0.14 * quality
+            + 0.10 * popularity_score
+            + 0.10 * group_diversity
+            + 0.06 * window_diversity
+        )
+        scored.append((item, round(min(max(score, 0.0), 1.0), 4)))
+    scored.sort(key=lambda row: (row[1], _popularity_quality_key(row[0])), reverse=True)
+    return scored
+
+
+def _beauty_evidence_terms(
+    query_terms: list[str],
+    history: list[UserHistoryItem],
+) -> set[str]:
+    evidence_terms = set(query_terms)
+    for item in history:
+        if item.rating >= 3:
+            evidence_terms.update(
+                token for token in terms(embedding_text(item.item_name, item.category, item.review))
+            )
+    evidence_terms.update(_phrase_terms(evidence_terms))
+    return evidence_terms
+
+
+def _beauty_group_window_tokens(
+    group_terms: set[str],
+    evidence_terms: set[str],
+    query_terms: list[str],
+) -> list[str]:
+    tokens: list[str] = []
+    for token in query_terms:
+        if token in group_terms and token not in tokens:
+            tokens.append(token)
+    for token in sorted(evidence_terms & group_terms):
+        if token not in tokens:
+            tokens.append(token)
+    fallback_terms = sorted(
+        group_terms,
+        key=lambda token: (_beauty_token_boost(token), token in ASPECT_STOPWORDS, token),
+        reverse=True,
+    )
+    for token in fallback_terms:
+        if token not in tokens:
+            tokens.append(token)
+        if len(tokens) >= 8:
+            break
+    return tokens[:8]
+
+
+def _beauty_taxonomy_windows(limit: int) -> tuple[tuple[int, int, float], ...]:
+    shallow_stop = max(35, int(limit * 0.06))
+    mid_stop = max(120, int(limit * 0.22))
+    deep_stop = max(450, int(limit * 1.20))
+    tail_stop = max(900, int(limit * 5.00))
+    return (
+        (0, shallow_stop, 1.00),
+        (shallow_stop, mid_stop, 0.88),
+        (mid_stop, deep_stop, 0.66),
+        (deep_stop, tail_stop, 0.48),
+    )
+
+
+def _top_popularity_items(items: list[Item], limit: int) -> list[Item]:
+    if len(items) <= limit:
+        return sorted(items, key=_popularity_quality_key, reverse=True)
+    return heapq.nlargest(limit, items, key=_popularity_quality_key)
+
+
+def _sample_window_items(items: list[Item], start: int, stop: int, limit: int) -> list[Item]:
+    window = items[start:stop]
+    if len(window) <= limit:
+        return window
+    if limit <= 1:
+        return window[:1]
+    step = (len(window) - 1) / (limit - 1)
+    sampled = []
+    used_offsets = set()
+    for index in range(limit):
+        offset = round(index * step)
+        if offset in used_offsets:
+            continue
+        sampled.append(window[offset])
+        used_offsets.add(offset)
+    return sampled
 
 
 def _should_use_beauty_taxonomy(
@@ -786,7 +1100,42 @@ def _select_balanced_candidates(
         )
 
     ranked = sorted(selected, key=priority, reverse=True)
+    user_neighbor_floor = (
+        _source_floor_candidates(
+            ranked=ranked,
+            sources=sources,
+            source_scores=source_scores,
+            source="user_neighbor",
+            limit=max(1, int(limit * 0.05)),
+        )
+        if limit >= 100
+        else []
+    )
     exploration_limit = max(10, int(limit * 0.08)) if limit >= 50 else max(1, int(limit * 0.10))
+    popularity_floor = (
+        max(20, int(limit * 0.06))
+        if limit >= 100
+        else max(1, int(limit * 0.10))
+    )
+    foundation = sorted(
+        (
+            item
+            for item in selected
+            if "global_popular" in sources.get(item.item_id, [])
+        ),
+        key=_popularity_quality_key,
+        reverse=True,
+    )[:popularity_floor]
+    has_beauty_exploration = any(
+        set(sources.get(item.item_id, [])) & BEAUTY_EXPLORATION_SOURCES for item in ranked
+    )
+    if has_beauty_exploration:
+        beauty_exploration_limit = (
+            min(180, max(12, int(limit * 0.16)))
+            if limit >= 50
+            else max(1, int(limit * 0.16))
+        )
+        exploration_limit = min(limit, max(exploration_limit, beauty_exploration_limit))
     protected_limit = max(limit - exploration_limit, 0)
     protected = [
         item
@@ -800,8 +1149,18 @@ def _select_balanced_candidates(
         if item.item_id not in protected_source_ids
         and set(sources.get(item.item_id, [])) & EXPLORATION_SOURCES
     ]
-    limited = protected[:protected_limit]
+    limited = list(user_neighbor_floor)
     limited_ids = {item.item_id for item in limited}
+    for item in foundation:
+        if item.item_id not in limited_ids:
+            limited.append(item)
+            limited_ids.add(item.item_id)
+    for item in protected:
+        if len(limited) >= protected_limit:
+            break
+        if item.item_id not in limited_ids:
+            limited.append(item)
+            limited_ids.add(item.item_id)
     for item in exploration:
         if len(limited) >= limit:
             break
@@ -815,3 +1174,27 @@ def _select_balanced_candidates(
             limited.append(item)
             limited_ids.add(item.item_id)
     return limited
+
+
+def _source_floor_candidates(
+    ranked: list[Item],
+    sources: dict[str, list[str]],
+    source_scores: dict[str, dict[str, float]],
+    source: str,
+    limit: int,
+) -> list[Item]:
+    if limit <= 0:
+        return []
+    candidates = [
+        item
+        for item in ranked
+        if source in sources.get(item.item_id, [])
+    ]
+    candidates.sort(
+        key=lambda item: (
+            source_scores.get(item.item_id, {}).get(source, 0.0),
+            _popularity_quality_key(item),
+        ),
+        reverse=True,
+    )
+    return candidates[:limit]
