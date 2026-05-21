@@ -1,4 +1,4 @@
-.PHONY: run test lint data index eval eval-generation tune tune-task-a train-task-a train-task-a-rmse promote-task-a train-ranker promote-ranker docker
+.PHONY: run test lint data index evidence-graph registry eval eval-generation eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker
 
 PYTHON ?= python3
 PROCESSED_DIR ?= data/processed
@@ -11,6 +11,12 @@ data:
 
 index:
 	$(PYTHON) scripts/build_retrieval_index.py --train $(PROCESSED_DIR)/train.jsonl --items $(PROCESSED_DIR)/items.jsonl --output-dir $(PROCESSED_DIR)
+
+evidence-graph:
+	$(PYTHON) scripts/build_evidence_graph.py --train $(PROCESSED_DIR)/train.jsonl --items $(PROCESSED_DIR)/items.jsonl --output $(PROCESSED_DIR)/evidence_graph_retrieval.json
+
+registry:
+	$(PYTHON) scripts/build_model_registry.py --output $(PROCESSED_DIR)/model_registry.json
 
 test:
 	pytest
@@ -27,8 +33,8 @@ eval:
 eval-generation:
 	$(PYTHON) eval/eval_task_a_generation.py --strict-provider
 
-tune:
-	$(PYTHON) eval/tune_ranker.py
+eval-evidence:
+	$(PYTHON) eval/eval_evidence_intelligence.py
 
 tune-task-a:
 	$(PYTHON) eval/tune_task_a.py
@@ -41,12 +47,6 @@ train-task-a-rmse:
 
 promote-task-a:
 	$(PYTHON) eval/promote_task_a.py
-
-train-ranker:
-	$(PYTHON) eval/train_ranker.py
-
-promote-ranker:
-	$(PYTHON) eval/promote_ranker.py
 
 docker:
 	docker compose up --build
