@@ -27,18 +27,71 @@ For teammate handoff and current dataset status, see [docs/HANDOFF.md](docs/HAND
 For GitHub push readiness, see [docs/PUSH_READY.md](docs/PUSH_READY.md).
 For the latest hardening pass and validation log, see
 [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md).
+For the submission metric snapshot, see
+[docs/evaluation/SUBMISSION_EVAL_SUMMARY.md](docs/evaluation/SUBMISSION_EVAL_SUMMARY.md).
+For the judge demo script, see [docs/product/DEMO_SCRIPT.md](docs/product/DEMO_SCRIPT.md).
+
+## Submission Snapshot
+
+The DSN x BCT brief requires both tasks, a containerized app/API, a 4-8 page solution paper, and a clean reproducible repo. Task A predicts likely ratings and reviews. Task B recommends personalized items; its rubric weights Ranking Quality at 30 points, Cold-Start & Cross-Domain at 25, Contextual Relevance human eval at 20, Solution Paper at 15, and Code Reproducibility at 10. Nigerian contextualization earns extra marks when it is grounded in visible user/context evidence.
+
+The strongest truthful story is evidence-first behavior-aware personalization:
+
+- Retrieval, ranking, rating prediction, validation, and traceability are measurable before any LLM writes prose.
+- The app is Amazon-first: product metadata, review history, candidate retrieval, ranking diagnostics, and grounded explanations.
+- Sparse and cross-domain cases are treated as first-class eval slices, not demo-only claims.
+- LLMs are downstream generators/explainers. They do not choose directly from the full product catalog.
+- Neural sequence models are out of scope for the current submission unless fixed evals beat the current hybrid baseline.
+
+Current bounded all-category Task B metrics after evidence graph work and the popularity-rank floor:
+
+| Metric | Current value | Submission read |
+| --- | ---: | --- |
+| `hybrid_candidate_recall@50` | `0.13` | Early recall is still sparse; useful for diagnosing top-pool coverage. |
+| `hybrid_candidate_recall@100` | `0.18` | Candidate generation is improving but remains the main bottleneck. |
+| `hybrid_candidate_recall@1000` | `0.34` | Best current overall candidate-recall signal. |
+| `hybrid_ranker_hit_rate@10` | `0.10` | Top-10 ranking beats only a low bar and needs promotion discipline. |
+| `hybrid_ranker_ndcg@10` | `0.0766` | Ranking quality is not overstated; next gate is better same-slice NDCG. |
+| Sparse candidate recall@1000 | `0.3611` | Sparse-user handling is a credible focus area. |
+| Cross-domain candidate recall@1000 | `0.5484` | Cross-domain candidate retrieval is the strongest Task B slice. |
+| Vector source recall | `0.0` | Vector retrieval is present as a diagnostic hook, not a quality claim. |
+
+Current Task A serving evidence remains rating-first: the promoted serving head is selected by fixed evaluation, with the latest documented 5,000-example all-category RMSE gate at `1.2654`. Review generation is downstream of the fixed rating and validated for rating-review consistency and grounding.
+
+## Response To Architecture Feedback
+
+The latest review correctly identified the core Task B problem: semantic relevance alone is not enough. The current bounded metrics show that the system must optimize candidate recall, co-engagement, semantic fit, and top-rank quality together instead of treating vector/semantic similarity as the whole retrieval solution.
+
+What has been implemented in this pass:
+
+- **Multi-head retrieval, local MTMH-style shape**: candidate generation now combines co-visitation, user-neighbor collaborative retrieval, review-term retrieval, lexical item-neighbor retrieval, evidence graph retrieval, BM25 profile/context retrieval, category-affinity popularity, global popularity fallback, and deterministic vector diagnostics. Each candidate keeps source attribution and per-source retrieval scores.
+- **Multi-objective ranking**: recommendation scoring now blends preference, context, category, aspect, sequential, evidence graph, Nigerian-context, collaborative, retrieval, diversity, popularity, novelty, item-quality, and confidence signals with explicit score components in the API response.
+- **Recall-first evaluation discipline**: Task B eval reports candidate Recall@50/100/1000 separately from HitRate@10 and NDCG@10, plus sparse-user and cross-domain slices. This prevents a top-rank metric from hiding a weak retrieval pool.
+- **Diversity and multi-tower behavior without adding a heavyweight model**: user profile, item profile, aspect evidence, context, collaborative history, and popularity operate as separate signal towers that feed retrieval and ranking. Source-diversity features and context-category guards reduce over-reliance on a single semantic path.
+- **Production path for MTMH and HSTU**: the current repo does not claim to train MTMH or HSTU neural models. It creates the serving, feature, source attribution, and promotion boundaries needed to replace local retrieval/ranking heads with MTMH-style multi-task multi-head retrieval and an HSTU-style sequential ranker after fixed offline evals prove a lift.
+
+How this addresses the feedback:
+
+| Feedback | Current implementation | Remaining work |
+| --- | --- | --- |
+| Semantic relevance and co-engagement are disconnected | Retrieval now uses both semantic/lexical paths and co-engagement paths, with source-level diagnostics. Vector recall is reported truthfully as `0.0` today. | Train or integrate a true MTMH retrieval model once enough fixed eval evidence and infrastructure are available. |
+| Need MTMH-style retrieval | The local candidate generator is multi-head and multi-objective, with recall reporting and candidate-source attribution. | Replace or augment deterministic heads with a learned multi-task retriever optimized for recall plus semantic relevance. |
+| Need stronger ranking such as HSTU | Current ranker exposes sequential, aspect, graph, collaborative, context, and popularity features and promotion gates. | Add an HSTU or sequence-aware ranker only after candidate Recall@K improves enough for ranking gains to matter. |
+| Need multi-tower diversity | Separate user, item, aspect, context, collaborative, graph, and popularity signals feed scoring; source diversity is part of the ranker. | Promote learned tower weights or neural towers after same-slice eval beats the hybrid baseline. |
 
 ## Architecture
 
 ```text
 Raw reviews and metadata
   -> ingestion and normalization
+  -> aspect-aware evidence intelligence
   -> user profile extraction
   -> item profile extraction
-  -> retrieval index
+  -> retrieval indexes and evidence graph
   -> ranking / rating prediction
+  -> review planning
   -> grounded generation
-  -> validation
+  -> evidence validation
   -> API / UI
 ```
 
@@ -50,12 +103,15 @@ Local hackathon implementation:
 ```text
 app/
   api/                  FastAPI routes
+  serving/              API orchestration, trace metadata, and serving workflow boundaries
   core/                 configuration and runtime settings
   models/               typed request/response schemas
+  platform/             local feature store and model/index registry abstractions
   services/
+    intelligence/       aspect-aware evidence extraction
     profiling/          user and item behavioral profiles
-    retrieval/          local candidate retrieval interface
-    ranking/            rating prediction and recommendation scoring
+    retrieval/          multi-head local candidate retrieval and source diagnostics
+    ranking/            multi-objective rating prediction and recommendation scoring
     generation/         final review/explanation generation
     validation/         consistency and grounding checks
   stores/               storage interfaces and local stores
@@ -81,6 +137,9 @@ Production mapping:
 | Python preprocessing | Spark, Ray, Beam, or scheduled batch jobs |
 | SQLite/local metadata | Postgres, BigQuery, Snowflake, or feature store |
 | Local retrieval | FAISS, pgvector, Milvus, Pinecone, or Weaviate |
+| Evidence graph artifact | Graph service, graph database, or offline graph retrieval index |
+| Local feature store | SageMaker Feature Store, Feast, DynamoDB, Redis, or warehouse-backed features |
+| Local model registry | SageMaker Model Registry, MLflow, Vertex AI Model Registry, or internal artifact registry |
 | In-process ranker | Dedicated ranking service |
 | FastAPI | Containerized API on ECS, Kubernetes, Cloud Run, or similar |
 | Local eval scripts | CI quality gates and batch evaluation jobs |
@@ -93,7 +152,7 @@ Production mapping:
 ```text
 POST /api/simulate-review
 
-1. ReviewSimulationAgent inspects the request
+1. Serving `ReviewSimulationAgent` inspects the request
 2. Build or load user profile
 3. Build or load target item profile
 4. Predict rating with deterministic scorer
@@ -107,9 +166,9 @@ POST /api/simulate-review
 ```text
 POST /api/recommend
 
-1. RecommendationAgent inspects history/context
+1. Serving `RecommendationAgent` inspects history/context
 2. Build or load user profile
-3. Generate candidates from co-visitation, user-neighbor CF, review-term retrieval, lexical item-neighbor retrieval, BM25, vector retrieval, category-affinity popularity, and global popularity fallback
+3. Generate candidates from co-visitation, user-neighbor CF, review-term retrieval, lexical item-neighbor retrieval, evidence graph retrieval, BM25, deterministic vector diagnostics, category-affinity popularity, and global popularity fallback
 4. Track candidate sources and retrieval scores for observability
 5. Rank candidates using hybrid scoring
 6. Apply explicit context-category guards for clear Beauty, music, and gift contexts
@@ -203,8 +262,8 @@ Output:
       "score": 0.81,
       "reason": "Matches the user's preference for calm, affordable dinner spots.",
       "tradeoffs": "Medium price, so it may not be the cheapest option.",
-      "candidate_sources": ["bm25_profile", "vector_profile"],
-      "retrieval_scores": {"bm25_profile": 1.0, "vector_profile": 0.42},
+      "candidate_sources": ["bm25_profile", "category_popularity"],
+      "retrieval_scores": {"bm25_profile": 1.0, "category_popularity": 0.42},
       "score_components": {
         "preference_match": 0.5,
         "context_match": 0.33,
@@ -236,7 +295,11 @@ score =
   preference_match
 + context_match
 + category_match
-+ vector_match
++ aspect_match
++ sequential_match
++ evidence_graph_match
++ nigerian_context_match
++ diagnostic_vector_match
 + collaborative_match
 + retrieval_match
 + source_diversity
@@ -276,11 +339,12 @@ Task B:
 
 - HitRate@10
 - NDCG@10
-- Recall@K and candidate Recall@50/100
+- Recall@K and candidate Recall@50/100/1000
+- evidence candidate Recall@K and evidence source mix
 - cold-start subset performance
 - sparse/warm-user and cross-domain slices
 - contextual human-eval pack with source traces
-- source ablations: popularity, filtered popularity, BM25, vector, hybrid candidates, hybrid ranker, cold-start persona-only
+- source diagnostics: popularity, filtered popularity, BM25, diagnostic vector retrieval, evidence graph, hybrid candidates, hybrid ranker, cold-start persona-only
 
 ## Quick Start
 
@@ -305,6 +369,17 @@ http://127.0.0.1:8000/docs
 http://127.0.0.1:8000/ui/
 ```
 
+Suggested submission demo path:
+
+```text
+1. Open http://127.0.0.1:8000/ui/
+2. Run Task B Recommend with the Lagos student / conversation-friendly dinner example.
+3. Point out candidate sources, score components, Nigerian context match, and trace ID.
+4. Run the cross-domain or cold-start example and explain the candidate diagnostics.
+5. Run Task A Review and show predicted rating, generated review, validation status, and trace.
+6. Open /api/metrics and /api/traces from the Metrics tab.
+```
+
 Build local sample artifacts and run evaluation:
 
 ```bash
@@ -313,21 +388,22 @@ python scripts/build_retrieval_index.py \
   --train data/processed/train.jsonl \
   --items data/processed/items.jsonl \
   --output-dir data/processed
+python eval/eval_evidence_intelligence.py
 python eval/eval_task_a.py
 python eval/eval_task_b.py
+python scripts/build_model_registry.py --output data/processed/model_registry.json
 ```
 
 Or:
 
 ```bash
 make eval
+make registry
 make eval-generation
+make eval-evidence
 make tune-task-a
 make train-task-a
 make promote-task-a
-make tune
-make train-ranker
-make promote-ranker
 ```
 
 Train and evaluate Task A on the combined local corpus:
@@ -410,20 +486,6 @@ python eval/eval_task_b.py \
   --miss-output runs/eval/all_categories_task_b_review_terms_stopword_misses_1000.json \
   --max-examples 100 \
   --candidate-limit 1000
-python eval/train_ranker.py \
-  --processed-dir data/processed/all_categories \
-  --output runs/eval/all_categories_learned_ranker_review_terms_split_1000.json \
-  --max-examples 100 \
-  --candidate-limit 1000 \
-  --epochs 8 \
-  --max-negatives 80 \
-  --validation-fraction 0.5
-python eval/promote_ranker.py \
-  --task-b-report runs/eval/all_categories_task_b_review_terms_stopword_1000.json \
-  --learned-ranker-report runs/eval/all_categories_learned_ranker_review_terms_split_1000.json \
-  --output runs/eval/all_categories_task_b_review_terms_ranker_promotion.json \
-  --weights-output data/processed/all_categories/task_b_ranker_weights.json \
-  --candidate-limit 1000
 python eval/create_task_b_contextual_eval.py \
   --processed-dir data/processed/all_categories \
   --output docs/human_eval_task_b_contextual.md \
@@ -489,23 +551,21 @@ TASK_A_MODEL_PATH=data/processed/all_categories/task_a_model_rmse.json
 TASK_A_STATS_PATH=data/processed/all_categories/task_a_rating_stats.json
 TASK_A_SERVING_POLICY=data/processed/all_categories/task_a_serving_policy.json
 TASK_B_RETRIEVAL_INDEX=data/processed/all_categories/collaborative_retrieval.json
-TASK_B_RANKER_WEIGHTS=data/processed/all_categories/task_b_ranker_weights.json
+TASK_B_EVIDENCE_GRAPH_INDEX=data/processed/all_categories/evidence_graph_retrieval.json
 ```
 
-When `review_term_retrieval.json` exists next to the configured Task B retrieval index, runtime and eval attach it automatically for review-term and lexical-neighbor candidate sources.
-
-Only set `TASK_B_RANKER_WEIGHTS` after `eval/promote_ranker.py` passes.
+When `review_term_retrieval.json` or `evidence_graph_retrieval.json` exists next to the configured Task B retrieval index, runtime and eval attach it automatically for review-term, lexical-neighbor, aspect graph, and sequential candidate sources.
 
 ## Staff-Level Design Principles
 
 - **Shared engine, two heads:** one user model powers both review simulation and recommendation.
 - **Offline before online:** expensive profile, summary, and embedding work should be precomputed.
 - **LLM as a component, not the system:** retrieval and ranking remain measurable and reproducible.
-- **Vector signal without vendor lock-in:** local hashing embeddings provide deterministic semantic retrieval and ranking features that can be replaced by managed embeddings later.
+- **Vector diagnostics without vendor lock-in:** local hashing embeddings provide a deterministic hook that can be replaced by stronger embeddings later; current vector source recall is `0.0`, so it is not presented as a retrieval-quality win.
+- **Evidence graph signal without cloud lock-in:** local aspect and sequential graph artifacts can later map to a graph service or feature store.
 - **Typed intermediate contracts:** every service exchanges structured schemas, not loose prompt blobs.
 - **Graceful degradation:** local deterministic fallback keeps the app runnable without external APIs.
 - **Evaluation first:** each major quality claim should have a metric, ablation, or qualitative example.
-- **Learned ranking path:** a candidate-aware pairwise trainer plus promotion gate prevents weaker learned weights from being wired into runtime.
 - **Observable agent behavior:** Task A and Task B responses include trace IDs, and `/api/metrics` plus `/api/traces` expose local runtime evidence.
 - **Production-shaped boundaries:** local modules map cleanly to scalable services later.
 

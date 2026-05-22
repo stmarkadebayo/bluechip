@@ -16,16 +16,68 @@ We interpreted "Build an agent" as an orchestration layer over deterministic, te
 1. We read the hackathon brief and narrowed the goal to the core build: a shared user-intelligence engine with two serving heads.
 2. We clarified that "staff-level" means scalable, measurable, reproducible, and not just prompt-based.
 3. We did a research pass across recommender systems, user modeling, agent architecture, retrieval, and industry patterns.
-4. We chose a production-shaped architecture:
+4. We kept one local API with clear internal boundaries:
    - offline ingestion and feature building
    - typed profile and item contracts
+   - aspect-aware evidence intelligence
    - retrieval before ranking
    - deterministic scoring before LLM generation
+   - review planning before final text generation
    - optional LLM only at the final language step
    - eval scripts as first-class project artifacts
 5. We implemented the repository from scratch, then reviewed it for correctness, scalability, and GitHub readiness.
 6. We downloaded and byte-validated five Amazon Reviews 2023 categories plus metadata.
 7. We built a combined all-category processed corpus and trained Task A models selected for both validation MAE and validation RMSE.
+8. We upgraded the architecture toward an evidence-first recommendation system while keeping it local and reproducible.
+
+## Submission Position
+
+The strongest truthful story for the current submission is evidence-first behavior-aware personalization:
+
+- Task A is rating-first review simulation: predict the rating from user/item evidence, then generate and validate the review.
+- Task B is retrieval before ranking: build a source-attributed candidate pool, rank it with explicit components, and explain from visible evidence.
+- Sparse and cross-domain behavior are measured separately because they are high-value rubric areas.
+- LLM output is downstream of profiling, retrieval, ranking, and validation.
+- Neural sequence models should stay out of the current runtime unless fixed evals beat the current hybrid baseline.
+
+Latest bounded all-category Task B metrics after evidence graph work and the popularity-rank floor:
+
+| Metric | Value |
+| --- | ---: |
+| `hybrid_candidate_recall@50` | `0.13` |
+| `hybrid_candidate_recall@100` | `0.18` |
+| `hybrid_candidate_recall@1000` | `0.34` |
+| `hybrid_ranker_hit_rate@10` | `0.10` |
+| `hybrid_ranker_ndcg@10` | `0.0766` |
+| Sparse candidate recall@1000 | `0.3611` |
+| Cross-domain candidate recall@1000 | `0.5484` |
+| Vector source recall | `0.0` |
+
+Vector retrieval is present as a deterministic diagnostic hook, but current measured vector source recall is `0.0`; do not describe it as a recall win.
+
+## Response To Latest Architecture Review
+
+The last teammate feedback was directionally right: the previous risk was optimizing for semantic fit while missing co-engagement behavior. A content encoder can look semantically relevant and still fail candidate recall, so the repository now treats Task B as a multi-objective retrieval and ranking problem.
+
+What changed to address it:
+
+- Added a local MTMH-style retrieval shape: multiple retrieval heads now contribute candidates instead of relying on one semantic/vector path.
+- Added co-engagement heads: item co-visitation and user-neighbor collaborative retrieval are first-class candidate sources.
+- Added semantic/evidence heads: BM25 profile/context retrieval, review-term retrieval, lexical item-neighbor retrieval, aspect evidence graph retrieval, and deterministic vector diagnostics.
+- Added source attribution: responses and eval reports expose `candidate_sources`, per-source retrieval scores, source counts, and candidate diagnostics.
+- Added multi-objective scoring: the ranker blends preference, context, category, aspect, sequential, evidence graph, Nigerian context, collaborative, retrieval, source diversity, item quality, popularity, novelty, and confidence features.
+- Added recall-first measurement: Task B eval now separates candidate Recall@50/100/1000 from HitRate@10 and NDCG@10, with sparse-user and cross-domain slices.
+- Added production boundaries: `app/platform/feature_store.py`, `app/platform/model_registry.py`, and `app/serving/orchestrators/` make it easier to swap local heads for stronger learned models later.
+
+What is intentionally not claimed:
+
+- We have not trained MTMH as a neural multi-task model in this repo.
+- We have not implemented HSTU as the online ranker.
+- We have not proven vector retrieval quality; vector source recall is currently `0.0`, so it remains a diagnostic/extensibility hook.
+
+Recommended interpretation for a teammate or judge:
+
+The current code implements the practical architecture around the feedback: multi-head retrieval, co-engagement plus semantic evidence, multi-objective ranking, source diagnostics, and fixed eval gates. MTMH and HSTU remain the next production-model upgrades after candidate recall improves and same-slice offline evals justify the added complexity.
 
 ## What Is Built
 
@@ -44,7 +96,7 @@ We interpreted "Build an agent" as an orchestration layer over deterministic, te
 
 ### Agent Workflows
 
-- `ReviewSimulationAgent`
+- `ReviewSimulationAgent` in `app/serving/orchestrators/review_simulation.py`
   - builds user profile
   - builds target item profile
   - predicts rating
@@ -52,7 +104,7 @@ We interpreted "Build an agent" as an orchestration layer over deterministic, te
   - validates rating-review consistency
   - returns an agent trace
 
-- `RecommendationAgent`
+- `RecommendationAgent` in `app/serving/orchestrators/recommendation.py`
   - builds user profile
   - retrieves candidate items
   - filters seen/history items
@@ -64,8 +116,10 @@ We interpreted "Build an agent" as an orchestration layer over deterministic, te
 
 - User profiling: `app/services/profiling/user_profile.py`
 - Item profiling: `app/services/profiling/item_profile.py`
+- Aspect intelligence: `app/services/intelligence/aspects.py`
 - BM25 retrieval: `app/services/retrieval/text.py`
 - Item co-occurrence retrieval: `app/services/retrieval/item_similarity.py`
+- Evidence graph retrieval: `app/services/retrieval/evidence_graph.py`
 - Candidate generation: `app/services/retrieval/candidates.py`
 - Rating prediction: `app/services/ranking/rating.py`
 - Recommendation ranking: `app/services/ranking/recommendation.py`
@@ -73,20 +127,24 @@ We interpreted "Build an agent" as an orchestration layer over deterministic, te
 - Deterministic hashing embeddings: `app/services/retrieval/embeddings.py`
 - Generation provider abstraction: `app/services/generation/providers.py`
 - Review/recommendation text generation: `app/services/generation/generator.py`
+- Review planning: `app/services/generation/review_plan.py`
+- Evidence critic: `app/services/validation/evidence_critic.py`
 - Output validation: `app/services/validation/critic.py`
 - Runtime trace store: `app/stores/trace_store.py`
+- Local feature store: `app/platform/feature_store.py`
+- Local model/index registry: `app/platform/model_registry.py`
 
 ### Data and Evaluation
 
 - Amazon JSONL ingestion: `scripts/ingest_amazon.py`
 - Temporal split builder: `scripts/build_splits.py`
 - Retrieval index builder: `scripts/build_retrieval_index.py`
+- Evidence graph builder: `scripts/build_evidence_graph.py`
 - Dataset downloader/checker: `scripts/download_amazon_hf.py`
 - Shared eval helpers: `eval/common.py`
 - Task A eval: `eval/eval_task_a.py`
+- Evidence intelligence eval: `eval/eval_evidence_intelligence.py`
 - Task B eval: `eval/eval_task_b.py`
-- Ranker tuning: `eval/tune_ranker.py`
-- Learned ranker training: `eval/train_ranker.py`
 - Metrics: `eval/metrics.py`
 
 ### Documentation
@@ -193,6 +251,23 @@ Run API:
 uvicorn app.main:app --reload
 ```
 
+Build the local model/index registry:
+
+```bash
+python scripts/build_model_registry.py --output data/processed/model_registry.json
+```
+
+Build the evidence graph artifact directly:
+
+```bash
+python scripts/build_evidence_graph.py \
+  --train data/processed/train.jsonl \
+  --items data/processed/items.jsonl \
+  --output data/processed/evidence_graph_retrieval.json
+```
+
+`scripts/build_retrieval_index.py` also writes `evidence_graph_retrieval.json` beside the collaborative and review-term retrieval artifacts.
+
 Open:
 
 ```text
@@ -215,7 +290,7 @@ Without provider variables, the system uses deterministic fallback text generati
 These checks passed locally:
 
 - Python compile check across `app`, `eval`, `scripts`, and `tests`.
-- Current hardening pass: 31 tests pass, lint passes, compile passes, sample eval passes, and bounded all-category Task B eval runs.
+- Current hardening pass: 43 tests pass, lint passes, compile passes, sample eval passes, and bounded all-category Task B eval runs.
 - FastAPI import smoke test passed.
 - `Subscription_Boxes` real-data ingestion passed.
 - `Subscription_Boxes` temporal split and retrieval index build passed.
@@ -228,6 +303,7 @@ Current sample eval signal:
 - Ranker tuning reaches NDCG@10 `0.877` on the sample split.
 - Learned ranker training reaches NDCG@10 `1.0` on the sample split.
 - Task B eval now reports candidate Recall@50/100, hybrid candidate recall, cold-start persona-only ranking, sparse/warm-user slices, and cross-domain slices.
+- Evidence-intelligence code paths are covered by focused tests for aspect extraction, graph retrieval, and review-plan fallback generation.
 
 Current real-data signal:
 
@@ -247,34 +323,24 @@ Current real-data signal:
 - On that same 5,000-example slice, raw continuous model MAE is `0.9177`; ordinary rounded raw-score MAE is `0.8834`.
 - On a 5,000-example all-category slice, the RMSE-selected serving artifact reports MAE `0.9136` and RMSE `1.3378`.
 - The Task A promotion gate selects `calibrated_profile` for serving because it has the best 5,000-example RMSE: `1.2654`.
-- On a 100-example all-category Task B slice over 188,236 items, hybrid HitRate@10 is `0.09` and NDCG@10 is `0.068`, matching filtered popularity.
-- After the candidate-recall upgrade, a 25-example all-category smoke eval reports base and hybrid candidate Recall@200 both at `0.16`; hybrid no longer crowds out the base candidate pool on that slice.
+- Earlier all-category Task B slices established the filtered-popularity floor and candidate-recall bottleneck.
 - Full all-category collaborative artifacts were built locally:
   - `data/processed/all_categories/collaborative_retrieval.json` (`237M`)
   - `data/processed/all_categories/item_neighbors.json` (`25M`)
   - `data/processed/all_categories/review_term_retrieval.json` (`421M`)
-- Updated 100-example all-category Task B eval over 188,236 items:
-  - candidate Recall@200 `0.20`
-  - candidate Recall@500 `0.25`
-  - candidate Recall@1000 `0.28`
-  - hybrid HitRate@10 `0.10` vs filtered popularity `0.09`
-  - hybrid NDCG@10 `0.0766` vs filtered popularity `0.068`
-  - cross-domain HitRate@10 `0.2581`, NDCG@10 `0.2056`
-- Beauty/sparse retrieval adds item-title terms, aspect retrieval, and sparse category-tail exploration:
-  - candidate Recall@1000 `0.29`
-  - candidate misses `71`
-  - hybrid HitRate@10 `0.10`, NDCG@10 `0.0766`
-- Review-term retrieval and lexical-neighbor retrieval add positive-review language and item-term postings:
-  - candidate Recall@1000 `0.32`
-  - candidate misses `68`
-  - hybrid HitRate@10 `0.10`, NDCG@10 `0.0766`
-  - ranker promotion remains blocked: learned holdout NDCG@10 `0.0788` vs same-slice hybrid `0.1061`
-- Graph-walk retrieval was implemented and measured as an ablation, but is not enabled in default candidate generation because it added latency without improving the 100-example all-category metrics.
-- Beauty taxonomy retrieval was measured on a 25-example smoke slice and gated off because it crowded out stronger candidate sources.
+- Latest bounded all-category Task B eval after evidence graph work and the popularity-rank floor:
+  - hybrid candidate Recall@50 `0.13`
+  - hybrid candidate Recall@100 `0.18`
+  - hybrid candidate Recall@1000 `0.34`
+  - hybrid HitRate@10 `0.10`
+  - hybrid NDCG@10 `0.0766`
+  - sparse candidate Recall@1000 `0.3611`
+  - cross-domain candidate Recall@1000 `0.5484`
+  - vector source recall `0.0`
+- Beauty taxonomy retrieval is enabled as a measured candidate-generation source.
+- Graph-walk retrieval is not enabled because it added latency without improving the fixed all-category metrics.
 - Context-category ranking guards are enabled for explicit Beauty, music, and gift contexts; this improves the human-eval/contextual demo path without changing empty-context offline metrics.
 - Contextual human-eval pack: `docs/human_eval_task_b_contextual.md`.
-- Candidate-aware learned ranker trained on the same 100-example all-category slice was not promoted because learned NDCG@10 `0.0700` trailed current hybrid NDCG@10 `0.0766`.
-- Split learned-ranker training now uses a holdout slice and is rejected unless it beats same-slice hybrid. Latest split result was not promoted: learned NDCG@10 `0.0788` vs hybrid `0.1061`.
 
 ## Important Fixes Already Made
 
@@ -287,22 +353,24 @@ Current real-data signal:
 - Improved ranking to account for sparse-user cases with popularity and item quality priors.
 - Added GitHub-safe ignore rules so large data and generated artifacts are not committed.
 - Fixed editable Python packaging so `pip install -e ".[dev]"` works.
-- Added local hashing embeddings and vector retrieval as a deterministic semantic signal.
+- Added local hashing embeddings and vector retrieval as a deterministic diagnostic hook; current vector source recall is `0.0`, so it is not a quality claim.
 - Added score component breakdowns for recommendations.
 - Added collaborative retrieval artifacts for item co-visitation and user-neighbor candidate generation.
 - Added category-affinity popularity as a high-recall Task B source.
 - Added review-term retrieval and lexical-neighbor retrieval for Task B candidate generation.
-- Added graph-walk and Beauty-taxonomy ablation code paths, but did not enable them by default after measurement.
+- Added aspect-aware evidence extraction for personas, review history, and item metadata.
+- Added evidence graph retrieval for aspect-to-item, category-aspect, item-transition, and category-transition candidate paths.
+- Added evidence-aware ranking features for aspect match, sequential match, evidence graph match, and Nigerian-context match.
+- Added plan-then-write review generation for Task A.
+- Added evidence critic checks for grounding and sensitive-inference risk.
+- Added Beauty taxonomy retrieval and evidence graph retrieval as default candidate sources after measurement.
 - Added context-category ranker guards and regression coverage for contextual recommendation relevance.
 - Added candidate source tracking, retrieval scores, and response-level `candidate_diagnostics`.
 - Added Task B candidate recall metrics and slice reporting so retrieval can be optimized before ranker promotion.
 - Added miss-analysis JSON output and Markdown reporting for candidate misses.
-- Added a candidate-aware ranker trainer plus `eval/promote_ranker.py` promotion gate.
 - Added JSONL runtime traces, `/api/metrics`, `/api/traces`, and response `trace_id`s.
 - Added an operational `/ui/` demo with Review Simulation, Recommend, and Metrics tabs.
 - Added API contract, vector retrieval, and downloader integrity tests.
-- Added ranker hyperparameter search via `make tune`.
-- Added a dependency-free pairwise learned-ranker training path via `make train-ranker`.
 - Added Task A adaptive star prediction, slice metrics, and tuning via `make tune-task-a`.
 - Added Task A model training via `eval/train_task_a_model.py`; trained artifacts are saved under ignored processed data directories.
 - Added direct DeepSeek generation support through `DEEPSEEK_API_KEY` and `LLM_PROVIDER=deepseek`; `.env` remains ignored.
@@ -328,13 +396,13 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
 ## Known Gaps
 
 - Full all-category Task B evaluation is expensive and currently represented by a bounded slice.
-- Task B candidate recall is still the main bottleneck: Recall@1000 is `0.32` on the bounded all-category slice after review-term retrieval.
-- Miss analysis shows the dominant miss categories are `All_Beauty` (`60` of `68` misses at candidate-limit `1000`), sparse history (`48` misses), and items with no item-neighbor path (`37` misses).
+- Task B candidate recall is still the main bottleneck: latest bounded all-category hybrid candidate Recall@1000 is `0.34`, while Recall@50 is only `0.13`.
+- Miss analysis should be rerun after each retrieval change; earlier reports showed Beauty-heavy misses, sparse-history misses, and items with no neighbor path.
+- Evidence graph retrieval is enabled as a local candidate source, but source-level attribution should be reported carefully. Vector source recall is currently `0.0`.
 - Current embeddings are deterministic hashing embeddings, not neural model embeddings.
 - Current generation is optional and only used at the final text step.
 - Test coverage is improved but still intentionally focused on core contracts.
 - No external tracing/cost dashboard is wired; local JSONL metrics are implemented.
-- Learned-ranker training is implemented, but learned weights should not be promoted until real-data evaluation is complete.
 - Contextual human-eval scores still need actual human labels; the judge-ready table is generated but intentionally unscored.
 
 ## Recommended Next Steps
@@ -344,7 +412,6 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
    - continue Beauty-specific retrieval work to improve the dominant miss category
    - add sparse-user fallbacks beyond global popularity
    - rerun Task B with candidate Recall@200/500/1000 and miss reports
-   - promote learned ranker weights only after `eval/promote_ranker.py` passes
    - fill human scores in `docs/human_eval_task_b_contextual.md`
    - add diversity controls after relevance improves
 3. Improve Task A:
@@ -357,14 +424,11 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
    - more ingestion edge cases
    - real-data eval smoke checks
    - trace persistence failure modes
-5. Run `make tune` on real processed data and freeze better ranker weights.
-6. Run `make train-ranker` on real processed data and compare against tuned heuristic weights.
-7. Update the solution paper with real metrics and ablation tables.
+5. Update the solution paper with real metrics and source-diagnostic tables.
 
 ## Possible Improvements
 
 - Replace deterministic hashing embeddings with stronger neural embeddings when credentials/runtime allow it.
-- Use a two-stage recommender: candidate retrieval, then learned ranker.
 - Add matrix factorization or implicit-feedback ALS as a baseline.
 - Add sequence-aware recommendation for users with enough history.
 - Cache profile and item features to avoid recomputation on every request.
