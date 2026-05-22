@@ -56,3 +56,20 @@ def embedding_text(*parts: object) -> str:
         else:
             flattened.append(str(part))
     return " ".join(flattened)
+
+
+def neural_available() -> bool:
+    try:
+        import sentence_transformers  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def encode(text: str, method: str = "neural") -> list[float]:
+    if method == "neural" and neural_available():
+        from app.services.retrieval.neural_embeddings import encode_text
+
+        return encode_text(text)
+    return hashed_embedding(text)
