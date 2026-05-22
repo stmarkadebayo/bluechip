@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 import re
 from collections import Counter
 
 from app.models.schemas import UserHistoryItem, UserProfile
 from app.services.intelligence.aspects import user_aspect_evidence
+from app.services.profiling.profile_enhancer import ProfileEnhancer
 from app.services.retrieval.embeddings import embedding_text, hashed_embedding
 
 STOPWORDS = {
@@ -86,6 +88,7 @@ def build_user_profile(
     persona: str,
     history: list[UserHistoryItem],
     locale: str | None = None,
+    enhance_with_llm: bool | None = None,
 ) -> UserProfile:
     ratings = [item.rating for item in history]
     average_rating = sum(ratings) / len(ratings) if ratings else 3.5
@@ -162,7 +165,7 @@ def build_user_profile(
         locale=locale,
     )
 
-    return UserProfile(
+    profile = UserProfile(
         locale=locale,
         average_rating=round(average_rating, 2),
         recent_average_rating=recent_average_rating,
@@ -188,6 +191,20 @@ def build_user_profile(
         voice_style=voice_style,
         signals=signals,
     )
+    if _should_enhance(enhance_with_llm):
+        return ProfileEnhancer().enhance(
+            profile=profile,
+            persona=persona,
+            history=history,
+            locale=locale,
+        )
+    return profile
+
+
+def _should_enhance(value: bool | None) -> bool:
+    if value is not None:
+        return value
+    return os.getenv("BLUECHIP_PROFILE_ENHANCER", "").lower() in {"1", "true", "yes"}
 
 
 def _extract_terms(text: str) -> list[str]:

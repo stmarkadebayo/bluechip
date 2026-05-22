@@ -5,8 +5,11 @@ import time
 from app.models.schemas import AgentTraceStep, SimulateReviewRequest, SimulateReviewResponse
 from app.platform.feature_store import get_feature_store
 from app.platform.model_registry import get_model_registry
+from app.services.agentic.user_simulator import UserSimulator
 from app.services.generation.generator import generate_review_result
 from app.services.generation.providers import generation_provider_name
+from app.services.nigerian.context import NigerianContextEngine
+from app.services.nigerian.pidgin import NigerianVoiceInjector
 from app.services.profiling.item_profile import build_item_profile
 from app.services.profiling.user_profile import build_user_profile
 from app.services.ranking.rating import predict_rating
@@ -15,11 +18,17 @@ from app.stores.trace_store import trace_store
 
 
 class ReviewSimulationAgent:
-    """Serving orchestrator for Task A review simulation.
+    """Serving orchestrator for Task A review simulation with LLM agentic workflow.
 
-    The orchestrator owns request flow and trace metadata. Profiling, rating,
-    generation, and validation remain deterministic service tools.
+    Integrates the LLM-driven UserSimulator for authentic review generation,
+    Nigerian context enrichment, and pidgin voice injection. Falls back to
+    deterministic pipeline when LLM is unavailable.
     """
+
+    def __init__(self) -> None:
+        self._simulator = UserSimulator()
+        self._nigerian_engine = NigerianContextEngine()
+        self._voice_injector = NigerianVoiceInjector()
 
     def run(self, request: SimulateReviewRequest) -> SimulateReviewResponse:
         started = time.perf_counter()
@@ -29,12 +38,25 @@ class ReviewSimulationAgent:
             persona=request.user_persona,
             history=request.user_history,
             locale=request.locale,
+            enhance_with_llm=request.enhance_with_llm,
         )
         trace.append(
             AgentTraceStep(
                 step="profile_user",
-                status="ok",
-                detail=f"{user_profile.evidence_count} history items, confidence {user_profile.confidence:.2f}",
+                status=(
+                    "ok"
+                    if user_profile.profile_enhancement is None
+                    or user_profile.profile_enhancement.llm_augmented
+                    else "fallback"
+                ),
+                detail=(
+                    f"{user_profile.evidence_count} history items, confidence {user_profile.confidence:.2f}"
+                    + (
+                        f", profile enhancer {user_profile.profile_enhancement.provider}"
+                        if user_profile.profile_enhancement
+                        else ""
+                    )
+                ),
             )
         )
 
@@ -47,18 +69,44 @@ class ReviewSimulationAgent:
             )
         )
 
+        nigerian_result = self._nigerian_engine.inject_nigerian_context(
+            persona=request.user_persona,
+            history=[
+                {"item_name": h.item_name, "rating": h.rating, "review": h.review,
+                 "category": h.category or ""}
+                for h in request.user_history
+            ],
+        )
+        nigerian_relevance = NigerianContextEngine.score_nigerian_relevance(user_profile)
+        trace.append(
+            AgentTraceStep(
+                step="nigerian_context",
+                status="ok",
+                detail=(
+                    f"confidence {nigerian_result.cultural_confidence:.2f}, "
+                    f"relevance {nigerian_relevance:.2f}"
+                ),
+            )
+        )
+
         rating_result = predict_rating(
             user_profile=user_profile,
             item_profile=item_profile,
             user_id=request.user_id,
         )
+
+        decision = self._simulator.simulate_review_decision(user_profile, item_profile)
+        agentic_rating = decision.predicted_rating if decision.llm_augmented else None
+
+        final_rating = agentic_rating if agentic_rating is not None else rating_result.predicted_rating
         trace.append(
             AgentTraceStep(
                 step="predict_rating",
                 status="ok",
                 detail=(
-                    f"predicted {rating_result.predicted_rating}/5"
+                    f"predicted {final_rating}/5"
                     f" using {rating_result.model_name or 'default rating model'}"
+                    f"{' + LLM reasoning' if agentic_rating is not None else ''}"
                 ),
             )
         )
@@ -66,13 +114,49 @@ class ReviewSimulationAgent:
         generated_review = generate_review_result(
             user_profile=user_profile,
             item_profile=item_profile,
-            predicted_rating=rating_result.predicted_rating,
+            predicted_rating=final_rating,
         )
-        review = generated_review.text
-        trace.append(AgentTraceStep(step="generate_review", status="ok", detail="rating-conditioned"))
+
+        if decision.llm_augmented and generated_review.used_fallback:
+            agentic_review = self._simulator.generate_authentic_review(
+                user_profile=user_profile,
+                item_profile=item_profile,
+                rating=final_rating,
+                decision_context=decision,
+            )
+            if agentic_review:
+                review = agentic_review
+            else:
+                review = generated_review.text
+        else:
+            review = generated_review.text
+
+        if nigerian_relevance > 0.25:
+            review = self._voice_injector.nigerianize_review(
+                review, intensity=min(nigerian_relevance, 0.80)
+            )
+            trace.append(
+                AgentTraceStep(
+                    step="nigerianize_review",
+                    status="ok",
+                    detail=f"injected Nigerian voice at intensity {min(nigerian_relevance, 0.80):.2f}",
+                )
+            )
+
+        trace.append(
+            AgentTraceStep(
+                step="generate_review",
+                status="ok",
+                detail=(
+                    "LLM agentic authentic review"
+                    if decision.llm_augmented
+                    else "rating-conditioned generation"
+                ),
+            )
+        )
 
         validation = validate_review_simulation(
-            predicted_rating=rating_result.predicted_rating,
+            predicted_rating=final_rating,
             review=review,
             user_profile=user_profile,
             item_profile=item_profile,
@@ -98,7 +182,7 @@ class ReviewSimulationAgent:
 
         return SimulateReviewResponse(
             trace_id=trace_record.trace_id,
-            predicted_rating=rating_result.predicted_rating,
+            predicted_rating=final_rating,
             predicted_score=rating_result.predicted_score,
             review=review,
             confidence=rating_result.confidence,

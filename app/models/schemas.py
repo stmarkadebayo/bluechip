@@ -27,6 +27,16 @@ class Item(BaseModel):
     average_rating: Optional[float] = Field(default=None, ge=1, le=5)
 
 
+class ProfileEnhancement(BaseModel):
+    provider: str = ""
+    llm_augmented: bool = False
+    confidence: float = Field(default=0.0, ge=0, le=1)
+    added_terms: dict[str, list[str]] = Field(default_factory=dict)
+    adjusted_fields: list[str] = Field(default_factory=list)
+    rationale: str = ""
+    fallback_reason: str | None = None
+
+
 class UserProfile(BaseModel):
     locale: Optional[str] = None
     average_rating: float
@@ -52,6 +62,7 @@ class UserProfile(BaseModel):
     confidence: float = Field(default=0.0, ge=0, le=1)
     voice_style: str
     signals: list[str]
+    profile_enhancement: ProfileEnhancement | None = None
 
 
 class ItemProfile(BaseModel):
@@ -97,6 +108,7 @@ class SimulateReviewRequest(BaseModel):
     user_history: list[UserHistoryItem] = Field(default_factory=list)
     target_item: Item
     locale: Optional[str] = None
+    enhance_with_llm: bool = False
 
 
 class ProfileUserRequest(BaseModel):
@@ -104,6 +116,7 @@ class ProfileUserRequest(BaseModel):
     user_persona: str
     user_history: list[UserHistoryItem] = Field(default_factory=list)
     locale: Optional[str] = None
+    enhance_with_llm: bool = False
 
 
 class SimulateReviewResponse(BaseModel):
@@ -130,6 +143,7 @@ class RecommendationRequest(BaseModel):
     candidate_items: list[Item]
     locale: Optional[str] = None
     limit: int = Field(default=5, ge=1, le=20)
+    enhance_with_llm: bool = False
 
 
 class RecommendationItem(BaseModel):
@@ -184,6 +198,73 @@ class TraceRecord(BaseModel):
     validation_status: str = ""
     fallback_reason: str | None = None
     steps: list[AgentTraceStep] = Field(default_factory=list)
+
+
+class ConversationTurnRequest(BaseModel):
+    conversation_id: str | None = None
+    user_persona: str
+    user_history: list[UserHistoryItem] = Field(default_factory=list)
+    context: str = ""
+    candidate_items: list[Item]
+    locale: str | None = None
+    user_message: str = ""
+    limit: int = Field(default=5, ge=1, le=20)
+    enhance_with_llm: bool = False
+
+
+class ConversationTurnResponse(BaseModel):
+    conversation_id: str
+    turn_index: int
+    recommendations: list[RecommendationItem]
+    agent_response: str
+    agent_trace: list[AgentTraceStep] = Field(default_factory=list)
+    candidate_diagnostics: CandidateDiagnostics | None = None
+
+
+class ColdStartInferenceResponse(BaseModel):
+    preferred_categories: list[str]
+    price_sensitivity: str
+    quality_expectation: str
+    likely_voice_style: str
+    key_terms: list[str]
+    confidence: float
+    provider: str = ""
+    llm_augmented: bool = False
+
+
+class CrossDomainTransferRequest(BaseModel):
+    source_domain: str
+    target_domain: str
+    preferences: list[str]
+
+
+class CrossDomainTransferResponse(BaseModel):
+    transferred_preferences: list[str]
+    mapped_categories: list[str]
+    adjusted_terms: list[str]
+    confidence: float
+    reasoning: str
+    provider: str = ""
+    llm_augmented: bool = False
+
+
+class NigerianContextResponse(BaseModel):
+    detected_markers: list[str]
+    locale_signals: list[str]
+    regional_context: dict[str, Any] = Field(default_factory=dict)
+    behavioral_indicators: dict[str, Any] = Field(default_factory=dict)
+    cultural_confidence: float
+    enriched_persona: str
+
+
+class ConversationSummary(BaseModel):
+    conversation_id: str
+    turn_count: int
+    context: str
+    accepted_count: int
+    rejected_count: int
+    last_turn: str
+    last_updated: float
 
 
 class RecommendationResponse(BaseModel):
