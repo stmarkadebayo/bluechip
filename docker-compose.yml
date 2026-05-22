@@ -5,6 +5,23 @@ services:
       - "8000:8000"
     env_file:
       - .env.example
+    environment:
+      APP_ENV: container
+      BLUECHIP_FEATURE_STORE_ROOT: /app/data/processed
+      LLM_PROVIDER: mock
     volumes:
-      - ./data:/app/data
+      - bluechip-processed:/app/data/processed
+      - ./runs:/app/runs
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
+volumes:
+  bluechip-processed:
