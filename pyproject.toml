@@ -21,6 +21,9 @@ dev = [
 metrics = [
   "bert-score>=0.3.13",
 ]
+baselines = [
+  "implicit>=0.7.3",
+]
 
 [tool.ruff]
 line-length = 100

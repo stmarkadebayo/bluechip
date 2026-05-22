@@ -82,6 +82,22 @@ Final validation smoke, 22 May 2026:
 | Task B sample-data neural smoke | Neural FAISS active on 11 items; `neural_vector` candidate recall@100 `1.0`. |
 | Task A all-categories agentic generation, 25 examples | Deterministic fallback succeeded; validation consistency, item mention, rating mention, and sentiment alignment were all `1.0`. |
 
+## Implicit Baseline
+
+The first conventional collaborative-filtering baseline run is recorded in [IMPLICIT_BASELINE_RESULTS.md](IMPLICIT_BASELINE_RESULTS.md). It trained ALS, BPR, and item-item cosine with `implicit` on the all-category training split and evaluated 5,000 Task B examples at candidate-limit `1000`.
+
+| Model | HitRate@10 | NDCG@10 | Recall@50 | Recall@100 | Recall@1000 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ALS | `0.0104` | `0.0059` | `0.0294` | `0.0468` | `0.1280` |
+| BPR | `0.0002` | `0.0001` | `0.0022` | `0.0046` | `0.0356` |
+| Item-item cosine | `0.0516` | `0.0280` | `0.1030` | `0.1254` | `0.2914` |
+
+Interpretation:
+
+- Item-item cosine is the useful conventional baseline from this run.
+- The current hybrid candidate Recall@1000 gate remains stronger at `0.34`, but item-item is close enough to validate that co-engagement/item-neighbor evidence is worth keeping.
+- ALS and BPR should be reported as attempted baselines, not promoted models.
+
 Interpretation:
 
 - Candidate generation is the main Task B bottleneck, especially at @50 and @100.

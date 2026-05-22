@@ -1,4 +1,4 @@
-.PHONY: run test test-api api-smoke api-smoke-live lint data index evidence-graph registry sqlite-feature-store human-eval-csv eval eval-all eval-generation eval-generation-strict eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker docker-build docker-test docker-smoke
+.PHONY: run test test-api api-smoke api-smoke-live lint data index evidence-graph registry sqlite-feature-store human-eval-csv implicit-baselines eval eval-all eval-generation eval-generation-strict eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker docker-build docker-test docker-smoke
 
 PYTHON ?= python3
 PROCESSED_DIR ?= data/processed
@@ -26,6 +26,9 @@ sqlite-feature-store:
 
 human-eval-csv:
 	$(PYTHON) eval/export_human_eval_csv.py
+
+implicit-baselines:
+	$(PYTHON) eval/eval_implicit_baselines.py --processed-dir $(PROCESSED_DIR) --output runs/eval/implicit_baselines.json
 
 test:
 	pytest
