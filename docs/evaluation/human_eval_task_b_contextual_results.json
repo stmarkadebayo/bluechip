@@ -1,0 +1,165 @@
+{
+  "task": "Task B contextual human evaluation",
+  "examples": 20,
+  "rubric_columns": [
+    "top10_relevance_1_5",
+    "context_fit_1_5",
+    "diversity_1_5",
+    "explanation_quality_1_5"
+  ],
+  "rubric": {
+    "top10_relevance_1_5": {
+      "n": 20,
+      "mean": 2.15,
+      "median": 2.0,
+      "min": 1.0,
+      "max": 3.0,
+      "distribution": {
+        "1.0": 1,
+        "2.0": 15,
+        "3.0": 4
+      }
+    },
+    "context_fit_1_5": {
+      "n": 20,
+      "mean": 2.25,
+      "median": 2.0,
+      "min": 2.0,
+      "max": 3.0,
+      "distribution": {
+        "2.0": 15,
+        "3.0": 5
+      }
+    },
+    "diversity_1_5": {
+      "n": 20,
+      "mean": 2.35,
+      "median": 2.0,
+      "min": 2.0,
+      "max": 3.0,
+      "distribution": {
+        "2.0": 13,
+        "3.0": 7
+      }
+    },
+    "explanation_quality_1_5": {
+      "n": 20,
+      "mean": 2.1,
+      "median": 2.0,
+      "min": 1.0,
+      "max": 3.0,
+      "distribution": {
+        "1.0": 1,
+        "2.0": 16,
+        "3.0": 3
+      }
+    }
+  },
+  "composite_1_5": {
+    "n": 20,
+    "mean": 2.2125,
+    "median": 2.125,
+    "min": 1.75,
+    "max": 3.0,
+    "distribution": {
+      "1.75": 2,
+      "2.0": 8,
+      "2.25": 6,
+      "2.5": 1,
+      "2.75": 1,
+      "3.0": 2
+    }
+  },
+  "estimated_contextual_relevance_points_20": 8.85,
+  "target_in_top10": {
+    "counts": {
+      "no": 20
+    },
+    "yes_rate": 0.0
+  },
+  "notes": {
+    "count": 20,
+    "top": [
+      {
+        "note": "Recommendations dosen't align well with hair styling produts.",
+        "count": 1
+      },
+      {
+        "note": "Recommendation is generic , not relating to the users need",
+        "count": 1
+      },
+      {
+        "note": "There is no direct match is users history, recommendations are slightly reasonable",
+        "count": 1
+      },
+      {
+        "note": "Recommendation isn't relative to the context",
+        "count": 1
+      },
+      {
+        "note": "Recommenations are diveres but pictures a bit of the context",
+        "count": 1
+      },
+      {
+        "note": "Recommendation fsils to captures the users context, obvoius mismatch",
+        "count": 1
+      },
+      {
+        "note": "There is a slight context understanding",
+        "count": 1
+      },
+      {
+        "note": "Recommendations dosen't capture context well enough",
+        "count": 1
+      },
+      {
+        "note": "slightly good beauty product focused recommendations",
+        "count": 1
+      },
+      {
+        "note": "poor skincare recommendation , no similarity to target",
+        "count": 1
+      },
+      {
+        "note": "recommendation poorly captures users request",
+        "count": 1
+      },
+      {
+        "note": "recommendations do not match user recent gifting behavior history.",
+        "count": 1
+      },
+      {
+        "note": "recommendations doesn't align  with recent positive purchases",
+        "count": 1
+      },
+      {
+        "note": "recommendation isn't  relevant to styling product",
+        "count": 1
+      },
+      {
+        "note": "no possible facial skincare recommendation",
+        "count": 1
+      },
+      {
+        "note": "poor recommendation for styling products",
+        "count": 1
+      },
+      {
+        "note": "recommendation not relevant to required skincare product",
+        "count": 1
+      },
+      {
+        "note": "recommendation not matching recent purchase",
+        "count": 1
+      },
+      {
+        "note": "recommendation is out of target context",
+        "count": 1
+      },
+      {
+        "note": "poor relevance between recommended product and target",
+        "count": 1
+      }
+    ]
+  }
+}
