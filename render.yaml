@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: bluechip-user-intelligence-agent
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    disk:
+      name: bluechip-runtime
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_MODEL
+        value: deepseek/deepseek-v4-flash:free
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: BLUECHIP_PROFILE_ENHANCER
+        value: "true"
+      - key: BLUECHIP_ALLOW_MODEL_DOWNLOAD
+        value: "false"
+      - key: BLUECHIP_RUNTIME_DB_PATH
+        value: /var/data/bluechip_runtime.sqlite
+      - key: BLUECHIP_RATE_LIMIT_ENABLED
+        value: "true"
+      - key: BLUECHIP_RATE_LIMIT_REQUESTS
+        value: "120"
+      - key: BLUECHIP_RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+      - key: BLUECHIP_FEATURE_STORE_ROOT
+        value: data/deploy/processed
+      - key: BLUECHIP_FEATURE_STORE_SQLITE
+        value: data/deploy/processed/feature_store.sqlite
+      - key: BLUECHIP_MODEL_REGISTRY
+        value: data/deploy/processed/model_registry.json
+      - key: TASK_A_MODEL_PATH
+        value: data/deploy/processed/task_a_model.json
+      - key: TASK_A_STATS_PATH
+        value: data/deploy/processed/task_a_rating_stats.json
+      - key: TASK_A_SERVING_POLICY
+        value: data/deploy/processed/task_a_serving_policy.json
+      - key: TASK_B_RETRIEVAL_INDEX
+        value: data/deploy/processed/collaborative_retrieval.json
+      - key: TASK_B_REVIEW_TERM_INDEX
+        value: data/deploy/processed/review_term_retrieval.json
+      - key: TASK_B_EVIDENCE_GRAPH_INDEX
+        value: data/deploy/processed/evidence_graph_retrieval.json
