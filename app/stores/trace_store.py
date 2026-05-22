@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sqlite3
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,16 +12,20 @@ from uuid import uuid4
 from app.models.schemas import AgentTraceStep, RuntimeMetrics, TraceRecord
 
 
-class JsonlTraceStore:
-    """Append-only local trace store for demo observability.
+def runtime_db_path() -> Path:
+    configured = os.getenv("BLUECHIP_RUNTIME_DB_PATH")
+    if configured:
+        return Path(configured)
+    return Path("runs/bluechip_runtime.sqlite")
 
-    Production deployments should send these records to tracing/analytics
-    infrastructure. The local JSONL format keeps the submission inspectable.
-    """
 
-    def __init__(self, path: Path = Path("runs/traces/requests.jsonl")) -> None:
-        self.path = path
+class SQLiteTraceStore:
+    """SQLite-backed trace store for persistent request observability."""
+
+    def __init__(self, path: Path | None = None) -> None:
+        self.path = path or Path(os.getenv("BLUECHIP_TRACE_SQLITE_PATH") or runtime_db_path())
         self._lock = Lock()
+        self._init_db()
 
     def append(
         self,
@@ -50,18 +56,38 @@ class JsonlTraceStore:
             fallback_reason=fallback_reason,
             steps=steps,
         )
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self._lock:
-            with self.path.open("a", encoding="utf-8") as handle:
-                handle.write(record.model_dump_json() + "\n")
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO traces(trace_id, created_at, endpoint, payload)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    record.trace_id,
+                    record.created_at,
+                    record.endpoint,
+                    record.model_dump_json(),
+                ),
+            )
         return record
 
     def recent(self, limit: int = 20) -> list[TraceRecord]:
-        if not self.path.exists():
-            return []
-        rows = self.path.read_text(encoding="utf-8").splitlines()
-        records = [TraceRecord(**json.loads(row)) for row in rows[-limit:] if row.strip()]
-        records.reverse()
+        bounded_limit = max(1, min(int(limit), 10_000))
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT payload FROM traces
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (bounded_limit,),
+            ).fetchall()
+        records = []
+        for row in rows:
+            try:
+                records.append(TraceRecord(**json.loads(row["payload"])))
+            except (json.JSONDecodeError, TypeError, ValueError, KeyError):
+                continue
         return records
 
     def metrics(self) -> RuntimeMetrics:
@@ -106,5 +132,31 @@ class JsonlTraceStore:
             index_version_counts=dict(sorted(index_version_counts.items())),
         )
 
+    def _init_db(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self._connect() as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS traces (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trace_id TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL,
+                    endpoint TEXT NOT NULL,
+                    payload TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_traces_created_at ON traces(created_at DESC)"
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_traces_endpoint ON traces(endpoint)")
 
-trace_store = JsonlTraceStore()
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.path, timeout=10)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+
+trace_store = SQLiteTraceStore()
