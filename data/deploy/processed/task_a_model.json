@@ -1,0 +1,86 @@
+{
+  "kind": "rmse_weighted_ensemble",
+  "weights": {
+    "trained_raw": 1.0
+  },
+  "base_model": {
+    "kind": "linear_rating_model",
+    "features": [
+      "user_prior",
+      "item_prior",
+      "category_prior",
+      "preference_match",
+      "dislike_match",
+      "category_affinity",
+      "vector_match",
+      "log_user_count",
+      "log_item_count",
+      "log_category_count"
+    ],
+    "weights": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "target_mean": 2.0,
+    "feature_means": [
+      3.33333333,
+      3.18518519,
+      3.33333333,
+      0.0,
+      0.0,
+      0.83333333,
+      0.16139195,
+      1.09861229,
+      0.69314718,
+      1.09861229
+    ],
+    "feature_scales": [
+      0.07856742,
+      1e-06,
+      0.00462161,
+      1e-06,
+      1e-06,
+      0.23570226,
+      0.09450723,
+      1e-06,
+      1e-06,
+      1e-06
+    ],
+    "star_thresholds": null,
+    "metadata": {
+      "examples": 3,
+      "epochs": 100,
+      "learning_rate": 0.025,
+      "l2": 0.001,
+      "loss": "mse",
+      "name": "compact_mse",
+      "feature_count": 10
+    }
+  },
+  "adaptive_item_count_threshold": 10,
+  "adaptive_user_weight": 0.4,
+  "metadata": {
+    "name": "compact_mse_rmse_ensemble",
+    "base_model": "compact_mse",
+    "component_count": 1,
+    "validation_examples": 3,
+    "validation_mae": 0.0,
+    "validation_rmse": 0.0,
+    "weight_step": 0.05,
+    "candidate_components": [
+      "trained_raw",
+      "trained_selected",
+      "trained_rounded",
+      "calibrated_profile",
+      "adaptive_star"
+    ]
+  }
+}

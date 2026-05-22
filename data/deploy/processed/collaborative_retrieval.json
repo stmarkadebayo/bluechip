@@ -1,0 +1,55 @@
+{
+  "type": "collaborative_retrieval",
+  "positive_threshold": 4.0,
+  "top_k": 20,
+  "item_neighbors": {},
+  "user_positive_items": {
+    "u_lagos_student": [
+      {
+        "item_id": "rest_001",
+        "rating": 5.0,
+        "timestamp": 1,
+        "category": "restaurant"
+      }
+    ],
+    "u_book_reader": [
+      {
+        "item_id": "book_001",
+        "rating": 5.0,
+        "timestamp": 1,
+        "category": "book"
+      }
+    ],
+    "u_value_shopper": [
+      {
+        "item_id": "prod_001",
+        "rating": 4.0,
+        "timestamp": 1,
+        "category": "kitchen"
+      }
+    ]
+  },
+  "item_positive_users": {
+    "rest_001": [
+      {
+        "user_id": "u_lagos_student",
+        "rating": 5.0,
+        "timestamp": 1
+      }
+    ],
+    "book_001": [
+      {
+        "user_id": "u_book_reader",
+        "rating": 5.0,
+        "timestamp": 1
+      }
+    ],
+    "prod_001": [
+      {
+        "user_id": "u_value_shopper",
+        "rating": 4.0,
+        "timestamp": 1
+      }
+    ]
+  }
+}

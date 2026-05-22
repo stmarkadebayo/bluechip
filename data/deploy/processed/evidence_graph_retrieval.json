@@ -1,0 +1,422 @@
+{
+  "type": "evidence_graph",
+  "top_k": 120,
+  "aspect_items": {
+    "price_value": [
+      {
+        "item_id": "rest_001",
+        "score": 1.0
+      },
+      {
+        "item_id": "prod_001",
+        "score": 0.981
+      },
+      {
+        "item_id": "prod_003",
+        "score": 0.5949
+      },
+      {
+        "item_id": "prod_002",
+        "score": 0.538
+      },
+      {
+        "item_id": "rest_011",
+        "score": 0.4394
+      },
+      {
+        "item_id": "rest_010",
+        "score": 0.4019
+      },
+      {
+        "item_id": "rest_002",
+        "score": 0.3402
+      },
+      {
+        "item_id": "rest_012",
+        "score": 0.3265
+      }
+    ],
+    "quality_reliability": [
+      {
+        "item_id": "rest_010",
+        "score": 1.0
+      },
+      {
+        "item_id": "prod_003",
+        "score": 0.9882
+      },
+      {
+        "item_id": "prod_002",
+        "score": 0.8465
+      }
+    ],
+    "service_speed": [
+      {
+        "item_id": "rest_001",
+        "score": 1.0
+      },
+      {
+        "item_id": "rest_010",
+        "score": 0.5997
+      },
+      {
+        "item_id": "rest_012",
+        "score": 0.5902
+      },
+      {
+        "item_id": "rest_011",
+        "score": 0.5712
+      },
+      {
+        "item_id": "rest_002",
+        "score": 0.538
+      }
+    ],
+    "ambience_context": [
+      {
+        "item_id": "book_001",
+        "score": 1.0
+      },
+      {
+        "item_id": "rest_001",
+        "score": 0.9953
+      },
+      {
+        "item_id": "rest_010",
+        "score": 0.5969
+      },
+      {
+        "item_id": "book_002",
+        "score": 0.5402
+      },
+      {
+        "item_id": "rest_002",
+        "score": 0.5354
+      },
+      {
+        "item_id": "rest_011",
+        "score": 0.306
+      }
+    ],
+    "taste_food": [
+      {
+        "item_id": "rest_012",
+        "score": 1.0
+      }
+    ]
+  },
+  "category_aspect_items": {
+    "restaurant": {
+      "price_value": [
+        {
+          "item_id": "rest_001",
+          "score": 1.0
+        },
+        {
+          "item_id": "rest_011",
+          "score": 0.4394
+        },
+        {
+          "item_id": "rest_010",
+          "score": 0.4019
+        },
+        {
+          "item_id": "rest_002",
+          "score": 0.3402
+        },
+        {
+          "item_id": "rest_012",
+          "score": 0.3265
+        }
+      ],
+      "quality_reliability": [
+        {
+          "item_id": "rest_010",
+          "score": 1.0
+        }
+      ],
+      "service_speed": [
+        {
+          "item_id": "rest_001",
+          "score": 1.0
+        },
+        {
+          "item_id": "rest_010",
+          "score": 0.5997
+        },
+        {
+          "item_id": "rest_012",
+          "score": 0.5902
+        },
+        {
+          "item_id": "rest_011",
+          "score": 0.5712
+        },
+        {
+          "item_id": "rest_002",
+          "score": 0.538
+        }
+      ],
+      "ambience_context": [
+        {
+          "item_id": "rest_001",
+          "score": 1.0
+        },
+        {
+          "item_id": "rest_010",
+          "score": 0.5997
+        },
+        {
+          "item_id": "rest_002",
+          "score": 0.538
+        },
+        {
+          "item_id": "rest_011",
+          "score": 0.3075
+        }
+      ],
+      "taste_food": [
+        {
+          "item_id": "rest_012",
+          "score": 1.0
+        }
+      ]
+    },
+    "book": {
+      "ambience_context": [
+        {
+          "item_id": "book_001",
+          "score": 1.0
+        },
+        {
+          "item_id": "book_002",
+          "score": 0.5402
+        }
+      ]
+    },
+    "kitchen": {
+      "price_value": [
+        {
+          "item_id": "prod_001",
+          "score": 1.0
+        },
+        {
+          "item_id": "prod_003",
+          "score": 0.6065
+        },
+        {
+          "item_id": "prod_002",
+          "score": 0.5484
+        }
+      ],
+      "quality_reliability": [
+        {
+          "item_id": "prod_003",
+          "score": 1.0
+        },
+        {
+          "item_id": "prod_002",
+          "score": 0.8566
+        }
+      ]
+    }
+  },
+  "item_transitions": {},
+  "category_transitions": {},
+  "item_aspects": {
+    "rest_010": {
+      "price_value": 0.5,
+      "quality_reliability": 0.5,
+      "service_speed": 1.0,
+      "ambience_context": 1.0
+    },
+    "rest_011": {
+      "price_value": 0.6667,
+      "service_speed": 1.0,
+      "ambience_context": 0.3333
+    },
+    "rest_012": {
+      "price_value": 0.3333,
+      "service_speed": 1.0,
+      "taste_food": 0.6667
+    },
+    "rest_001": {
+      "price_value": 1.0,
+      "service_speed": 1.0,
+      "ambience_context": 1.0
+    },
+    "rest_002": {
+      "price_value": 0.5,
+      "service_speed": 1.0,
+      "ambience_context": 1.0
+    },
+    "book_001": {
+      "ambience_context": 1.0
+    },
+    "book_002": {
+      "ambience_context": 1.0
+    },
+    "book_003": {},
+    "prod_001": {
+      "price_value": 1.0
+    },
+    "prod_002": {
+      "price_value": 1.0,
+      "quality_reliability": 0.5
+    },
+    "prod_003": {
+      "price_value": 1.0,
+      "quality_reliability": 0.5
+    }
+  },
+  "item_terms": {
+    "rest_010": [
+      "service",
+      "mainland",
+      "grill",
+      "restaurant",
+      "known",
+      "grilled",
+      "food",
+      "calm",
+      "seating",
+      "reliable",
+      "price",
+      "medium",
+      "ambience",
+      "quiet",
+      "fast"
+    ],
+    "rest_011": [
+      "busy",
+      "late",
+      "night",
+      "bites",
+      "restaurant",
+      "affordable",
+      "late-night",
+      "meals",
+      "environment",
+      "price",
+      "low",
+      "ambience",
+      "service",
+      "slow"
+    ],
+    "rest_012": [
+      "service",
+      "casual",
+      "pepper",
+      "house",
+      "restaurant",
+      "spicy",
+      "local",
+      "dishes",
+      "quick",
+      "seating",
+      "price",
+      "medium",
+      "ambience",
+      "fast"
+    ],
+    "rest_001": [
+      "campus",
+      "restaurant",
+      "fast",
+      "service",
+      "bistro",
+      "affordable",
+      "calm",
+      "seating",
+      "price",
+      "low",
+      "ambience",
+      "quiet"
+    ],
+    "rest_002": [
+      "grill",
+      "noisy",
+      "service",
+      "rush",
+      "restaurant",
+      "busy",
+      "seating",
+      "slower",
+      "price",
+      "medium",
+      "ambience",
+      "slow"
+    ],
+    "book_001": [
+      "systems",
+      "book",
+      "quiet",
+      "thoughtful",
+      "practical",
+      "clear",
+      "explanations",
+      "style",
+      "calm",
+      "topic"
+    ],
+    "book_002": [
+      "loud",
+      "growth",
+      "book",
+      "style",
+      "repetitive",
+      "topic"
+    ],
+    "book_003": [
+      "design",
+      "patient",
+      "book",
+      "writing",
+      "grounded",
+      "examples",
+      "practical",
+      "ideas",
+      "style",
+      "clear",
+      "topic"
+    ],
+    "prod_001": [
+      "blender",
+      "everyday",
+      "kitchen",
+      "daily-use",
+      "easy",
+      "clean",
+      "good",
+      "value",
+      "price",
+      "medium",
+      "durability",
+      "strong"
+    ],
+    "prod_002": [
+      "mixer",
+      "durability",
+      "premium",
+      "kitchen",
+      "premium-priced",
+      "mixed",
+      "feedback",
+      "price",
+      "expensive",
+      "weak"
+    ],
+    "prod_003": [
+      "reliable",
+      "toaster",
+      "kitchen",
+      "affordable",
+      "simple",
+      "daily",
+      "use",
+      "price",
+      "low",
+      "durability"
+    ]
+  }
+}

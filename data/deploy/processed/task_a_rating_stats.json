@@ -1,0 +1,114 @@
+{
+  "kind": "rating_stats",
+  "stats": {
+    "global_mean": 3.3333333333333335,
+    "global_std": 1.3743685418725535,
+    "global_positive_share": 0.5,
+    "global_negative_share": 0.5,
+    "user_means": {
+      "u_lagos_student": 3.5,
+      "u_book_reader": 3.5,
+      "u_value_shopper": 3.0
+    },
+    "user_counts": {
+      "u_lagos_student": 2,
+      "u_book_reader": 2,
+      "u_value_shopper": 2
+    },
+    "user_stds": {
+      "u_lagos_student": 1.5,
+      "u_book_reader": 1.5,
+      "u_value_shopper": 1.0
+    },
+    "user_recent_means": {
+      "u_lagos_student": 3.5,
+      "u_book_reader": 3.5,
+      "u_value_shopper": 3.0
+    },
+    "user_positive_shares": {
+      "u_lagos_student": 0.5,
+      "u_book_reader": 0.5,
+      "u_value_shopper": 0.5
+    },
+    "user_negative_shares": {
+      "u_lagos_student": 0.5,
+      "u_book_reader": 0.5,
+      "u_value_shopper": 0.5
+    },
+    "item_means": {
+      "rest_001": 5.0,
+      "rest_002": 2.0,
+      "book_001": 5.0,
+      "book_002": 2.0,
+      "prod_001": 4.0,
+      "prod_002": 2.0
+    },
+    "item_counts": {
+      "rest_001": 1,
+      "rest_002": 1,
+      "book_001": 1,
+      "book_002": 1,
+      "prod_001": 1,
+      "prod_002": 1
+    },
+    "item_stds": {
+      "rest_001": 0.0,
+      "rest_002": 0.0,
+      "book_001": 0.0,
+      "book_002": 0.0,
+      "prod_001": 0.0,
+      "prod_002": 0.0
+    },
+    "item_positive_shares": {
+      "rest_001": 1.0,
+      "rest_002": 0.0,
+      "book_001": 1.0,
+      "book_002": 0.0,
+      "prod_001": 1.0,
+      "prod_002": 0.0
+    },
+    "item_negative_shares": {
+      "rest_001": 0.0,
+      "rest_002": 1.0,
+      "book_001": 0.0,
+      "book_002": 1.0,
+      "prod_001": 0.0,
+      "prod_002": 1.0
+    },
+    "category_means": {
+      "restaurant": 3.5,
+      "book": 3.5,
+      "kitchen": 3.0
+    },
+    "category_counts": {
+      "restaurant": 2,
+      "book": 2,
+      "kitchen": 2
+    },
+    "category_stds": {
+      "restaurant": 1.5,
+      "book": 1.5,
+      "kitchen": 1.0
+    },
+    "category_positive_shares": {
+      "restaurant": 0.5,
+      "book": 0.5,
+      "kitchen": 0.5
+    },
+    "category_negative_shares": {
+      "restaurant": 0.5,
+      "book": 0.5,
+      "kitchen": 0.5
+    },
+    "user_category_means": {
+      "u_lagos_student\trestaurant": 3.5,
+      "u_book_reader\tbook": 3.5,
+      "u_value_shopper\tkitchen": 3.0
+    },
+    "user_category_counts": {
+      "u_lagos_student\trestaurant": 2,
+      "u_book_reader\tbook": 2,
+      "u_value_shopper\tkitchen": 2
+    }
+  }
+}

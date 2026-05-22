@@ -1,0 +1,1978 @@
+{
+  "type": "review_term_retrieval",
+  "positive_threshold": 4.0,
+  "max_terms_per_item": 18,
+  "max_items_per_term": 250,
+  "item_terms": {
+    "book_001": [
+      [
+        "systems",
+        4.6871
+      ],
+      [
+        "thoughtful",
+        4.078
+      ],
+      [
+        "quiet_systems",
+        4.078
+      ],
+      [
+        "systems_book",
+        4.078
+      ],
+      [
+        "book_thoughtful",
+        4.078
+      ],
+      [
+        "practical",
+        3.3561
+      ],
+      [
+        "book",
+        3.3098
+      ],
+      [
+        "liked",
+        3.1692
+      ],
+      [
+        "clearly",
+        3.1692
+      ],
+      [
+        "were",
+        3.1692
+      ],
+      [
+        "explained",
+        3.1692
+      ],
+      [
+        "thoughtful_practical",
+        3.1692
+      ],
+      [
+        "practical_and",
+        3.1692
+      ],
+      [
+        "and_calm",
+        3.1692
+      ],
+      [
+        "calm_liked",
+        3.1692
+      ],
+      [
+        "liked_clearly",
+        3.1692
+      ],
+      [
+        "clearly_the",
+        3.1692
+      ],
+      [
+        "the_ideas",
+        3.1692
+      ]
+    ],
+    "book_002": [
+      [
+        "loud",
+        4.3459
+      ],
+      [
+        "growth",
+        4.3459
+      ],
+      [
+        "growth_book",
+        3.5869
+      ],
+      [
+        "book",
+        2.5329
+      ],
+      [
+        "style",
+        2.5329
+      ],
+      [
+        "repetitive",
+        2.2895
+      ],
+      [
+        "loud_growth",
+        2.2895
+      ],
+      [
+        "book_repetitive",
+        2.2895
+      ],
+      [
+        "repetitive_growth",
+        2.2895
+      ],
+      [
+        "book_loud",
+        2.2895
+      ],
+      [
+        "loud_style",
+        2.2895
+      ],
+      [
+        "style_loud",
+        2.2895
+      ],
+      [
+        "loud_topic",
+        2.2895
+      ],
+      [
+        "topic_growth",
+        2.2895
+      ],
+      [
+        "topic",
+        1.6167
+      ]
+    ],
+    "book_003": [
+      [
+        "design",
+        4.3459
+      ],
+      [
+        "patient",
+        3.5869
+      ],
+      [
+        "writing",
+        2.2895
+      ],
+      [
+        "grounded",
+        2.2895
+      ],
+      [
+        "examples",
+        2.2895
+      ],
+      [
+        "patient_design",
+        2.2895
+      ],
+      [
+        "design_book",
+        2.2895
+      ],
+      [
+        "book_patient",
+        2.2895
+      ],
+      [
+        "patient_writing",
+        2.2895
+      ],
+      [
+        "writing_grounded",
+        2.2895
+      ],
+      [
+        "grounded_examples",
+        2.2895
+      ],
+      [
+        "examples_and",
+        2.2895
+      ],
+      [
+        "practical_design",
+        2.2895
+      ],
+      [
+        "design_ideas",
+        2.2895
+      ],
+      [
+        "ideas_style",
+        2.2895
+      ],
+      [
+        "style_clear",
+        2.2895
+      ],
+      [
+        "clear_topic",
+        2.2895
+      ],
+      [
+        "topic_design",
+        2.2895
+      ]
+    ],
+    "prod_001": [
+      [
+        "blender",
+        4.6871
+      ],
+      [
+        "everyday",
+        4.078
+      ],
+      [
+        "easy",
+        4.078
+      ],
+      [
+        "clean",
+        4.078
+      ],
+      [
+        "value",
+        4.078
+      ],
+      [
+        "strong",
+        4.078
+      ],
+      [
+        "everyday_blender",
+        4.078
+      ],
+      [
+        "blender_kitchen",
+        4.078
+      ],
+      [
+        "easy_clean",
+        4.078
+      ],
+      [
+        "clean_and",
+        4.078
+      ],
+      [
+        "enough",
+        3.1692
+      ],
+      [
+        "kitchen_value",
+        3.1692
+      ],
+      [
+        "value_easy",
+        3.1692
+      ],
+      [
+        "and_strong",
+        3.1692
+      ],
+      [
+        "strong_enough",
+        3.1692
+      ],
+      [
+        "enough_daily",
+        3.1692
+      ],
+      [
+        "kitchen",
+        2.8796
+      ],
+      [
+        "daily",
+        2.6082
+      ]
+    ],
+    "prod_002": [
+      [
+        "mixer",
+        3.5869
+      ],
+      [
+        "durability",
+        2.5329
+      ],
+      [
+        "premium",
+        2.2895
+      ],
+      [
+        "premium-priced",
+        2.2895
+      ],
+      [
+        "mixed",
+        2.2895
+      ],
+      [
+        "feedback",
+        2.2895
+      ],
+      [
+        "expensive",
+        2.2895
+      ],
+      [
+        "weak",
+        2.2895
+      ],
+      [
+        "premium_mixer",
+        2.2895
+      ],
+      [
+        "mixer_kitchen",
+        2.2895
+      ],
+      [
+        "kitchen_premium-priced",
+        2.2895
+      ],
+      [
+        "premium-priced_mixer",
+        2.2895
+      ],
+      [
+        "mixer_mixed",
+        2.2895
+      ],
+      [
+        "mixed_durability",
+        2.2895
+      ],
+      [
+        "durability_feedback",
+        2.2895
+      ],
+      [
+        "feedback_price",
+        2.2895
+      ],
+      [
+        "price_expensive",
+        2.2895
+      ],
+      [
+        "expensive_durability",
+        2.2895
+      ]
+    ],
+    "prod_003": [
+      [
+        "toaster",
+        3.5869
+      ],
+      [
+        "reliable_toaster",
+        3.5869
+      ],
+      [
+        "reliable",
+        3.5765
+      ],
+      [
+        "simple",
+        2.2895
+      ],
+      [
+        "toaster_kitchen",
+        2.2895
+      ],
+      [
+        "kitchen_affordable",
+        2.2895
+      ],
+      [
+        "affordable_and",
+        2.2895
+      ],
+      [
+        "toaster_simple",
+        2.2895
+      ],
+      [
+        "simple_daily",
+        2.2895
+      ],
+      [
+        "daily_price",
+        2.2895
+      ],
+      [
+        "low_durability",
+        2.2895
+      ],
+      [
+        "durability_reliable",
+        2.2895
+      ],
+      [
+        "daily",
+        1.8842
+      ],
+      [
+        "and_reliable",
+        1.8842
+      ],
+      [
+        "kitchen",
+        1.6167
+      ],
+      [
+        "affordable",
+        1.6167
+      ],
+      [
+        "low",
+        1.6167
+      ],
+      [
+        "durability",
+        1.6167
+      ]
+    ],
+    "rest_001": [
+      [
+        "campus",
+        4.6871
+      ],
+      [
+        "bistro",
+        4.078
+      ],
+      [
+        "campus_bistro",
+        4.078
+      ],
+      [
+        "bistro_restaurant",
+        4.078
+      ],
+      [
+        "restaurant_affordable",
+        3.3561
+      ],
+      [
+        "space",
+        3.1692
+      ],
+      [
+        "staff",
+        3.1692
+      ],
+      [
+        "did",
+        3.1692
+      ],
+      [
+        "not",
+        3.1692
+      ],
+      [
+        "waste",
+        3.1692
+      ],
+      [
+        "time",
+        3.1692
+      ],
+      [
+        "affordable_food",
+        3.1692
+      ],
+      [
+        "calm_space",
+        3.1692
+      ],
+      [
+        "space_and",
+        3.1692
+      ],
+      [
+        "and_the",
+        3.1692
+      ],
+      [
+        "the_staff",
+        3.1692
+      ],
+      [
+        "staff_did",
+        3.1692
+      ],
+      [
+        "did_not",
+        3.1692
+      ]
+    ],
+    "rest_002": [
+      [
+        "noisy",
+        3.5869
+      ],
+      [
+        "grill",
+        2.9519
+      ],
+      [
+        "rush",
+        2.2895
+      ],
+      [
+        "slower",
+        2.2895
+      ],
+      [
+        "rush_grill",
+        2.2895
+      ],
+      [
+        "restaurant_busy",
+        2.2895
+      ],
+      [
+        "busy_grill",
+        2.2895
+      ],
+      [
+        "grill_noisy",
+        2.2895
+      ],
+      [
+        "noisy_seating",
+        2.2895
+      ],
+      [
+        "and_slower",
+        2.2895
+      ],
+      [
+        "slower_service",
+        2.2895
+      ],
+      [
+        "ambience_noisy",
+        2.2895
+      ],
+      [
+        "noisy_service",
+        2.2895
+      ],
+      [
+        "service",
+        1.9957
+      ],
+      [
+        "busy",
+        1.8842
+      ],
+      [
+        "slow",
+        1.8842
+      ],
+      [
+        "grill_restaurant",
+        1.8842
+      ],
+      [
+        "service_slow",
+        1.8842
+      ]
+    ],
+    "rest_010": [
+      [
+        "mainland",
+        2.2895
+      ],
+      [
+        "known",
+        2.2895
+      ],
+      [
+        "grilled",
+        2.2895
+      ],
+      [
+        "mainland_grill",
+        2.2895
+      ],
+      [
+        "restaurant_known",
+        2.2895
+      ],
+      [
+        "known_grilled",
+        2.2895
+      ],
+      [
+        "grilled_food",
+        2.2895
+      ],
+      [
+        "reliable_service",
+        2.2895
+      ],
+      [
+        "service",
+        1.9957
+      ],
+      [
+        "grill",
+        1.8842
+      ],
+      [
+        "food",
+        1.8842
+      ],
+      [
+        "reliable",
+        1.8842
+      ],
+      [
+        "grill_restaurant",
+        1.8842
+      ],
+      [
+        "food_calm",
+        1.8842
+      ],
+      [
+        "calm_seating",
+        1.8842
+      ],
+      [
+        "and_reliable",
+        1.8842
+      ],
+      [
+        "ambience_quiet",
+        1.8842
+      ],
+      [
+        "quiet_service",
+        1.8842
+      ]
+    ],
+    "rest_011": [
+      [
+        "busy",
+        2.9519
+      ],
+      [
+        "late",
+        2.2895
+      ],
+      [
+        "night",
+        2.2895
+      ],
+      [
+        "bites",
+        2.2895
+      ],
+      [
+        "late-night",
+        2.2895
+      ],
+      [
+        "meals",
+        2.2895
+      ],
+      [
+        "environment",
+        2.2895
+      ],
+      [
+        "late_night",
+        2.2895
+      ],
+      [
+        "night_bites",
+        2.2895
+      ],
+      [
+        "bites_restaurant",
+        2.2895
+      ],
+      [
+        "affordable_late-night",
+        2.2895
+      ],
+      [
+        "late-night_meals",
+        2.2895
+      ],
+      [
+        "meals_busy",
+        2.2895
+      ],
+      [
+        "busy_environment",
+        2.2895
+      ],
+      [
+        "environment_price",
+        2.2895
+      ],
+      [
+        "ambience_busy",
+        2.2895
+      ],
+      [
+        "busy_service",
+        2.2895
+      ],
+      [
+        "slow",
+        1.8842
+      ]
+    ],
+    "rest_012": [
+      [
+        "casual",
+        3.5869
+      ],
+      [
+        "pepper",
+        2.2895
+      ],
+      [
+        "house",
+        2.2895
+      ],
+      [
+        "spicy",
+        2.2895
+      ],
+      [
+        "local",
+        2.2895
+      ],
+      [
+        "dishes",
+        2.2895
+      ],
+      [
+        "quick",
+        2.2895
+      ],
+      [
+        "pepper_house",
+        2.2895
+      ],
+      [
+        "house_restaurant",
+        2.2895
+      ],
+      [
+        "restaurant_spicy",
+        2.2895
+      ],
+      [
+        "spicy_local",
+        2.2895
+      ],
+      [
+        "local_dishes",
+        2.2895
+      ],
+      [
+        "dishes_quick",
+        2.2895
+      ],
+      [
+        "quick_service",
+        2.2895
+      ],
+      [
+        "service_and",
+        2.2895
+      ],
+      [
+        "and_casual",
+        2.2895
+      ],
+      [
+        "casual_seating",
+        2.2895
+      ],
+      [
+        "seating_price",
+        2.2895
+      ]
+    ]
+  },
+  "term_items": {
+    "systems": [
+      [
+        "book_001",
+        4.8171
+      ]
+    ],
+    "thoughtful": [
+      [
+        "book_001",
+        4.1911
+      ]
+    ],
+    "quiet_systems": [
+      [
+        "book_001",
+        4.1911
+      ]
+    ],
+    "systems_book": [
+      [
+        "book_001",
+        4.1911
+      ]
+    ],
+    "book_thoughtful": [
+      [
+        "book_001",
+        4.1911
+      ]
+    ],
+    "practical": [
+      [
+        "book_001",
+        3.4492
+      ]
+    ],
+    "book": [
+      [
+        "book_001",
+        3.4016
+      ],
+      [
+        "book_002",
+        2.5329
+      ]
+    ],
+    "liked": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "clearly": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "were": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "explained": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "thoughtful_practical": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "practical_and": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "and_calm": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "calm_liked": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "liked_clearly": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "clearly_the": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "the_ideas": [
+      [
+        "book_001",
+        3.2571
+      ]
+    ],
+    "loud": [
+      [
+        "book_002",
+        4.3459
+      ]
+    ],
+    "growth": [
+      [
+        "book_002",
+        4.3459
+      ]
+    ],
+    "growth_book": [
+      [
+        "book_002",
+        3.5869
+      ]
+    ],
+    "style": [
+      [
+        "book_002",
+        2.5329
+      ]
+    ],
+    "repetitive": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "loud_growth": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "book_repetitive": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "repetitive_growth": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "book_loud": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "loud_style": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "style_loud": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "loud_topic": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "topic_growth": [
+      [
+        "book_002",
+        2.2895
+      ]
+    ],
+    "topic": [
+      [
+        "book_002",
+        1.6167
+      ]
+    ],
+    "design": [
+      [
+        "book_003",
+        4.3459
+      ]
+    ],
+    "patient": [
+      [
+        "book_003",
+        3.5869
+      ]
+    ],
+    "writing": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "grounded": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "examples": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "patient_design": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "design_book": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "book_patient": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "patient_writing": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "writing_grounded": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "grounded_examples": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "examples_and": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "practical_design": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "design_ideas": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "ideas_style": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "style_clear": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "clear_topic": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "topic_design": [
+      [
+        "book_003",
+        2.2895
+      ]
+    ],
+    "blender": [
+      [
+        "prod_001",
+        4.8171
+      ]
+    ],
+    "everyday": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "easy": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "clean": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "value": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "strong": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "everyday_blender": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "blender_kitchen": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "easy_clean": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "clean_and": [
+      [
+        "prod_001",
+        4.1911
+      ]
+    ],
+    "enough": [
+      [
+        "prod_001",
+        3.2571
+      ]
+    ],
+    "kitchen_value": [
+      [
+        "prod_001",
+        3.2571
+      ]
+    ],
+    "value_easy": [
+      [
+        "prod_001",
+        3.2571
+      ]
+    ],
+    "and_strong": [
+      [
+        "prod_001",
+        3.2571
+      ]
+    ],
+    "strong_enough": [
+      [
+        "prod_001",
+        3.2571
+      ]
+    ],
+    "enough_daily": [
+      [
+        "prod_001",
+        3.2571
+      ]
+    ],
+    "kitchen": [
+      [
+        "prod_001",
+        2.9594
+      ],
+      [
+        "prod_003",
+        1.6167
+      ]
+    ],
+    "daily": [
+      [
+        "prod_001",
+        2.6805
+      ],
+      [
+        "prod_003",
+        1.8842
+      ]
+    ],
+    "mixer": [
+      [
+        "prod_002",
+        3.5869
+      ]
+    ],
+    "durability": [
+      [
+        "prod_002",
+        2.5329
+      ],
+      [
+        "prod_003",
+        1.6167
+      ]
+    ],
+    "premium": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "premium-priced": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "mixed": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "feedback": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "expensive": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "weak": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "premium_mixer": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "mixer_kitchen": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "kitchen_premium-priced": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "premium-priced_mixer": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "mixer_mixed": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "mixed_durability": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "durability_feedback": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "feedback_price": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "price_expensive": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "expensive_durability": [
+      [
+        "prod_002",
+        2.2895
+      ]
+    ],
+    "toaster": [
+      [
+        "prod_003",
+        3.5869
+      ]
+    ],
+    "reliable_toaster": [
+      [
+        "prod_003",
+        3.5869
+      ]
+    ],
+    "reliable": [
+      [
+        "prod_003",
+        3.5765
+      ],
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "simple": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "toaster_kitchen": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "kitchen_affordable": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "affordable_and": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "toaster_simple": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "simple_daily": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "daily_price": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "low_durability": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "durability_reliable": [
+      [
+        "prod_003",
+        2.2895
+      ]
+    ],
+    "and_reliable": [
+      [
+        "rest_010",
+        1.8842
+      ],
+      [
+        "prod_003",
+        1.8842
+      ]
+    ],
+    "affordable": [
+      [
+        "prod_003",
+        1.6167
+      ]
+    ],
+    "low": [
+      [
+        "prod_003",
+        1.6167
+      ]
+    ],
+    "campus": [
+      [
+        "rest_001",
+        4.8171
+      ]
+    ],
+    "bistro": [
+      [
+        "rest_001",
+        4.1911
+      ]
+    ],
+    "campus_bistro": [
+      [
+        "rest_001",
+        4.1911
+      ]
+    ],
+    "bistro_restaurant": [
+      [
+        "rest_001",
+        4.1911
+      ]
+    ],
+    "restaurant_affordable": [
+      [
+        "rest_001",
+        3.4492
+      ]
+    ],
+    "space": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "staff": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "did": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "not": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "waste": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "time": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "affordable_food": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "calm_space": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "space_and": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "and_the": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "the_staff": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "staff_did": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "did_not": [
+      [
+        "rest_001",
+        3.2571
+      ]
+    ],
+    "noisy": [
+      [
+        "rest_002",
+        3.5869
+      ]
+    ],
+    "grill": [
+      [
+        "rest_002",
+        2.9519
+      ],
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "rush": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "slower": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "rush_grill": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "restaurant_busy": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "busy_grill": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "grill_noisy": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "noisy_seating": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "and_slower": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "slower_service": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "ambience_noisy": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "noisy_service": [
+      [
+        "rest_002",
+        2.2895
+      ]
+    ],
+    "service": [
+      [
+        "rest_010",
+        1.9957
+      ],
+      [
+        "rest_002",
+        1.9957
+      ]
+    ],
+    "busy": [
+      [
+        "rest_011",
+        2.9519
+      ],
+      [
+        "rest_002",
+        1.8842
+      ]
+    ],
+    "slow": [
+      [
+        "rest_011",
+        1.8842
+      ],
+      [
+        "rest_002",
+        1.8842
+      ]
+    ],
+    "grill_restaurant": [
+      [
+        "rest_010",
+        1.8842
+      ],
+      [
+        "rest_002",
+        1.8842
+      ]
+    ],
+    "service_slow": [
+      [
+        "rest_002",
+        1.8842
+      ]
+    ],
+    "mainland": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "known": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "grilled": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "mainland_grill": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "restaurant_known": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "known_grilled": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "grilled_food": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "reliable_service": [
+      [
+        "rest_010",
+        2.2895
+      ]
+    ],
+    "food": [
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "food_calm": [
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "calm_seating": [
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "ambience_quiet": [
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "quiet_service": [
+      [
+        "rest_010",
+        1.8842
+      ]
+    ],
+    "late": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "night": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "bites": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "late-night": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "meals": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "environment": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "late_night": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "night_bites": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "bites_restaurant": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "affordable_late-night": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "late-night_meals": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "meals_busy": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "busy_environment": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "environment_price": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "ambience_busy": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "busy_service": [
+      [
+        "rest_011",
+        2.2895
+      ]
+    ],
+    "casual": [
+      [
+        "rest_012",
+        3.5869
+      ]
+    ],
+    "pepper": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "house": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "spicy": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "local": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "dishes": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "quick": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "pepper_house": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "house_restaurant": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "restaurant_spicy": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "spicy_local": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "local_dishes": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "dishes_quick": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "quick_service": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "service_and": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "and_casual": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "casual_seating": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ],
+    "seating_price": [
+      [
+        "rest_012",
+        2.2895
+      ]
+    ]
+  },
+  "item_categories": {
+    "rest_010": "restaurant",
+    "rest_011": "restaurant",
+    "rest_012": "restaurant",
+    "rest_001": "restaurant",
+    "rest_002": "restaurant",
+    "book_001": "book",
+    "book_002": "book",
+    "book_003": "book",
+    "prod_001": "kitchen",
+    "prod_002": "kitchen",
+    "prod_003": "kitchen"
+  },
+  "item_positive_counts": {
+    "rest_001": 1,
+    "book_001": 1,
+    "prod_001": 1
+  }
+}

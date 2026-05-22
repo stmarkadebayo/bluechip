@@ -1,0 +1,8 @@
+{
+  "type": "task_a_serving_policy",
+  "source_report": "deploy_lean_artifacts",
+  "metric": "demo_stability",
+  "serving_head": "profile_heuristic",
+  "metric_name": "deploy_safe_heuristic",
+  "metric_value": 0.0
+}

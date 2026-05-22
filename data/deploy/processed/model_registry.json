@@ -1,0 +1,67 @@
+{
+  "type": "bluechip_model_registry",
+  "registry_path": "data/deploy/processed/model_registry.json",
+  "feature_store": {
+    "root": "data/deploy/processed",
+    "available": true,
+    "counts": {}
+  },
+  "artifacts": {
+    "task_a_model": {
+      "kind": "model",
+      "path": "data/deploy/processed/task_a_model.json",
+      "version": "data/deploy/processed/task_a_model.json@1779175472:1613",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_a_rating_stats": {
+      "kind": "feature_stats",
+      "path": "data/deploy/processed/task_a_rating_stats.json",
+      "version": "data/deploy/processed/task_a_rating_stats.json@1779489438:2513",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_a_serving_policy": {
+      "kind": "policy",
+      "path": "data/deploy/processed/task_a_serving_policy.json",
+      "version": "data/deploy/processed/task_a_serving_policy.json@1779489438:216",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_b_retrieval_index": {
+      "kind": "index",
+      "path": "data/deploy/processed/collaborative_retrieval.json",
+      "version": "data/deploy/processed/collaborative_retrieval.json@1779437577:1009",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_b_review_term_index": {
+      "kind": "index",
+      "path": "data/deploy/processed/review_term_retrieval.json",
+      "version": "data/deploy/processed/review_term_retrieval.json@1779437577:26411",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_b_implicit_item_index": {
+      "kind": "index",
+      "path": "data/deploy/processed/item_neighbors.json",
+      "version": "data/deploy/processed/item_neighbors.json@1779437577:73",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_b_evidence_graph_index": {
+      "kind": "index",
+      "path": "data/deploy/processed/evidence_graph_retrieval.json",
+      "version": "data/deploy/processed/evidence_graph_retrieval.json@1779437577:7405",
+      "exists": true,
+      "source": "deploy_bundle"
+    },
+    "task_b_neural_index": {
+      "kind": "index",
+      "path": "data/deploy/processed/neural_index.faiss",
+      "version": "data/deploy/processed/neural_index.faiss@1779414819:16941",
+      "exists": true,
+      "source": "deploy_bundle"
+    }
+  }
+}

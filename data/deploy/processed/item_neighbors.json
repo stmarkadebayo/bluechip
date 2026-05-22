@@ -1,0 +1,5 @@
+{
+  "type": "positive_item_cooccurrence",
+  "top_k": 20,
+  "items": {}
+}
