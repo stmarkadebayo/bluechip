@@ -8,7 +8,7 @@ Score 1-5 for each generated review:
 - `groundedness`: claims are supported by user history and item facts.
 - `specificity`: review is concrete rather than generic.
 
-Generated reviews are produced by the local deterministic Task A fallback shape so the pack can be created without sending eval rows to an external LLM provider.
+Generated reviews are produced by the local deterministic Task A fallback, so the pack can be created without sending eval rows to an external LLM provider. The fallback intentionally varies openings and avoids first-sentence rating boilerplate.
 
 ## A-001
 
@@ -20,7 +20,7 @@ Generated reviews are produced by the local deterministic Task A fallback shape 
 
 Generated review:
 
-> I would rate Herbivore - Natural Sea Mist Texturizing Salt Spray (Coconut, 8 oz) 4 out of 5. Sea, spray, smell, mist, coconut, and beach supports that rating, and it fits what I usually look for.
+> Herbivore - Natural Sea Mist Texturizing Salt Spray (Coconut, 8 oz) feels like a 4 out of 5 for me. Sea, spray, smell, mist, coconut, and beach stood out first, and this would probably work for me.
 
 User history:
 
@@ -44,7 +44,7 @@ Notes:
 
 Generated review:
 
-> I would rate muaowig Ombre Body Wave Bundles 1B Grey Human Hair Bundles 8 10 12 inch Hair Weave Body Wave Brazilian Remy Hair Bundles Ombre Hair Extensions 3 Bundles By Muao,Grey Body Wave 4 out of 5. Hair, bundles, grey, body, wave, and can supports that rating, and it fits what I usually look for.
+> Hair, bundles, grey, body, wave, and can is the main reason muaowig Ombre Body Wave Bundles 1B Grey Human Hair Bundles 8 10 12 inch Hair Weave Body Wave Brazilian Remy Hair Bundles Ombre Hair Extensions 3 Bundles By Muao,Grey Body Wave lands at 4 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -68,7 +68,7 @@ Notes:
 
 Generated review:
 
-> I would rate NIRA Skincare Laser & Serum Bundle - Includes Anti-Aging Laser & Hyaluronic Acid Serum - Reduces Appearance of Fine Lines & Wrinkles - FDA Cleared 4 out of 5. Skin, nice, really, highly, recommend, and laser supports that rating, and it fits what I usually look for.
+> NIRA Skincare Laser & Serum Bundle - Includes Anti-Aging Laser & Hyaluronic Acid Serum - Reduces Appearance of Fine Lines & Wrinkles - FDA Cleared feels like a 4 out of 5 for me. Skin, nice, really, highly, recommend, and laser stood out first, and this would probably work for me.
 
 User history:
 
@@ -92,7 +92,7 @@ Notes:
 
 Generated review:
 
-> I would rate 2 Pieces Hair Brush Cleaner Cleaning Tool Comb Cleaner Hair Brush Cleaner Comb Brushes Mini Hair Dirt Remover Brush with Metal Wire Rake Wooden Handle for Home and Salon Use (Black) 3 out of 5. Hair, brush, cleaner, comb, these, and cleaning supports that rating, and it has useful strengths but also a few tradeoffs. I would still watch out for nothing, special, unfortunately, and waited.
+> Hair, brush, cleaner, comb, these, and cleaning is the main reason 2 Pieces Hair Brush Cleaner Cleaning Tool Comb Cleaner Hair Brush Cleaner Comb Brushes Mini Hair Dirt Remover Brush with Metal Wire Rake Wooden Handle for Home and Salon Use (Black) lands at 3 out of 5. For my taste, I see the useful parts, but I am not fully sold. I would still watch out for nothing, special, unfortunately, and waited.
 
 User history:
 
@@ -116,7 +116,7 @@ Notes:
 
 Generated review:
 
-> I would rate Body + Soul: The '70s (Time-Life) 5 out of 5. Butter, good, shea, body, soul, and time-life supports that rating, and it fits what I usually look for.
+> Body + Soul: The '70s (Time-Life) feels like a 5 out of 5 for me. Butter, good, shea, body, soul, and time-life stood out first, and this would probably work for me.
 
 User history:
 
@@ -140,7 +140,7 @@ Notes:
 
 Generated review:
 
-> I would rate Adofect 31 Pairs Gold Eye Mask Collagen Eye Gel Pads Under Eye Mask for Puffiness and Dark Circle Under Eye Patches for Women and Men, Gold 5 out of 5. Eye, under, mask, skin, patches, and gold supports that rating, and it fits what I usually look for.
+> I am at 5 out of 5 on Adofect 31 Pairs Gold Eye Mask Collagen Eye Gel Pads Under Eye Mask for Puffiness and Dark Circle Under Eye Patches for Women and Men, Gold. Eye, under, mask, skin, patches, and gold is what carries it, though this would probably work for me.
 
 User history:
 
@@ -164,7 +164,7 @@ Notes:
 
 Generated review:
 
-> I would rate Halo Hair Extensions Thick Invisible Wire Hair Extension with Transparent Headband Hairpieces 4 Types Adjustable Headwidth Size Wavy Curly Long 18 Inches Artificial Human Hair Hairpiece for Women Girls Heat-resistant Fiber with 2 Pcs Removable Secure Clips 145g(5.11oz) (Golden Blonde Mix Bleach Blonde Highlights) 4 out of 5. Hair, they, gift, always, these, and size supports that rating, and it fits what I usually look for.
+> I am at 4 out of 5 on Halo Hair Extensions Thick Invisible Wire Hair Extension with Transparent Headband Hairpieces 4 Types Adjustable Headwidth Size Wavy Curly Long 18 Inches Artificial Human Hair Hairpiece for Women Girls Heat-resistant Fiber with 2 Pcs Removable Secure Clips 145g(5.11oz) (Golden Blonde Mix Bleach Blonde Highlights). Hair, they, gift, always, these, and size is what carries it, though this would probably work for me.
 
 User history:
 
@@ -188,7 +188,7 @@ Notes:
 
 Generated review:
 
-> I would rate Premium Life Rain Hat With Full Visor 4 out of 5. Rain, hat, full, visor, premium, and life supports that rating, and it fits what I usually look for.
+> I am at 4 out of 5 on Premium Life Rain Hat With Full Visor. Rain, hat, full, visor, premium, and life is what carries it, though this would probably work for me.
 
 User history:
 
@@ -212,7 +212,7 @@ Notes:
 
 Generated review:
 
-> I would rate Chialstar (2 Pack) Shampoo Brush | Hair Scalp Massager, Soft Silicone Scalp Care Brush [Wet & Dry] Perfect for Men, Women, Kids and Pets (Pink/Green) 4 out of 5. Scalp, hair, your, brush, massager, and chialstar supports that rating, and it fits what I usually look for.
+> Chialstar (2 Pack) Shampoo Brush | Hair Scalp Massager, Soft Silicone Scalp Care Brush [Wet & Dry] Perfect for Men, Women, Kids and Pets (Pink/Green) feels like a 4 out of 5 for me. Scalp, hair, your, brush, massager, and chialstar stood out first, and this would probably work for me.
 
 User history:
 
@@ -236,7 +236,7 @@ Notes:
 
 Generated review:
 
-> I would rate 24 Eyebrow stencil , Meilala Eyebrow Shaper Kit ,Reusable Eyebrow Template Eye Brown Shape Kit With Eyebrow Razor… 4 out of 5. Eyebrow, kit, eye, your, gift, and stencil supports that rating, and it fits what I usually look for.
+> Eyebrow, kit, eye, your, gift, and stencil is the main reason 24 Eyebrow stencil , Meilala Eyebrow Shaper Kit ,Reusable Eyebrow Template Eye Brown Shape Kit With Eyebrow Razor… lands at 4 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -260,7 +260,7 @@ Notes:
 
 Generated review:
 
-> I would rate DAWEIF Crystal Rhinestone Bowknot Barrette French Bridal Hair Clips Hairpin Headwear for Women Girls 4 out of 5. Fine, single, pins, daweif, crystal, and rhinestone supports that rating, and it fits what I usually look for.
+> Fine, single, pins, daweif, crystal, and rhinestone is the main reason DAWEIF Crystal Rhinestone Bowknot Barrette French Bridal Hair Clips Hairpin Headwear for Women Girls lands at 4 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -284,7 +284,7 @@ Notes:
 
 Generated review:
 
-> I would rate DoorDash Gift Card 4 out of 5. Great, tried, many, doordash, gift, and card supports that rating, and it fits what I usually look for.
+> Great, tried, many, doordash, gift, and card is the main reason DoorDash Gift Card lands at 4 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -308,7 +308,7 @@ Notes:
 
 Generated review:
 
-> I would rate S. FERRAGAMO Subtil Homme Edt Spray 3.3 OZ 5 out of 5. Perfume, pero, ferragamo, subtil, homme, and edt supports that rating, and it fits what I usually look for.
+> S. FERRAGAMO Subtil Homme Edt Spray 3.3 OZ feels like a 5 out of 5 for me. Perfume, pero, ferragamo, subtil, homme, and edt stood out first, and this would probably work for me.
 
 User history:
 
@@ -332,7 +332,7 @@ Notes:
 
 Generated review:
 
-> I would rate Rhinestones for Acrylic Nails, Nail Gems Jewels Crystals 7660Pcs Red Flatback Nail Rhinestones Mutil Shapes Sizes for Nail Art Design, Non-Hotfix Rhinestones Kit with Tweezers Storage Box 3 out of 5. Rhinestones, nail, gems, acrylic, crystals, and kit supports that rating, and it has useful strengths but also a few tradeoffs. I would still watch out for sizing, all, and off.
+> I am at 3 out of 5 on Rhinestones for Acrylic Nails, Nail Gems Jewels Crystals 7660Pcs Red Flatback Nail Rhinestones Mutil Shapes Sizes for Nail Art Design, Non-Hotfix Rhinestones Kit with Tweezers Storage Box. Rhinestones, nail, gems, acrylic, crystals, and kit is what carries it, though I see the useful parts, but I am not fully sold. I would still watch out for sizing, all, and off.
 
 User history:
 
@@ -356,7 +356,7 @@ Notes:
 
 Generated review:
 
-> I would rate Sonic Facial Cleansing Brush, Electric Silicone Face Brush and Massager, Waterproof Silicone Face Scrubber for Deep Cleansing, Exfoliating, Blackhead Removing, Rechargeable,for Girls Gifts 3 out of 5. Brush, skin, silicone, great, facial, and face supports that rating, and it has useful strengths but also a few tradeoffs.
+> Sonic Facial Cleansing Brush, Electric Silicone Face Brush and Massager, Waterproof Silicone Face Scrubber for Deep Cleansing, Exfoliating, Blackhead Removing, Rechargeable,for Girls Gifts feels like a 3 out of 5 for me. Brush, skin, silicone, great, facial, and face stood out first, and I see the useful parts, but I am not fully sold.
 
 User history:
 
@@ -380,7 +380,7 @@ Notes:
 
 Generated review:
 
-> I would rate Sailor Moon x Colourpop Collection - From The Moon - Pressed Powder Blush (From The Moon) 5 out of 5. Moon, feet, completely, use, spray, and natural supports that rating, and it fits what I usually look for.
+> I am at 5 out of 5 on Sailor Moon x Colourpop Collection - From The Moon - Pressed Powder Blush (From The Moon). Moon, feet, completely, use, spray, and natural is what carries it, though this would probably work for me.
 
 User history:
 
@@ -404,7 +404,7 @@ Notes:
 
 Generated review:
 
-> I would rate Frankies Bikinis Lip Butter Gloss, Sleeping Vegan Lip Mask Overnight, Moisturizing Lip Plumper, Vitamin E Lip Balm Moisturizer, Hydrating Lip Oil with Cocoa Butter, Made in USA, Guava 0.7 Ounces 4 out of 5. Skin, one, they, them, like, and use supports that rating, and it fits what I usually look for.
+> Skin, one, they, them, like, and use is the main reason Frankies Bikinis Lip Butter Gloss, Sleeping Vegan Lip Mask Overnight, Moisturizing Lip Plumper, Vitamin E Lip Balm Moisturizer, Hydrating Lip Oil with Cocoa Butter, Made in USA, Guava 0.7 Ounces lands at 4 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -428,7 +428,7 @@ Notes:
 
 Generated review:
 
-> I would rate 4pcs Button Headbands Set for Mask- Non Slip Elastic Headbands with Button in 4 Colors Ear Protection Nurse Headbands Sports Head Wrap for Women Men Yoga Sports Outdoor Activities Doctor Nurse Gift 3 out of 5. Button, headbands, slip, nurse, sports, and head supports that rating, and it has useful strengths but also a few tradeoffs. I would still watch out for paint, off, worn, and days.
+> I am at 3 out of 5 on 4pcs Button Headbands Set for Mask- Non Slip Elastic Headbands with Button in 4 Colors Ear Protection Nurse Headbands Sports Head Wrap for Women Men Yoga Sports Outdoor Activities Doctor Nurse Gift. Button, headbands, slip, nurse, sports, and head is what carries it, though I see the useful parts, but I am not fully sold. I would still watch out for paint, off, worn, and days.
 
 User history:
 
@@ -452,7 +452,7 @@ Notes:
 
 Generated review:
 
-> I would rate Schar Deli-Style Bread Gluten Free -- 8.5 oz Each / Pack of 2 5 out of 5. Nail, amazon, bread, product, gluten-free, and good supports that rating, and it fits what I usually look for.
+> Schar Deli-Style Bread Gluten Free -- 8.5 oz Each / Pack of 2 feels like a 5 out of 5 for me. Nail, amazon, bread, product, gluten-free, and good stood out first, and this would probably work for me.
 
 User history:
 
@@ -476,7 +476,7 @@ Notes:
 
 Generated review:
 
-> I would rate Color Club Nail Lacquer Halo Hues Collection - Cloud Nine 5 out of 5. Nail, colors, color, club, polish, and lacquer supports that rating, and it fits what I usually look for.
+> Color Club Nail Lacquer Halo Hues Collection - Cloud Nine feels like a 5 out of 5 for me. Nail, colors, color, club, polish, and lacquer stood out first, and this would probably work for me.
 
 User history:
 
@@ -500,7 +500,7 @@ Notes:
 
 Generated review:
 
-> I would rate LUMOSMAX Hair Growth Serum with built-in Scalp Massager - Promotes Hair Care and improves Scalp Health while Nourishing Scalp | Serum Applicator for Women 5 out of 5. Hair, great, like, works, well, and use supports that rating, and it fits what I usually look for.
+> Hair, great, like, works, well, and use is the main reason LUMOSMAX Hair Growth Serum with built-in Scalp Massager - Promotes Hair Care and improves Scalp Health while Nourishing Scalp | Serum Applicator for Women lands at 5 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -524,7 +524,7 @@ Notes:
 
 Generated review:
 
-> I would rate (PACK of 2) 0lay Regenerist Micro-Sculpting Serum Advanced Anti-Aging Moisturize - 1.7 Fl Oz (50ml) EACH 5 out of 5. Love, look, mascara, lashes, pack, and lay supports that rating, and it fits what I usually look for.
+> Love, look, mascara, lashes, pack, and lay is the main reason (PACK of 2) 0lay Regenerist Micro-Sculpting Serum Advanced Anti-Aging Moisturize - 1.7 Fl Oz (50ml) EACH lands at 5 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -548,7 +548,7 @@ Notes:
 
 Generated review:
 
-> I would rate SUBWAY Gift Card 5 out of 5. Good, product, subway, gift, give, and card supports that rating, and it fits what I usually look for.
+> Good, product, subway, gift, give, and card is the main reason SUBWAY Gift Card lands at 5 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -572,7 +572,7 @@ Notes:
 
 Generated review:
 
-> I would rate Amazon Reload 5 out of 5. Your, balance, gift, card, amazon, and reload supports that rating, and it fits what I usually look for.
+> Your, balance, gift, card, amazon, and reload is the main reason Amazon Reload lands at 5 out of 5. For my taste, this would probably work for me.
 
 User history:
 
@@ -596,7 +596,7 @@ Notes:
 
 Generated review:
 
-> I would rate Bed Head Curve Check Curling Wand for Tousled Waves and Texture, Jumbo Barrel 4 out of 5. Tousled, texture, waves, bed, head, and curve supports that rating, and it fits what I usually look for. The only thing I would keep in mind is magazine, excited, didn, and find.
+> Tousled, texture, waves, bed, head, and curve is the main reason Bed Head Curve Check Curling Wand for Tousled Waves and Texture, Jumbo Barrel lands at 4 out of 5. For my taste, this would probably work for me. The only thing I would keep in mind is magazine, excited, didn, and find.
 
 User history:
 

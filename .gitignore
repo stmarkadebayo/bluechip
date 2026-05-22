@@ -12,6 +12,7 @@ __pycache__/
 htmlcov/
 *.sqlite
 *.sqlite3
+!data/deploy/processed/*.sqlite
 runs/*
 !runs/.gitkeep
 data/raw/*
