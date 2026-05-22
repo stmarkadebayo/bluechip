@@ -1,258 +1,356 @@
-# Literature Review and Technical Direction
+# Bluechip Literature Review and Implementation Map
 
-This document captures the research and industry patterns that should shape the Bluechip hackathon system.
+Search date: 2026-05-22
 
-The goal is not to cite papers for decoration. The goal is to choose an implementation strategy that is defensible, measurable, scalable, and aligned with the challenge brief.
+This review maps the DSN x BCT hackathon brief, the current Bluechip codebase, and the recommendation / LLM-agent literature. The goal is to be useful for the submission paper and engineering direction, not to cite papers decoratively.
 
-## Executive Takeaways
+## Executive Answer
 
-1. Build one shared user-intelligence engine, not two unrelated demos.
-2. Use a multi-stage recommender architecture: candidate generation, filtering, ranking, optional reranking, explanation.
-3. Use the LLM late in the pipeline for reasoning, review generation, explanations, and validation. Do not ask it to rank an entire catalog.
-4. Treat Task A as an explainable recommendation / personalized review generation problem: rating prediction and text generation must be jointly consistent.
-5. Treat Task B as a hybrid recommender problem: behavior signals, item metadata, text embeddings, context, and popularity all matter.
-6. Make baselines strong. Recommender literature has a reproducibility problem; tuned baselines often beat flashy models.
-7. Precompute profiles, embeddings, summaries, and indexes offline. Keep request-time serving cheap.
-8. Evaluate with held-out interactions, not just demos.
+Yes, we still need an internal human evaluation pass, but with one nuance: the brief says the judges conduct the official human evaluation during judging. Our labels do not replace that official score. They help us tune the submission, catch weak examples before judges see them, and report a bounded human study in the solution paper.
 
-## Foundational Papers
+The brief assigns human scoring to both tasks:
 
-| Area | Source | Core Idea | What We Should Use |
+- Task A: Behavioural Fidelity, 20 points.
+- Task B: Contextual Relevance, 20 points.
+
+The repo has generated human-eval packs, but their scoring columns are still blank:
+
+- `docs/human_eval_task_a.md`
+- `docs/human_eval_task_b.md`
+- `docs/human_eval_task_b_contextual.md`
+
+Minimum defensible path:
+
+1. Use 2 or 3 human reviewers.
+2. Score all 25 Task A examples and all 20 contextual Task B examples.
+3. Average scores by dimension and report the mean, standard deviation, and reviewer count in the solution paper.
+4. If there is only time for one reviewer, label it as a bounded human review rather than a full inter-rater study.
+
+Do this before adding more model complexity. It prepares us for 40 combined rubric points across both tasks and gives the solution paper stronger evidence than automated metrics alone.
+
+## What We Have Actually Implemented
+
+The current system is not a clone of one paper. It is a pragmatic hybrid recommender and review-simulation system that implements the architecture patterns behind several strong papers and industry systems.
+
+| Area | Status | Main code | Honest claim |
 | --- | --- | --- | --- |
-| Collaborative filtering | [BPR: Bayesian Personalized Ranking from Implicit Feedback](https://arxiv.org/abs/1205.2618) | Optimize pairwise ranking from implicit signals. | Use BPR/implicit-feedback baselines for Task B. |
-| Neural collaborative filtering | [Neural Collaborative Filtering](https://arxiv.org/abs/1708.05031) | Replace inner product user-item interaction with learned neural interaction. | Cite as a stronger learned ranker path, but do not start here. |
-| Large-scale hybrid ranking | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/1606.07792) | Combine memorization and generalization for production ranking. | Use this as justification for hybrid feature scoring. |
-| Feature interaction ranking | [DeepFM](https://arxiv.org/abs/1703.04247) | Learn low- and high-order feature interactions without heavy manual feature engineering. | Future learned ranker direction. |
-| Production deep recsys | [DLRM](https://arxiv.org/abs/1906.00091) | Embeddings plus dense feature interactions for personalization. | Cite in scalability section; not needed for MVP. |
-| Sequential recommendation | [SASRec](https://arxiv.org/abs/1808.09781) | Use self-attention over recent user actions. | Use sequence-aware features: recent positives should weigh more than old history. |
-| Sequential masked modeling | [BERT4Rec](https://arxiv.org/abs/1904.06690) | Bidirectional transformer-style sequence modeling for next-item prediction. | Stretch goal for sequence modeling, not MVP. |
-| Graph recommendation | [LightGCN](https://arxiv.org/abs/2002.02126) | Simplifies graph convolution for collaborative filtering. | Useful if we model users/items as a graph later. |
-| Reproducibility warning | [Are We Really Making Much Progress?](https://arxiv.org/abs/1907.06902) | Many neural recsys papers are hard to reproduce and weak against baselines. | We need honest baselines and ablations in the paper. |
+| Multi-stage recommendation | Implemented | `app/services/retrieval/candidates.py`, `app/services/ranking/recommendation.py` | Candidate generation and ranking are separate, matching the large-scale two-stage pattern. |
+| Item-to-item / co-engagement retrieval | Implemented | `app/services/retrieval/candidates.py`, retrieval artifacts | We use item-neighbor and co-engagement style retrieval. |
+| Review-text user and item profiles | Implemented | `app/services/profiling/`, `app/services/intelligence/` | We use review text to build user and item signals. |
+| Evidence graph retrieval | Implemented as lightweight graph features | `app/services/retrieval/evidence_graph.py`, `scripts/build_evidence_graph.py` | We use graph-like co-engagement, aspect, and sequence evidence. We do not train a neural GNN. |
+| Semantic retrieval | Implemented | `app/services/retrieval/neural_embeddings.py`, `app/services/retrieval/vector_store.py` | We use sentence-transformers plus FAISS as a swappable vector retrieval path. |
+| Rating-first review generation | Implemented | `app/serving/orchestrators/review_simulation.py`, `app/services/generation/` | Rating is predicted before review text is generated, keeping text aligned with the metric decision. |
+| Grounded LLM generation and explanation | Implemented with fallback | `app/services/generation/`, `app/services/agentic/` | LLMs write reviews, explanations, profile enrichments, and reasoning summaries after deterministic decisions exist. |
+| Bounded LLM profile enrichment | Implemented | `app/services/profiling/profile_enhancer.py` | LLM-inferred fields merge into deterministic profiles with caps, confidence, and fallback. |
+| SQLite feature store | Implemented as Phase 1 | `app/platform/feature_store.py`, `scripts/build_sqlite_feature_store.py` | SQLite improves local serving and point lookups; it is not yet a 10/10 production feature store. |
+| Evaluation spine | Implemented | `eval/`, `docs/evaluation/` | We measure RMSE, ROUGE-L, optional BERTScore, candidate Recall@K, HitRate@K, NDCG@K, sparse and cross-domain slices. |
+| Human eval | Pack generated, labels missing | `docs/human_eval_*.md` | Needs human scoring before final submission claims. |
 
-## Review Generation and Explainable Recommendation
+## Papers And Systems We Can Honestly Say Influenced The Implementation
 
-Task A maps directly to this literature. The right framing is not "make an LLM write a review." The right framing is "predict a rating and generate a personalized textual explanation/review consistent with the user and item."
+### Multi-stage Recommender Architecture
 
-| Source | Core Idea | Implementation Implication |
-| --- | --- | --- |
-| [NRT: Neural Rating Regression with Abstractive Tips Generation](https://arxiv.org/abs/1708.00154) | Jointly predict rating and generate short text reflecting user experience. | Keep rating prediction and review generation coupled. |
-| [PETER: Personalized Transformer for Explainable Recommendation](https://arxiv.org/abs/2105.11601) | Personalized generation can use user and item identities plus text generation objectives. | Our prompt context should include user profile, item profile, examples, and rating. |
-| [PEPLER: Personalized Prompt Learning for Explainable Recommendation](https://arxiv.org/abs/2202.07371) | Prompt learning can fuse user/item identifiers with pretrained language models. | If we add trainable components, use soft prompts/adapters before full fine-tuning. |
-| [MAPLE: Multi-Aspect Prompt Learning](https://arxiv.org/abs/2408.09865) | Multi-aspect prompts improve review generation coherence and factual relevance. | Represent item aspects like price, service, ambience, durability, quality, etc. |
+[Deep Neural Networks for YouTube Recommendations](https://research.google.com/pubs/pub45530.html?authuser=1) is the clearest industry precedent for splitting recommendation into candidate generation and ranking. The paper describes a two-stage system: a candidate generator first narrows the catalog, then a ranking model scores the smaller set.
 
-Design decision:
+Bluechip implements this pattern directly:
+
+- retrieval heads generate candidates;
+- source attribution is preserved;
+- ranking happens after retrieval;
+- explanations happen after ranking;
+- eval separates candidate recall from top-10 ranking quality.
+
+This is one of the strongest architectural alignments in the repo.
+
+### Item-to-item Collaborative Filtering
+
+[Amazon's recommendation history](https://www.amazon.science/the-history-of-amazons-recommendation-algorithm) explains why item-to-item collaborative filtering scales well: use recent user history to fetch related products, then weight candidates by relatedness.
+
+Bluechip implements the same idea locally through:
+
+- co-visitation retrieval;
+- lexical item-neighbor retrieval;
+- category-affinity popular fallback;
+- held-out future interaction evaluation.
+
+We should cite this as an architectural and retrieval-pattern influence, not as a claim that we implemented Amazon's exact production algorithm.
+
+### BPR And Implicit-feedback Ranking
+
+[BPR: Bayesian Personalized Ranking from Implicit Feedback](https://arxiv.org/abs/1205.2618) gives the classic pairwise ranking objective for implicit interactions.
+
+Current status:
+
+- Not implemented as a trained model.
+- The eval frame is compatible with BPR-style ranking.
+- It is the best next baseline to add through `implicit` or RecBole.
+
+Use this phrasing in the paper:
+
+> We evaluate with ranking metrics suitable for implicit recommendation and leave trained BPR/ALS baselines as a next reproducibility extension.
+
+Do not claim that Bluechip currently trains BPR.
+
+### Wide & Deep / Hybrid Memorization And Generalization
+
+[Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/1606.07792) argues for combining memorization from sparse/crossed features with generalization from dense embeddings.
+
+Bluechip's current scorer is not a trained Wide & Deep model, but it follows the same practical motivation:
+
+- collaborative and co-engagement signals handle memorized behavior;
+- profile, aspect, category, context, and vector signals generalize to sparse/cold-start cases;
+- a single ranker combines these components.
+
+Honest claim:
+
+> The ranker is a transparent hybrid scorer inspired by Wide & Deep's memorization/generalization split, not a trained Wide & Deep neural model.
+
+### Review-aware User And Item Modeling
+
+[DeepCoNN](https://arxiv.org/abs/1701.04783) jointly models users and items from review text. It uses parallel networks over user reviews and item reviews.
+
+Bluechip implements the non-neural equivalent:
+
+- user profiles are built from prior reviews, ratings, categories, aspects, and terms;
+- item profiles are built from metadata and review-derived evidence;
+- both profiles feed rating prediction, ranking, and generation.
+
+Honest claim:
+
+> We implement review-aware user and item profiling in the spirit of DeepCoNN, but not its CNN architecture.
+
+### Review Usefulness And Explanation Evidence
+
+[NARRE](https://doi.org/10.1145/3178876.3186070) uses review-level attention to weight useful reviews for rating prediction and explanation.
+
+Bluechip partially mirrors the motivation:
+
+- it extracts aspect and term evidence;
+- it preserves source families for recommendations;
+- it validates groundedness and sensitive-inference risk;
+- it exposes candidate sources in contextual human-eval packs.
+
+Honest claim:
+
+> We use explicit evidence selection and source attribution, not neural review-level attention.
+
+### Personalized Explanation And Review Generation
+
+[PETER](https://arxiv.org/abs/2105.11601) and [PEPLER](https://arxiv.org/abs/2202.07371) are the closest match for Task A and recommendation explanations because they combine personalization with natural-language generation.
+
+Bluechip implements the serving pattern, not the trained models:
+
+- predict or rank first;
+- build a grounded plan;
+- generate review/explanation text conditioned on the user, item, rating, and evidence;
+- validate consistency after generation.
+
+Honest claim:
+
+> We implement a rating-conditioned, evidence-grounded generation pipeline influenced by explainable recommendation work; we do not train PETER or PEPLER.
+
+### Retrieval-augmented Generation
+
+[RAG](https://arxiv.org/abs/2005.11401) combines model generation with non-parametric retrieved memory to improve specificity and factuality.
+
+Bluechip uses the RAG pattern throughout:
+
+- retrieve user/item/context evidence first;
+- pass only bounded evidence into the LLM;
+- require deterministic fallback;
+- validate grounding and consistency.
+
+This is safe to claim as implemented at the system-pattern level.
+
+### Agentic Reasoning
+
+[ReAct](https://arxiv.org/abs/2210.03629) combines language-model reasoning traces with actions against external tools or environments.
+
+Bluechip is ReAct-adjacent, not a full ReAct agent:
+
+- the orchestrators call explicit profiling, retrieval, ranking, generation, and validation tools;
+- LLM calls can produce structured reasoning summaries;
+- traces capture the path taken.
+
+But the system does not run an open-ended thought/action loop. This is intentional for reproducibility, latency, and hackathon demo reliability.
+
+### Sequential Recommendation
+
+[SASRec](https://huggingface.co/papers/1808.09781) models user action histories with self-attention.
+
+Current status:
+
+- Bluechip has sequential and recent-history features.
+- Bluechip does not train a SASRec model.
+- SASRec is a strong next baseline if we want a true sequence model.
+
+The original [SASRec GitHub repo](https://github.com/kang205/SASRec) is useful for understanding data formatting, but RecBole is likely faster to integrate for our repo.
+
+### HSTU / Generative Recommenders
+
+[Actions Speak Louder than Words: Trillion-Parameter Sequential Transducers for Generative Recommendations](https://arxiv.org/abs/2402.17152) introduces HSTU for large-scale sequential generative recommendation.
+
+Current status:
+
+- We do not implement HSTU.
+- We do have a target architecture slot for sequence-aware ranking.
+- HSTU is overkill for the hackathon deadline and our current bottleneck.
+
+Reason:
+
+Task B's measured bottleneck is candidate recall. A heavy sequence model will not help if the held-out item is not in the candidate pool often enough.
+
+Use [meta-recsys/generative-recommenders](https://github.com/facebookresearch/generative-recommenders) as a reference implementation only.
+
+### Graph Recommendation
+
+[LightGCN](https://arxiv.org/abs/2002.02126) simplifies graph convolution for collaborative filtering by focusing on neighborhood aggregation in the user-item graph.
+
+Bluechip currently has graph techniques, but not a GNN:
+
+- co-visitation/item-neighbor candidate edges;
+- aspect evidence graph;
+- sequential transition evidence;
+- source-family diagnostics;
+- graph-derived ranking features.
+
+Would a GNN be better?
+
+Not immediately. A LightGCN or PinSage-style model can help once the data split and candidate recall evaluation are stable, but the current system should first improve retrieval recall and add a cheap BPR/ALS baseline. A GNN is only worth adding if it beats same-slice Recall@50/100/1000 and does not hurt HitRate@10/NDCG@10.
+
+## Evaluation Literature And Metrics
+
+### Text Generation Metrics
+
+[ROUGE](https://aclanthology.org/W04-1013/) is implemented as a dependency-free lexical proxy in `eval/eval_task_a_generation.py`.
+
+[BERTScore](https://arxiv.org/abs/1904.09675) is supported as optional because it requires heavier dependencies and local/downloaded models. This is the right tradeoff for reproducibility: judges can run the core eval without model downloads, and a provider/model-enabled environment can run semantic scoring.
+
+### Ranking Metrics
+
+HitRate@K, Recall@K, and NDCG@K are the right shape for Task B because the target is a held-out future item or interaction.
+
+Bluechip's most important evaluation design is separation of:
+
+- candidate Recall@50/100/1000;
+- ranker HitRate@10 and NDCG@10;
+- sparse-user slices;
+- cross-domain slices;
+- source-family diagnostics.
+
+This prevents ranker tuning from hiding retrieval failure.
+
+### Human Evaluation
+
+Human eval is not optional for the brief's scoring, even though the official evaluation is judge-run. Our internal pass is still worth doing because it exposes whether the submitted outputs look behaviorally faithful and contextually relevant to humans.
+
+Recommended rubric:
+
+Task A:
+
+- rating fit;
+- voice fit;
+- groundedness;
+- specificity.
+
+Task B:
+
+- top-10 relevance;
+- context fit;
+- diversity;
+- explanation quality.
+
+Suggested reporting:
 
 ```text
-Task A = rating predictor + grounded review generator + consistency critic
+Task A human eval: n examples, r reviewers, mean score by dimension, mean overall.
+Task B contextual eval: n examples, r reviewers, mean score by dimension, mean overall.
+Disagreements were averaged; no reviewer saw model internals beyond the provided histories and outputs.
 ```
 
-The generator should not choose the rating. The rating model should predict first, then generation should explain that rating in the user's likely voice.
+## Technical Blogs And System Writeups That Should Shape The Next Version
 
-## LLM Recommender and Agent Papers
-
-LLM work is useful, but the scalable pattern is to augment conventional recommenders rather than replacing them.
-
-| Source | Core Idea | What We Should Use |
+| Source | Why it matters | Bluechip implication |
 | --- | --- | --- |
-| [RecMind: LLM Powered Agent for Recommendation](https://arxiv.org/abs/2308.14296) | Recommendation agents can use tools, reasoning, and external knowledge. | Present our runtime as profiler, retriever, scorer, generator, critic tools. |
-| [RecAgent](https://huggingface.co/papers/2306.02552) | LLM agents can simulate user behavior for recommender research. | Supports the user-behavior simulation story for Task A. |
-| [LLMRec: Graph Augmentation for Recommendation](https://arxiv.org/abs/2311.00423) | LLMs can improve graph features/data rather than serve every request online. | Use LLMs offline for profile/aspect enrichment when possible. |
-| [Large Language Models meet Collaborative Filtering](https://arxiv.org/abs/2404.11343) | LLMs can work with collaborative filtering efficiently. | Keep collaborative filtering and LLM reasoning separate. |
-| [Large Language Models for Generative Recommendation: Survey](https://huggingface.co/papers/2309.01157) | Surveys LLM roles in generative recommendation. | Cite for taxonomy and tradeoffs. |
-| [LLM4Rec Survey](https://www.mdpi.com/1999-5903/17/6/252) | Broad survey of LLM integration in recommenders. | Use for related work, but prioritize primary papers. |
+| [YouTube DNN recommendations](https://research.google.com/pubs/pub45530.html?authuser=1) | Candidate generation and ranking are separate models. | Keep improving recall before over-tuning ranker. |
+| [Pinterest Pixie](https://medium.com/pinterest-engineering/introducing-pixie-an-advanced-graph-based-recommendation-system-e7b4229b664b) | Real-time graph candidate generation with biased random walks. | Add a small Pixie-style random-walk retrieval head over our evidence graph. |
+| [Airbnb Embedding-Based Retrieval](https://airbnb.tech/ai-ml/embedding-based-retrieval-for-airbnb-search/) | ANN retrieval should be trained/evaluated as candidate narrowing, not final ranking. | Fine-tune or calibrate embeddings only if candidate recall improves on fixed slices. |
+| [Amazon Science recommender history](https://www.amazon.science/the-history-of-amazons-recommendation-algorithm) | Item-to-item similarity is scalable and practical. | Strengthen item-neighbor and co-visitation artifacts before heavier neural models. |
+| [Feast docs](https://docs.feast.dev/) | Feature stores need offline/online parity and low-latency serving. | Our SQLite store is Phase 1; 10/10 requires typed feature views, lineage, point-in-time training sets, and parity tests. |
+| [Feast point-in-time joins](https://docs.feast.dev/v0.17-branch/getting-started/concepts/point-in-time-joins) | Prevents target leakage when building training sets. | Add timestamped feature materialization before training learned rankers. |
+| [OpenTelemetry Python](https://opentelemetry.io/docs/languages/python/) | Standard tracing for services. | Keep JSONL traces for the hackathon; map them to OpenTelemetry later. |
+| [PostHog](https://posthog.com/) | Product analytics, flags, experiments, session replay. | Useful after launch for product analytics, not a replacement for offline eval or human eval. |
 
-Design decision:
+## GitHub Implementations Worth Using
 
-```text
-LLM roles:
-  - infer readable user profile from evidence
-  - extract item aspects from text/metadata
-  - explain top ranked candidates
-  - generate review text conditioned on predicted rating
-  - critique hallucination and rating-review mismatch
-
-Non-LLM roles:
-  - catalog candidate generation
-  - ranking thousands of candidates
-  - metric evaluation
-  - deterministic fallbacks
-```
-
-## Industry Systems
-
-The industry pattern is consistent: large systems use multiple stages and precompute expensive work.
-
-| Company / Source | Pattern | What We Should Copy |
+| Repo | Use it for | Recommendation |
 | --- | --- | --- |
-| [YouTube DNN recommendations](https://research.google.com/pubs/pub45530.html?authuser=1) | Two-stage system: candidate generation followed by ranking. | Build candidate generation and ranking as separate services. |
-| [Pinterest Pixie](https://medium.com/pinterest-engineering/introducing-pixie-an-advanced-graph-based-recommendation-system-e7b4229b664b) and [paper](https://arxiv.org/abs/1711.07601) | Real-time graph retrieval over massive item graph. | Add graph/item-neighbor retrieval as a candidate generator. |
-| [Airbnb embedding-based retrieval](https://airbnb.tech/ai-ml/embedding-based-retrieval-for-airbnb-search/) | Precompute item embeddings offline; only compute query/user side online. | Build embeddings offline and cache indexes. |
-| [Netflix recommendation overview](https://help.netflix.com/en/node/100639) | Combines user interactions, similar users, and item metadata. | Use hybrid signals rather than a single technique. |
-| [Netflix foundation model for personalization](https://netflixtechblog.com/foundation-model-for-personalized-recommendation-1a0bd8e02d39) | Unified personalization representation across many use cases. | Our shared UserProfile is the local version of this idea. |
-| [Amazon recommendation history](https://www.amazon.science/the-history-of-amazons-recommendation-algorithm) | Item-level similarity and evaluation tied to future behavior. | Implement item-to-item and held-out future interaction eval. |
-| [Spotify generalized user representations](https://research.atspotify.com/2025/9/generalized-user-representations-for-large-scale-recommendations) | Stable user embeddings reused across retrieval, ranking, and generation. | Create user profile embeddings and behavioral profile fields. |
-| [Uber two-tower embeddings](https://www.uber.com/blog/innovative-recommendation-applications-using-two-tower-embeddings/) | Two-tower retrieval for matching entities at scale. | Future learned candidate generator. |
+| [benfred/implicit](https://github.com/benfred/implicit) | ALS, BPR, logistic MF, item-item nearest neighbors for implicit feedback. | Highest-leverage next baseline. It is smaller than RecBole and matches our current data better. |
+| [RUCAIBox/RecBole](https://github.com/RUCAIBox/RecBole) | Standardized recommender baselines including sequential and graph models. | Use for benchmark scripts, not as the serving stack. |
+| [recommenders-team/recommenders](https://github.com/recommenders-team/recommenders) | Microsoft best-practice notebooks and evaluation patterns. | Borrow eval/report structure and baseline examples. |
+| [meta-recsys/generative-recommenders](https://github.com/facebookresearch/generative-recommenders) | HSTU reference implementation. | Research reference only; too heavy for the hackathon app. |
+| [kang205/SASRec](https://github.com/kang205/SASRec) | Original SASRec implementation and sequential data format. | Useful reference; RecBole is likely easier for a modern baseline. |
+| [chenchongthu/NARRE](https://github.com/chenchongthu/NARRE) | Neural attentional rating regression with review-level explanations. | Useful reference for evidence weighting; too old to import directly without modernization. |
+| [lileipisces/PETER](https://github.com/lileipisces/PETER) | Personalized transformer explanation generation. | Use to improve Task A paper framing and eval format, not as immediate dependency. |
+| [lileipisces/PEPLER](https://github.com/lileipisces/PEPLER) | Personalized prompt learning for explainable recommendation. | Stretch reference for trainable personalized generation. |
+| [feast-dev/feast](https://github.com/feast-dev/feast) | Feature store concepts, registry, online/offline separation. | Adopt concepts now; consider dependency only after hackathon. |
+| [huggingface/sentence-transformers](https://github.com/UKPLab/sentence-transformers) | Semantic embeddings and rerankers. | Already used for embeddings; next step is domain-specific fine-tuning or cross-encoder reranking only on top candidates. |
+| [NVIDIA Merlin](https://github.com/NVIDIA-Merlin/Merlin) | Production-scale GPU recommender stack. | Good architecture reference, too heavy for this repo now. |
 
-Design decision:
+## Frozen Next Work Before Submission
 
-```text
-Runtime Task B flow:
-  1. retrieve 200-500 candidates cheaply
-  2. blend collaborative, lexical, vector, category, and popularity sources
-  3. filter hard mismatches and previously seen items
-  4. rank with hybrid score
-  5. evaluate candidate recall before tuning final rank quality
-  6. optionally LLM-rerank/explain top 10 only
-```
+The active submission freeze is in `docs/SUBMISSION_FREEZE.md`. Before the final submission, the only new model work in scope is the `implicit` baseline pass: ALS, BPR, and item-item on `data/processed/all_categories`.
 
-## Useful Open-Source Repositories
+LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, and trained Wide & Deep remain future work for this deadline. They are useful research references, but starting them now would add too much integration and validation risk.
 
-| Repo | Why It Matters | How We Should Use It |
-| --- | --- | --- |
-| [RecBole](https://github.com/RUCAIBox/RecBole) | Broad benchmark framework with many recommender algorithms and evaluation protocols. | Use for baseline reference or optional benchmark runner. |
-| [Microsoft Recommenders](https://github.com/recommenders-team/recommenders) | Practical examples and best practices for recommendation systems. | Borrow evaluation structure and baseline patterns. |
-| [NVIDIA Merlin](https://github.com/NVIDIA-Merlin/Merlin) | End-to-end GPU-accelerated recommender stack. | Cite as production-scale analog; too heavy for MVP. |
-| [implicit](https://github.com/benfred/implicit) | Fast ALS/BPR/nearest-neighbor models for implicit feedback. | Strong local baseline candidate for Task B. |
-| [Cornac](https://github.com/PreferredAI/cornac) | Multimodal recommender framework with rating and ranking metrics. | Good if we want text-aware baselines and standard metrics. |
-| [PETER](https://github.com/lileipisces/PETER) | Reference implementation for personalized transformer explanation generation. | Study data format and eval choices for Task A. |
-| [PEPLER](https://github.com/lileipisces/PEPLER) | Personalized prompt learning reference. | Stretch direction for trainable generation. |
-| [LightFM](https://github.com/lyst/lightfm) | Hybrid matrix factorization with user/item features. | Good baseline for cold-start if install works. |
+## What To Add Next, In Priority Order
 
-Recommendation:
+1. Complete human eval scoring.
 
-- Use our own simple pipeline for the submitted app.
-- Use `implicit` or `Cornac` for a serious baseline if dependency/time allows.
-- Use RecBole as a benchmark reference, not as the main app dependency.
+This is the highest-score-per-hour work left. It directly addresses Behavioural Fidelity and Contextual Relevance.
 
-## Dataset Direction
+2. Add an `implicit` baseline runner.
 
-Hackathon brief allows Yelp, Amazon Reviews, and Goodreads.
+Train ALS/BPR/item-item baselines on the same split and report Recall@50/100/1000, HitRate@10, and NDCG@10. This gives the solution paper a strong conventional baseline.
 
-| Dataset | Strength | Risk |
-| --- | --- | --- |
-| [Amazon Reviews 2023](https://amazon-reviews-2023.github.io/) | Public, recent, rich reviews, item metadata, categories, timestamps, standard splits. | Some categories are large; choose one manageable category. |
-| [Yelp Open Dataset](https://www.yelp.com/dataset) | Great fit for restaurants, service, ambience, local context. | Download/license flow can be slower; data is geographically non-Nigerian. |
-| [Goodreads datasets](https://mengtingwan.github.io/data/goodreads.html) | Rich taste modeling for books and cross-domain demos. | Older data; access links may need care. |
-| [McAuley Lab datasets](https://cseweb.ucsd.edu/~jmcauley/datasets.html) | Central source for Amazon/Goodreads-style recommendation datasets. | Need select subset to keep reproducible. |
+3. Add a Pixie-style graph retrieval head.
 
-Recommended primary dataset:
+Use the existing evidence graph and run bounded random walks or Personalized PageRank from a user's positive items/aspects. Promote only if candidate recall improves on fixed slices.
 
-```text
-Amazon Reviews 2023 - All_Beauty or Digital_Music subset
-```
+4. Add point-in-time feature materialization.
 
-Rationale:
+SQLite is fine for local serving, but the feature store becomes strong when it can produce timestamp-correct Task A and Task B training frames with no leakage.
 
-- direct user reviews and ratings
-- item metadata
-- manageable compared with full Amazon categories
-- supports Task A and Task B from the same normalized schema
-- easy to explain in the paper
+5. Add a learned ranker only after recall improves.
 
-Yelp can be a secondary demo if we manually download it in time, especially for restaurant-style Nigerian-context UI examples.
+A LightGBM/XGBoost ranker over current score components is likely more useful than a neural sequence model right now. Promote it only with same-slice HitRate@10 and NDCG@10 gains.
 
-## Target Architecture After Research
+6. Treat LLM reranking as optional.
 
-```text
-Offline:
-  raw reviews
-    -> normalize users/items/reviews
-    -> timestamp split
-    -> user profile features
-    -> item aspect profiles
-    -> text embeddings
-    -> item-item neighbors
-    -> baseline model artifacts
-    -> eval fixtures
+LLM reranking is optional because it is expensive, non-deterministic, hard to evaluate at catalog scale, and does not fix candidate recall. Keep it limited to reranking or explaining a small top candidate set, with deterministic fallback.
 
-Online:
-  request
-    -> profile lookup or cold-start profile builder
-    -> candidate generation
-    -> ranking / rating prediction
-    -> LLM generation or explanation
-    -> validation critic
-    -> structured response
-```
+7. Keep the custom lightweight agent framework.
 
-## Task A Implementation Plan
-
-1. Use held-out last review per user as the test target.
-2. Build profile from earlier user reviews only.
-3. Predict rating with baselines:
-   - global mean
-   - user mean
-   - item mean
-   - user plus item bias
-   - hybrid profile scorer
-4. Generate review only after rating prediction.
-5. Condition generation on:
-   - predicted rating
-   - user preference profile
-   - user voice examples
-   - item metadata/aspects
-   - retrieved similar user reviews
-6. Validate:
-   - rating mentioned
-   - sentiment matches rating
-   - item facts are grounded
-   - no unsupported claims
-
-Metrics:
-
-- RMSE / MAE for rating
-- ROUGE-L / BERTScore if feasible for text
-- sentiment-rating consistency
-- human examples for behavioral fidelity
-
-## Task B Implementation Plan
-
-1. Use held-out future item as positive.
-2. Generate candidates using multiple sources:
-   - popular by category
-   - item-item similarity from user positives
-   - text embedding similarity
-   - profile/context keyword match
-3. Rank candidates with explicit hybrid features:
-   - preference match
-   - context match
-   - item quality
-   - novelty
-   - confidence/evidence quantity
-4. Explain only top results.
-
-Metrics:
-
-- HitRate@10
-- NDCG@10
-- Recall@K
-- cold-start subset performance
-- ablations by candidate generator and ranker feature set
-
-## What To Build Next
-
-Highest-leverage next engineering tasks:
-
-1. Add dataset ingestion for one Amazon Reviews 2023 category.
-2. Add timestamp split and normalized local artifacts.
-3. Add baseline rating and ranking metrics.
-4. Add BM25 or embedding retrieval.
-5. Add a model-provider interface for LLM generation.
-6. Add eval report output under `runs/eval/`.
-7. Update the solution paper with real results and related work.
-
-Do not build a larger UI before this. A beautiful demo without real evaluation will be easy to dismiss.
+The current layers are explicit, inspectable, and testable. LangGraph/CrewAI/AutoGen would add orchestration features but also more dependency and debugging surface. Use a framework later only if we need durable graph execution, human approval nodes, long-running workflows, or distributed tool calls.
 
 ## Paper Positioning
 
-Suggested claim:
+Strong, honest claim:
 
-> We build a scalable user-intelligence engine that turns review history into a reusable behavioral profile. The same profile supports review simulation through rating-conditioned generation and personalized recommendation through multi-stage retrieval, hybrid ranking, and grounded explanation.
+> Bluechip implements an evidence-first user intelligence system. It separates candidate retrieval, ranking/rating, LLM generation, validation, and evaluation. The design is influenced by multi-stage industrial recommenders, review-aware user/item modeling, explainable recommendation, RAG, and graph retrieval, while keeping exact neural baselines such as BPR, LightGCN, SASRec, HSTU, PETER, and PEPLER as explicit future or benchmark work unless implemented and evaluated.
 
-This claim is strong because it is:
+What not to claim:
 
-- aligned with the brief
-- supported by recommender-system literature
-- compatible with industry architecture
-- feasible within the hackathon deadline
-- measurable through standard offline metrics
+- Do not say we trained BPR, LightGCN, SASRec, HSTU, PETER, or PEPLER.
+- Do not say FAISS/neural retrieval improves quality until same-slice eval proves lift.
+- Do not call the evidence graph a GNN.
+- Do not say PostHog is the eval layer. It is product analytics and experimentation, not offline metric evaluation.
+
+## Submission Checklist From This Review
+
+- Fill `docs/human_eval_task_a.md`.
+- Fill `docs/human_eval_task_b_contextual.md`.
+- Add human-eval means to `paper/solution_paper.md`.
+- Cite YouTube, Amazon, DeepCoNN, PETER/PEPLER, RAG, ROUGE, BERTScore, BPR, LightGCN/SASRec/HSTU as related work with exact implemented/not-implemented wording.
+- Mention `docs/FEATURE_STORE_10_PLAN.md` as the feature-store upgrade plan.
+- Keep claims conservative around graph and neural methods.

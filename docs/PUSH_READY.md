@@ -1,8 +1,16 @@
 # Push Readiness Notes
 
-Date: 2026-05-19
+Date: 2026-05-22
 
-This repo is ready to share with a teammate as source code, tests, docs, and reproducible sample data. Large local datasets, processed artifacts, run outputs, virtualenvs, and secrets are intentionally ignored.
+This repo is ready to share with a teammate as source code, tests, docs, and reproducible sample data. Large local datasets, processed artifacts, run outputs, virtualenvs, and secrets are intentionally ignored. The active final-submission plan is [docs/SUBMISSION_FREEZE.md](SUBMISSION_FREEZE.md).
+
+## Frozen Scope
+
+- Keep the evidence-first hybrid architecture.
+- Finish human eval from the CSV packs.
+- Add only `implicit` ALS/BPR/item-item baselines before final submission if they run cleanly.
+- Do not start LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, or trained Wide & Deep now.
+- Run the final validation suite only after human eval and the optional `implicit` report are done.
 
 ## What Changed Recently
 
@@ -13,6 +21,7 @@ This repo is ready to share with a teammate as source code, tests, docs, and rep
 - Removed unpromoted learned-ranker tooling; the runtime uses the measured hybrid ranker.
 - Added context-category guards for explicit Beauty, music, and gift recommendation contexts.
 - Added contextual Task B human-eval pack: `docs/human_eval_task_b_contextual.md`.
+- Added Google Sheets-ready CSV exports for human eval.
 - Added API contract, generation, retrieval, downloader, Task A rating, and recommendation regression tests.
 
 ## Current Validation
@@ -25,10 +34,10 @@ Run before pushing:
 ./.venv/bin/python -m compileall app eval scripts tests
 ```
 
-Last local result:
+Last recorded full validation result before this documentation pass:
 
 - Ruff: passed
-- Pytest: `47 passed`
+- Pytest: passed
 - Compileall: passed
 
 ## Git Hygiene

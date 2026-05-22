@@ -2,6 +2,19 @@
 
 This document summarizes how the project got to its current state, what is implemented, what was validated, and what should happen next.
 
+The submission scope is now frozen. Use [SUBMISSION_FREEZE.md](SUBMISSION_FREEZE.md) as the source of truth for the eight-step path to final submission.
+
+Current final-submission sequence:
+
+1. Freeze scope around the current evidence-first hybrid agent.
+2. Complete human eval from the CSV packs.
+3. Run the optional `implicit` ALS/BPR/item-item baseline on all categories.
+4. Run final validation.
+5. Finalize the 4-8 page solution paper.
+6. Package the repo safely.
+7. Demo-check the API/UI.
+8. Submit the repo, paper PDF, architecture diagram, app/API instructions, and eval summary.
+
 ## Project Context
 
 The hackathon brief asks for an LLM agent that solves two related tasks:
@@ -90,8 +103,17 @@ The current code implements the practical architecture around the feedback: mult
   - `POST /api/profile-user`
   - `POST /api/simulate-review`
   - `POST /api/recommend`
+  - `POST /api/conversation/turn`
+  - `POST /api/conversation/{conversation_id}/feedback`
+  - `GET /api/conversation/{conversation_id}`
+  - `GET /api/conversations`
+  - `POST /api/infer-cold-start`
+  - `POST /api/transfer-cross-domain`
+  - `POST /api/nigerian/context`
   - `GET /api/metrics`
   - `GET /api/traces`
+  - `GET /api/runtime/registry`
+  - `GET /api/runtime/feature-store`
 - Browser demo mounted at `/ui/`.
 
 ### Agent Workflows
@@ -152,7 +174,7 @@ The current code implements the practical architecture around the feedback: mult
 - Main setup and architecture: `README.md`
 - Literature and industry review: `research/literature_review.md`
 - Production architecture notes: `infra/production_architecture.md`
-- Solution paper draft: `paper/solution_paper.md`
+- Solution paper: `paper/solution_paper.md`
 - Prompt contracts: `prompts/`
 - Hardening log: `docs/IMPLEMENTATION_LOG.md`
 - This handoff: `docs/HANDOFF.md`
@@ -424,11 +446,11 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
    - more ingestion edge cases
    - real-data eval smoke checks
    - trace persistence failure modes
-5. Update the solution paper with real metrics and source-diagnostic tables.
+5. Keep the solution paper synced as larger same-slice evals replace the current bounded smoke metrics.
 
 ## Possible Improvements
 
-- Replace deterministic hashing embeddings with stronger neural embeddings when credentials/runtime allow it.
+- Promote neural embeddings only after same-slice all-category evals show lift over the current hybrid gate.
 - Add matrix factorization or implicit-feedback ALS as a baseline.
 - Add sequence-aware recommendation for users with enough history.
 - Cache profile and item features to avoid recomputation on every request.

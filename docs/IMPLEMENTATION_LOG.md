@@ -1,9 +1,11 @@
 # Implementation Log
 
 Date: 2026-05-19
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 This log tracks the hardening pass requested after the project status review. It is intentionally operational: each entry states what changed, why it matters for the DSN x BCT submission, and how it was validated.
+
+The submission scope is now frozen in [SUBMISSION_FREEZE.md](SUBMISSION_FREEZE.md). From this point, the only new model work before final submission is the `implicit` ALS/BPR/item-item baseline pass; LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, and trained Wide & Deep stay out of this deadline's runtime.
 
 ## Submission Metrics Kept In Scope
 
@@ -143,7 +145,7 @@ Browser verification:
 - Added downloader integrity status tests.
 - Existing recommendation filtering and temporal split tests still pass.
 
-Current test count:
+Historical test count recorded during this pass:
 
 - 43 tests passing.
 
