@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.serving.orchestrators import recommendation as recommendation_orchestrator
 from app.services.generation import generator
 
 
@@ -104,7 +105,9 @@ def test_generation_fallback_is_recorded_in_trace(monkeypatch) -> None:
     assert trace["fallback_reason"] == "provider unavailable"
 
 
-def test_recommend_contract_exposes_score_components() -> None:
+def test_recommend_contract_exposes_score_components(monkeypatch) -> None:
+    monkeypatch.setattr(recommendation_orchestrator, "_load_neural_index", lambda: None)
+
     response = client.post(
         "/api/recommend",
         json={
