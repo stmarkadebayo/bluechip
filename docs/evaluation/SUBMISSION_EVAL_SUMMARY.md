@@ -73,6 +73,37 @@ Latest bounded all-category Task B metrics after evidence graph work and the pop
 | Cross-domain candidate recall@1000 | `0.5484` | Strongest measured Task B slice. |
 | Vector source recall | `0.0` | Diagnostic only; do not claim a quality lift. |
 
+Lean-pruning review, 22 May 2026:
+
+- `implicit_item_item` is now a real retrieval source backed by a lazy SQLite artifact.
+- The lean run disables `vector_profile`, `bm25_profile`, `beauty_sparse_tail`, `sparse_category_tail`, and `neural_vector` for the no-context all-category gate.
+- Retrieval source family metadata now lives in one registry used by serving, ranking, and eval diagnostics.
+- `eval_task_b.py` is split into dataset-builder, evaluator, and runner layers while preserving the existing JSON report contract.
+- The lean 100x1000 gate preserved HitRate@10 `0.10`, NDCG@10 `0.0766`, Recall@50 `0.13`, Recall@100 `0.18`, and Recall@1000 `0.34`.
+- A larger 250-example candidate-only diagnostic produced Recall@50 `0.104`, Recall@100 `0.136`, Recall@1000 `0.28`, and cross-domain Recall@1000 `0.4615`.
+- Details and engineering decisions are recorded in [QUALITY_REVIEW_PRUNING.md](QUALITY_REVIEW_PRUNING.md).
+
+## Human Evaluation
+
+Task B contextual human eval is recorded in [HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md](HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md), generated from [../human_eval_task_b_contextual.csv](../human_eval_task_b_contextual.csv).
+
+| Human-eval metric | Value |
+| --- | ---: |
+| Examples scored | `20` |
+| Top-10 relevance mean | `2.15 / 5` |
+| Context fit mean | `2.25 / 5` |
+| Diversity mean | `2.35 / 5` |
+| Explanation quality mean | `2.10 / 5` |
+| Composite mean | `2.2125 / 5` |
+| Linear contextual relevance estimate | `8.85 / 20` |
+| Target in top-10 | `0 / 20` |
+
+Interpretation:
+
+- Human eval confirms the main Task B weakness is contextual precision, not just broad candidate recall.
+- The strongest recurring issue is that generic same-category beauty items can outrank the specific sub-intent requested by the context.
+- A follow-up ranker patch adds explicit hair/skincare/nail/gift sub-intent boosts and penalties for contextual requests, with terms and weights in `app/services/ranking/context_intents.json`.
+
 Final validation smoke, 22 May 2026:
 
 | Run | Result |
@@ -170,6 +201,37 @@ python eval/eval_task_b.py \
   --miss-output runs/eval/submission_task_b_100x1000_misses.json \
   --max-examples 100 \
   --candidate-limit 1000
+```
+
+Lean Task B gate:
+
+```bash
+python eval/eval_task_b.py \
+  --processed-dir data/processed/all_categories \
+  --output runs/eval/task_b_pruned_nodiversity_100x1000.json \
+  --miss-output runs/eval/task_b_pruned_nodiversity_100x1000_misses.json \
+  --max-examples 100 \
+  --candidate-limit 1000 \
+  --hybrid-only \
+  --disabled-sources vector_profile,bm25_profile,beauty_sparse_tail,sparse_category_tail,neural_vector
+```
+
+Task B source ablation gate:
+
+```bash
+python eval/run_task_b_source_ablation.py \
+  --processed-dir data/processed/all_categories \
+  --max-examples 100 \
+  --candidate-limit 1000
+```
+
+Build the implicit item-item retrieval artifact:
+
+```bash
+python scripts/build_implicit_item_index.py \
+  --processed-dir data/processed/all_categories \
+  --output data/processed/all_categories/implicit_item_neighbors.sqlite \
+  --neighbors 100
 ```
 
 Contextual human-eval pack:

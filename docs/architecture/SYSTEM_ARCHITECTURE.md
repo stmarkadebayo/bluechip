@@ -194,6 +194,8 @@ flowchart LR
   processed --> splits["scripts/build_splits.py\nTemporal Holdouts"]
   splits --> index["scripts/build_retrieval_index.py"]
   index --> evidence_graph["Evidence Graph Retrieval Index"]
+  splits --> implicit_index["scripts/build_implicit_item_index.py\nSQLite Item-Item Index"]
+  source_registry["retrieval/source_registry.py\nSource Families And Defaults"] --> task_b_eval
 
   splits --> task_a_train["eval/train_task_a_model.py"]
   splits --> task_a_eval["eval/eval_task_a.py"]
@@ -207,7 +209,9 @@ flowchart LR
 
   index --> task_b_eval["eval/eval_task_b.py"]
   evidence_graph --> task_b_eval
+  implicit_index --> task_b_eval
   splits --> task_b_eval
+  task_b_eval --> ablation["eval/run_task_b_source_ablation.py"]
   evidence_graph --> evidence_eval["eval/eval_evidence_intelligence.py"]
   task_b_eval --> miss_report["Candidate Recall And Miss Analysis"]
 
@@ -222,6 +226,7 @@ Promotion rules:
 - Task A generation changes must preserve validation, grounding, and text-quality metrics.
 - Task B ranker artifacts must beat filtered popularity and the current hybrid ranker on the same holdout.
 - Retrieval changes must report candidate Recall@K and miss analysis before ranker changes are trusted.
+- Retrieval sources must be promoted through the source registry and ablation runner so serving defaults, ranking features, and eval diagnostics stay in sync.
 
 ## Service Ownership Map
 
@@ -246,6 +251,6 @@ Promotion rules:
 - Feature store and model registry are local implementations; managed cloud equivalents remain deployment work.
 - Vector and graph services are still local artifacts rather than managed infrastructure.
 - Cloud provisioning is intentionally out of scope for the current repo-local implementation.
-- Human eval tables exist, but scored human review is still needed.
+- Task B contextual human eval has been scored and summarized; Task A behavioural human eval can still be added for a stronger final paper.
 - Dashboards and rollout controls are not implemented yet; `/api/metrics` and `/api/traces` are local substitutes.
 - Privacy and safety rules are documented, but broader automated enforcement is still a future step.
