@@ -15,10 +15,11 @@ from app.services.retrieval.item_similarity import (
     scored_candidate_ids_from_history,
 )
 from app.services.retrieval.text import BM25Retriever
-from app.services.retrieval.vector_store import LocalVectorRetriever
+from app.services.retrieval.vector_store import FAISSVectorStore, LocalVectorRetriever
 
 
 SOURCE_PRIORITIES = {
+    "neural_vector": 0.90,
     "beauty_review_term_profile": 0.87,
     "beauty_lexical_item_neighbor": 0.86,
     "category_aspect_graph": 0.855,
@@ -314,6 +315,7 @@ def generate_candidates(
     item_neighbors: dict[str, list[dict]] | None = None,
     bm25_retriever: BM25Retriever | None = None,
     vector_retriever: LocalVectorRetriever | None = None,
+    neural_retriever: FAISSVectorStore | None = None,
     catalog: CandidateCatalog | None = None,
     limit: int = 100,
 ) -> list[Item]:
@@ -325,6 +327,7 @@ def generate_candidates(
         item_neighbors=item_neighbors,
         bm25_retriever=bm25_retriever,
         vector_retriever=vector_retriever,
+        neural_retriever=neural_retriever,
         catalog=catalog,
         limit=limit,
     ).items
@@ -339,6 +342,7 @@ def generate_candidate_pool(
     item_neighbors: dict[str, list[dict]] | None = None,
     bm25_retriever: BM25Retriever | None = None,
     vector_retriever: LocalVectorRetriever | None = None,
+    neural_retriever: FAISSVectorStore | None = None,
     catalog: CandidateCatalog | None = None,
     limit: int = 100,
 ) -> CandidatePool:
@@ -471,6 +475,19 @@ def generate_candidate_pool(
             vector_added += 1
         if vector_added >= vector_target:
             break
+
+    if neural_retriever is not None and neural_retriever._built:
+        neural_target = max(vector_target, int(limit * 0.65))
+        neural_added = 0
+        for item, score in neural_retriever.search_with_scores(
+            query or context, limit=min(search_limit, neural_retriever.index.ntotal)
+        ):
+            had_source = "neural_vector" in sources.get(item.item_id, [])
+            add_candidate(item, "neural_vector", score)
+            if item.item_id not in history_item_ids and not had_source:
+                neural_added += 1
+            if neural_added >= neural_target:
+                break
 
     use_beauty_exploration = _should_use_beauty_taxonomy(user_profile, query_terms, history)
     aspect_share = 0.26 if len(history) <= 2 else 0.16

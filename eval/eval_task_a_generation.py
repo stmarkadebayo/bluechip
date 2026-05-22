@@ -17,6 +17,8 @@ from app.services.ranking.rating import predict_rating  # noqa: E402
 from app.services.ranking.rating_features import build_rating_stats, clamp_rating  # noqa: E402
 from app.services.ranking.task_a_model import load_task_a_model  # noqa: E402
 from app.services.validation.critic import validate_review_simulation  # noqa: E402
+from app.services.agentic.user_simulator import UserSimulator  # noqa: E402
+from app.services.nigerian.pidgin import NigerianVoiceInjector  # noqa: E402
 from eval.common import histories_by_user, load_eval_data, persona_from_history, print_report, write_report  # noqa: E402
 from eval.metrics import rounded  # noqa: E402
 
@@ -65,6 +67,17 @@ def main() -> None:
             "'redact' sends generic synthetic prompts, and 'allow' sends eval rows."
         ),
     )
+    parser.add_argument(
+        "--agentic",
+        action="store_true",
+        help="Use LLM agentic UserSimulator for review generation and compare with baseline.",
+    )
+    parser.add_argument(
+        "--nigerian-voice-intensity",
+        type=float,
+        default=0.35,
+        help="Intensity of Nigerian pidgin voice injection (0.0-1.0) when --agentic is active.",
+    )
     args = parser.parse_args()
     provider_name = generation_provider_name()
     if args.strict_provider and provider_name == "template":
@@ -91,8 +104,20 @@ def main() -> None:
     histories = histories_by_user(train)
     model = load_task_a_model(Path(args.model_path)) if args.model_path else None
 
+    simulator: UserSimulator | None = None
+    if args.agentic:
+        try:
+            simulator = UserSimulator()
+            print(f"Agentic UserSimulator initialised. Provider: {simulator._provider_name}")
+        except Exception as exc:
+            print(f"UserSimulator unavailable: {exc}. Running baseline only.")
+            simulator = None
+
     scored = []
     failures = []
+    scored_agentic: list[dict] = []
+    failures_agentic: list[dict] = []
+    agentic_comparisons: list[dict] = []
     for row in test_a:
         history = histories.get(row["user_id"], [])
         user_profile = build_user_profile(persona_from_history(history), history, locale=None)
@@ -157,6 +182,84 @@ def main() -> None:
             }
         )
 
+        if simulator is not None:
+            try:
+                agentic_decision = simulator.simulate_review_decision(
+                    user_profile=generation_user_profile,
+                    item_profile=generation_item_profile,
+                )
+                agentic_rating = agentic_decision.predicted_rating
+                agentic_review_text = simulator.generate_authentic_review(
+                    user_profile=generation_user_profile,
+                    item_profile=generation_item_profile,
+                    rating=agentic_rating,
+                    decision_context=agentic_decision,
+                )
+                agentic_review_text = NigerianVoiceInjector.nigerianize_review(
+                    agentic_review_text,
+                    intensity=args.nigerian_voice_intensity,
+                )
+                agentic_validation = validate_review_simulation(
+                    predicted_rating=agentic_rating,
+                    review=agentic_review_text,
+                    user_profile=generation_user_profile,
+                    item_profile=generation_item_profile,
+                )
+                pidgin_injected = _has_nigerian_pidgin(agentic_review_text)
+                scored_agentic.append(
+                    {
+                        "user_id": row["user_id"],
+                        "item_id": row["item_id"],
+                        "item_name": item_profile.name,
+                        "actual_rating": row["rating"],
+                        "predicted_rating": agentic_rating,
+                        "baseline_predicted_rating": predicted_rating,
+                        "reference_review": reference_review,
+                        "generated_review": agentic_review_text,
+                        "provider": agentic_decision.provider,
+                        "llm_augmented": agentic_decision.llm_augmented,
+                        "used_fallback": not agentic_decision.llm_augmented,
+                        "nigerian_voice_intensity": args.nigerian_voice_intensity,
+                        "pidgin_injected": pidgin_injected,
+                        "validation_consistent": agentic_validation.is_consistent,
+                        "validation_issues": agentic_validation.issues,
+                        "rating_mentioned": str(agentic_rating) in agentic_review_text,
+                        "item_mentioned": generation_item_profile.name.lower() in agentic_review_text.lower(),
+                        "rouge_l_f1": rouge_l_f1(reference_review, agentic_review_text),
+                        "unigram_f1": unigram_f1(reference_review, agentic_review_text),
+                        "sentiment_aligned": sentiment_aligned(agentic_rating, agentic_review_text),
+                        "thought_process": agentic_decision.thought_process,
+                        "key_concerns": agentic_decision.key_concerns,
+                        "emotional_reaction": agentic_decision.emotional_reaction,
+                    }
+                )
+                agentic_comparisons.append(
+                    {
+                        "user_id": row["user_id"],
+                        "item_id": row["item_id"],
+                        "baseline_review_len": len(generated.text.split()),
+                        "agentic_review_len": len(agentic_review_text.split()),
+                        "baseline_rouge_l_f1": rouge_l_f1(reference_review, generated.text),
+                        "agentic_rouge_l_f1": rouge_l_f1(reference_review, agentic_review_text),
+                        "baseline_unigram_f1": unigram_f1(reference_review, generated.text),
+                        "agentic_unigram_f1": unigram_f1(reference_review, agentic_review_text),
+                        "baseline_rating_mentioned": str(predicted_rating) in generated.text,
+                        "agentic_rating_mentioned": str(agentic_rating) in agentic_review_text,
+                        "baseline_used_fallback": generated.used_fallback,
+                        "agentic_used_fallback": not agentic_decision.llm_augmented,
+                        "agentic_llm_augmented": agentic_decision.llm_augmented,
+                        "pidgin_injected": pidgin_injected,
+                    }
+                )
+            except Exception as exc:
+                failures_agentic.append(
+                    {
+                        "user_id": row["user_id"],
+                        "item_id": row["item_id"],
+                        "error": str(exc),
+                    }
+                )
+
     bert_score_metrics = _bert_score_metrics(
         scored=scored,
         enabled=args.bert_score,
@@ -166,6 +269,17 @@ def main() -> None:
     )
     metrics = _metrics(scored=scored, failures=failures, total=len(test_a))
     metrics.update(bert_score_metrics)
+
+    agentic_metrics: dict[str, float] = {}
+    if simulator is not None:
+        agentic_metrics = _agentic_metrics(
+            scored=scored_agentic,
+            failures=failures_agentic,
+            total=len(test_a),
+        )
+        comparison_metrics = _agentic_comparison_metrics(agentic_comparisons)
+        agentic_metrics.update(comparison_metrics)
+
     payload = {
         "task": "Task A Generation",
         "dataset": str(Path(args.processed_dir)),
@@ -173,15 +287,28 @@ def main() -> None:
         "provider": provider_name,
         "strict_provider": args.strict_provider,
         "external_data_policy": args.external_data_policy,
+        "agentic_mode": args.agentic and simulator is not None,
+        "nigerian_voice_intensity": args.nigerian_voice_intensity if args.agentic else None,
         "metrics": metrics,
+        "agentic_metrics": agentic_metrics if agentic_metrics else None,
+        "agentic_comparisons": agentic_comparisons[:5] if agentic_comparisons else None,
         "samples": scored[:5],
+        "agentic_samples": scored_agentic[:5] if scored_agentic else None,
         "failures": failures[:5],
+        "agentic_failures": failures_agentic[:5] if failures_agentic else None,
         "notes": [
             "ROUGE-L and unigram F1 are dependency-free lexical proxies for review text quality.",
             "Consistency checks verify rating mention, target item grounding, and basic rating-sentiment alignment.",
             "Use --strict-provider for DeepSeek/OpenRouter/OpenAI runs so provider failures are visible instead of hidden by fallback text.",
             "External providers default to deny for non-sample datasets; redact mode sends synthetic prompts only.",
             "BERTScore is optional because it requires bert-score, torch, transformers, and a local/downloaded model.",
+            (
+                "Agentic mode uses UserSimulator with LLM reasoning for authentic review generation. "
+                "NigerianVoiceInjector adds Nigerian pidgin patterns for culturally-adapted voice simulation. "
+                "Comparison metrics quantify improvement over baseline template-based generation."
+                if args.agentic and simulator is not None
+                else "Use --agentic to enable LLM-driven review generation with Nigerian voice injection."
+            ),
         ],
     }
     write_report(Path(args.output), payload)
@@ -399,6 +526,86 @@ def _f1(precision: float, recall: float) -> float:
 
 def _mean(values: list[float | bool]) -> float:
     return sum(float(value) for value in values) / len(values) if values else 0.0
+
+
+def _has_nigerian_pidgin(text: str) -> bool:
+    """Check if text contains Nigerian pidgin expressions."""
+    from app.services.nigerian.pidgin import NIGERIAN_EXPRESSIONS, NIGERIAN_PIDGIN_PHRASES
+
+    lowered = text.lower()
+    for term in NIGERIAN_EXPRESSIONS:
+        if term.lower() in lowered:
+            return True
+    for phrases in NIGERIAN_PIDGIN_PHRASES.values():
+        for phrase in phrases:
+            if phrase.lower() in lowered:
+                return True
+    return False
+
+
+def _agentic_metrics(scored: list[dict], failures: list[dict], total: int) -> dict[str, float]:
+    """Compute agentic-specific review quality metrics."""
+    success_count = len(scored)
+    if not scored:
+        return {
+            "agentic_generation_success_rate": 0.0,
+            "agentic_provider_failure_rate": rounded(len(failures) / total) if total else 0.0,
+            "agentic_fallback_rate": 0.0,
+            "agentic_llm_augmented_rate": 0.0,
+            "agentic_validation_consistency_rate": 0.0,
+            "agentic_rating_mention_rate": 0.0,
+            "agentic_item_mention_rate": 0.0,
+            "agentic_sentiment_alignment_rate": 0.0,
+            "agentic_rouge_l_f1": 0.0,
+            "agentic_unigram_f1": 0.0,
+            "agentic_pidgin_injection_rate": 0.0,
+        }
+    return {
+        "agentic_generation_success_rate": rounded(success_count / total) if total else 0.0,
+        "agentic_provider_failure_rate": rounded(len(failures) / total) if total else 0.0,
+        "agentic_fallback_rate": rounded(_mean([row["used_fallback"] for row in scored])),
+        "agentic_llm_augmented_rate": rounded(_mean([row["llm_augmented"] for row in scored])),
+        "agentic_validation_consistency_rate": rounded(
+            _mean([row["validation_consistent"] for row in scored])
+        ),
+        "agentic_rating_mention_rate": rounded(_mean([row["rating_mentioned"] for row in scored])),
+        "agentic_item_mention_rate": rounded(_mean([row["item_mentioned"] for row in scored])),
+        "agentic_sentiment_alignment_rate": rounded(
+            _mean([row["sentiment_aligned"] for row in scored])
+        ),
+        "agentic_rouge_l_f1": rounded(_mean([row["rouge_l_f1"] for row in scored])),
+        "agentic_unigram_f1": rounded(_mean([row["unigram_f1"] for row in scored])),
+        "agentic_pidgin_injection_rate": rounded(
+            _mean([row.get("pidgin_injected", False) for row in scored])
+        ),
+    }
+
+
+def _agentic_comparison_metrics(comparisons: list[dict]) -> dict[str, float]:
+    """Compute per-example comparison deltas between baseline and agentic generation."""
+    if not comparisons:
+        return {}
+    rouge_deltas = [c["agentic_rouge_l_f1"] - c["baseline_rouge_l_f1"] for c in comparisons]
+    unigram_deltas = [c["agentic_unigram_f1"] - c["baseline_unigram_f1"] for c in comparisons]
+    len_ratios = [
+        c["agentic_review_len"] / max(c["baseline_review_len"], 1)
+        for c in comparisons
+    ]
+    agentic_better_rouge = sum(1 for d in rouge_deltas if d > 0)
+    agentic_better_unigram = sum(1 for d in unigram_deltas if d > 0)
+    return {
+        "baseline_vs_agentic_rouge_l_delta": rounded(_mean(rouge_deltas)),
+        "baseline_vs_agentic_unigram_f1_delta": rounded(_mean(unigram_deltas)),
+        "agentic_better_rouge_rate": rounded(agentic_better_rouge / len(comparisons)),
+        "agentic_better_unigram_rate": rounded(agentic_better_unigram / len(comparisons)),
+        "agentic_review_length_ratio": rounded(_mean(len_ratios)),
+        "agentic_llm_augmented_rate": rounded(
+            _mean([c["agentic_llm_augmented"] for c in comparisons])
+        ),
+        "agentic_pidgin_injected_rate": rounded(
+            _mean([c["pidgin_injected"] for c in comparisons])
+        ),
+    }
 
 
 if __name__ == "__main__":

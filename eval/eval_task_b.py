@@ -27,13 +27,18 @@ from app.services.retrieval.candidates import (  # noqa: E402
 )
 from app.services.retrieval.item_similarity import build_collaborative_retrieval_index  # noqa: E402
 from app.services.retrieval.text import BM25Retriever  # noqa: E402
-from app.services.retrieval.vector_store import LocalVectorRetriever  # noqa: E402
+from app.services.retrieval.vector_store import (  # noqa: E402
+    FAISSVectorStore,
+    LocalVectorRetriever,
+    create_retriever,
+)
 
 
 SOURCE_FAMILY_ORDER = (
     "collaborative_co_engagement",
     "lexical_review_term",
     "semantic_vector",
+    "neural_semantic_vector",
     "aspect_evidence",
     "popularity_fallback",
     "other",
@@ -42,6 +47,7 @@ SOURCE_FAMILY_LABELS = {
     "collaborative_co_engagement": "collaborative/co-engagement",
     "lexical_review_term": "lexical/review-term",
     "semantic_vector": "semantic/vector",
+    "neural_semantic_vector": "neural/semantic-vector",
     "aspect_evidence": "aspect/evidence",
     "popularity_fallback": "popularity/fallback",
     "other": "other",
@@ -69,6 +75,7 @@ SOURCE_FAMILY_BY_SOURCE = {
     "global_popular": "popularity_fallback",
     "sparse_category_tail": "popularity_fallback",
     "beauty_sparse_tail": "popularity_fallback",
+    "neural_vector": "neural_semantic_vector",
 }
 
 
@@ -85,6 +92,12 @@ def main() -> None:
     parser.add_argument("--build-collaborative", action="store_true")
     parser.add_argument("--miss-output", default="")
     parser.add_argument("--max-misses", type=int, default=200)
+    parser.add_argument(
+        "--retriever",
+        choices=["legacy", "neural"],
+        default="legacy",
+        help="Vector retriever backend: legacy (LocalVectorRetriever) or neural (FAISSVectorStore).",
+    )
     args = parser.parse_args()
 
     train, _, test_b, items = load_eval_data(
@@ -99,6 +112,18 @@ def main() -> None:
     history_map = histories_by_user(train)
     retriever = BM25Retriever.from_items(item_list)
     vector_retriever = LocalVectorRetriever(item_list)
+    neural_retriever: FAISSVectorStore | None = None
+    if args.retriever == "neural":
+        index_path = Path(args.processed_dir) / "neural_index.faiss"
+        if index_path.exists():
+            neural_retriever = FAISSVectorStore.deserialize(str(index_path), item_list)
+        else:
+            neural_retriever = create_retriever(item_list, method="neural")
+        if isinstance(neural_retriever, FAISSVectorStore) and neural_retriever._built:
+            print(f"Neural FAISS retriever initialised: {neural_retriever.index.ntotal} items indexed.")
+        else:
+            print("Neural FAISS retriever unavailable; falling back to LocalVectorRetriever only.")
+            neural_retriever = None
     catalog = CandidateCatalog.from_items(item_list)
     popularity = _popularity_rank(train, item_list)
     train_item_counts = Counter(row["item_id"] for row in train if row["rating"] >= 4)
@@ -122,6 +147,7 @@ def main() -> None:
             item_list=item_list,
             candidate_limit=args.candidate_limit,
             collaborative_index=None,
+            neural_retriever=neural_retriever,
         )
         hybrid_pool = _candidate_pool(
             row=row,
@@ -132,6 +158,7 @@ def main() -> None:
             item_list=item_list,
             candidate_limit=args.candidate_limit,
             collaborative_index=collaborative_index,
+            neural_retriever=neural_retriever,
         )
         base_pools.append(base_pool)
         hybrid_pools.append(hybrid_pool)
@@ -152,6 +179,7 @@ def main() -> None:
                 item_list=item_list,
                 candidate_limit=args.candidate_limit,
                 limit=max(args.k, min(args.candidate_limit, len(item_list))),
+                neural_retriever=neural_retriever,
             )
         )
 
@@ -226,10 +254,18 @@ def main() -> None:
             json.dumps(miss_report, ensure_ascii=True, indent=2) + "\n",
             encoding="utf-8",
         )
+    retriever_note = (
+        "Neural FAISS vector retriever active; neural_vector source contributes "
+        "additional candidates and is tracked separately in source diagnostics."
+        if neural_retriever is not None and neural_retriever._built
+        else "Legacy LocalVectorRetriever used for semantic vector retrieval."
+    )
     payload = {
         "task": "Task B",
         "dataset": str(Path(args.processed_dir) if Path(args.processed_dir).exists() else Path(args.reviews)),
         "examples": len(test_b),
+        "retriever": args.retriever,
+        "neural_retriever_active": neural_retriever is not None and neural_retriever._built if neural_retriever else False,
         "metrics": metrics,
         "slices": slices,
         "retrieval_sources": source_counts,
@@ -243,6 +279,7 @@ def main() -> None:
             "Hybrid candidates blend co-visitation, user-neighbor CF, review-term, evidence graph, BM25, vector, category-affinity, and popularity sources when artifacts are available.",
             "Cold-start persona-only uses the derived persona without history items.",
             "Hybrid ranker uses preference, context, category, aspect, sequential, evidence graph, vector, collaborative, quality, novelty, and confidence signals.",
+            retriever_note,
         ],
     }
     write_report(Path(args.output), payload)
@@ -304,6 +341,7 @@ def _candidate_pool(
     item_list: list[Item],
     candidate_limit: int,
     collaborative_index: dict | None,
+    neural_retriever: FAISSVectorStore | None = None,
 ) -> CandidatePool:
     persona = persona_from_history(history)
     user_profile = build_user_profile(persona=persona, history=history, locale=None)
@@ -317,6 +355,7 @@ def _candidate_pool(
         vector_retriever=vector_retriever,
         catalog=catalog,
         limit=min(candidate_limit, len(item_list)),
+        neural_retriever=neural_retriever,
     )
 
 
@@ -342,6 +381,7 @@ def _cold_start_rank(
     item_list: list[Item],
     candidate_limit: int,
     limit: int,
+    neural_retriever: FAISSVectorStore | None = None,
 ) -> list[str]:
     persona = _cold_start_persona(row)
     user_profile = build_user_profile(persona=persona, history=[], locale=None)
@@ -354,6 +394,7 @@ def _cold_start_rank(
         vector_retriever=vector_retriever,
         catalog=catalog,
         limit=min(candidate_limit, len(item_list)),
+        neural_retriever=neural_retriever,
     )
     ranked = rank_candidates(
         user_profile=user_profile,
