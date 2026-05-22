@@ -31,6 +31,8 @@ Judge-facing docs:
 - [Submission evaluation summary](docs/evaluation/SUBMISSION_EVAL_SUMMARY.md)
 - [Dataset EDA](docs/evaluation/DATASET_EDA.md)
 - [Implicit baseline results](docs/evaluation/IMPLICIT_BASELINE_RESULTS.md)
+- [Quality review and source pruning](docs/evaluation/QUALITY_REVIEW_PRUNING.md)
+- [Task B contextual human eval results](docs/evaluation/HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md)
 - [System architecture](docs/architecture/SYSTEM_ARCHITECTURE.md)
 - [Demo script](docs/product/DEMO_SCRIPT.md)
 - [Implementation log](docs/IMPLEMENTATION_LOG.md)
@@ -40,7 +42,8 @@ Frozen submission scope:
 - Keep the runtime claim evidence-first and hybrid.
 - Add only `implicit` ALS/BPR/item-item baselines as new model work before submission.
 - Do not start LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, or a trained Wide & Deep model for this deadline.
-- Finish human eval from the CSV packs, then run final validation and paper polish.
+- Task B contextual human eval is complete and summarized; Task A behavioural human eval can still be added if time allows.
+- Run final validation and paper polish after any last human-eval-driven ranking tweaks.
 
 The detailed eight-step plan is in [docs/SUBMISSION_FREEZE.md](docs/SUBMISSION_FREEZE.md).
 
@@ -66,6 +69,7 @@ Interpretation:
 - Task B is retrieval-before-ranking: candidate recall is measured separately from top-10 ranking.
 - Cross-domain candidate retrieval is currently the strongest Task B slice.
 - Vector retrieval is a diagnostic/extensibility hook today, not a promoted quality claim.
+- Retrieval source metadata, default disabling, family labels, and score calibration are centralized in `app/services/retrieval/source_registry.py`.
 
 ## Architecture
 
@@ -121,6 +125,8 @@ POST /api/recommend
   -> generate reasons and tradeoffs
   -> return recommendations, source diagnostics, trace
 ```
+
+The lean serving path disables noisy vector/sparse-tail sources by default through the shared source registry. Set `BLUECHIP_DISABLED_RETRIEVAL_SOURCES` only when deliberately running an ablation or experiment.
 
 ## Quick Start
 
@@ -375,6 +381,28 @@ python eval/eval_task_b.py \
   --processed-dir data/processed/all_categories \
   --output runs/eval/submission_task_b_100x1000.json \
   --miss-output runs/eval/submission_task_b_100x1000_misses.json \
+  --max-examples 100 \
+  --candidate-limit 1000
+```
+
+Lean/pruned gate:
+
+```bash
+python eval/eval_task_b.py \
+  --processed-dir data/processed/all_categories \
+  --output runs/eval/task_b_pruned_100x1000.json \
+  --miss-output runs/eval/task_b_pruned_100x1000_misses.json \
+  --max-examples 100 \
+  --candidate-limit 1000 \
+  --hybrid-only \
+  --disabled-sources vector_profile,bm25_profile,beauty_sparse_tail,sparse_category_tail,neural_vector
+```
+
+Source ablations:
+
+```bash
+python eval/run_task_b_source_ablation.py \
+  --processed-dir data/processed/all_categories \
   --max-examples 100 \
   --candidate-limit 1000
 ```

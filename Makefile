@@ -1,7 +1,8 @@
-.PHONY: run test test-api api-smoke api-smoke-live lint data index evidence-graph registry sqlite-feature-store dataset-eda human-eval-csv implicit-baselines eval eval-all eval-generation eval-generation-strict eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker docker-build docker-test docker-smoke
+.PHONY: run test test-api api-smoke api-smoke-live lint data index evidence-graph registry sqlite-feature-store dataset-eda human-eval-csv human-eval-task-a-reviews summarize-human-eval implicit-baselines implicit-item-index task-b-source-ablation eval eval-all eval-generation eval-generation-strict eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker docker-build docker-test docker-smoke
 
 PYTHON ?= python3
 PROCESSED_DIR ?= data/processed
+TASK_A_HUMAN_EVAL_PROCESSED_DIR ?= data/processed/all_categories
 IMAGE ?= bluechip-user-intelligence-agent
 SMOKE_BASE_URL ?= http://127.0.0.1:8000
 LLM_PROVIDER ?= mock
@@ -30,8 +31,20 @@ dataset-eda:
 human-eval-csv:
 	$(PYTHON) eval/export_human_eval_csv.py
 
+human-eval-task-a-reviews:
+	$(PYTHON) eval/create_task_a_human_eval_reviews.py --processed-dir $(TASK_A_HUMAN_EVAL_PROCESSED_DIR)
+
+summarize-human-eval:
+	$(PYTHON) eval/summarize_human_eval.py docs/human_eval_task_b_contextual.csv --output-json docs/evaluation/human_eval_task_b_contextual_results.json --output-md docs/evaluation/HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md
+
 implicit-baselines:
 	$(PYTHON) eval/eval_implicit_baselines.py --processed-dir $(PROCESSED_DIR) --output runs/eval/implicit_baselines.json
+
+implicit-item-index:
+	$(PYTHON) scripts/build_implicit_item_index.py --processed-dir $(PROCESSED_DIR) --output $(PROCESSED_DIR)/implicit_item_neighbors.sqlite
+
+task-b-source-ablation:
+	$(PYTHON) eval/run_task_b_source_ablation.py --processed-dir $(PROCESSED_DIR)
 
 test:
 	pytest
