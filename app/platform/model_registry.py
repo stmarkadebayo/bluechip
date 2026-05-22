@@ -119,6 +119,7 @@ ARTIFACT_NAMES = (
     "task_b_retrieval_index",
     "task_b_review_term_index",
     "task_b_evidence_graph_index",
+    "task_b_neural_index",
 )
 
 
@@ -181,6 +182,13 @@ def _artifact_candidates(name: str) -> tuple[str | Path | None, ...]:
             feature_root / "evidence_graph_retrieval.json",
             "data/processed/all_categories/evidence_graph_retrieval.json",
             "data/processed/evidence_graph_retrieval.json",
+        )
+    if name == "task_b_neural_index":
+        return (
+            os.getenv("TASK_B_NEURAL_INDEX"),
+            feature_root / "neural_index.faiss",
+            "data/processed/all_categories/neural_index.faiss",
+            "data/processed/neural_index.faiss",
         )
     return ()
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.platform.feature_store import LocalFeatureStore
+from app.platform.feature_store import LocalFeatureStore, SQLiteFeatureStore
 from app.platform.model_registry import LocalModelRegistry
 
 
@@ -52,6 +53,80 @@ def test_local_feature_store_loads_point_features(tmp_path) -> None:
     assert store.get_item("item_1").name == "Practical Blender"
     assert store.get_user_history("user_1")[0].rating == 5
     assert store.summary().counts["items"] == 1
+    assert store.summary().available
+
+
+def test_sqlite_feature_store_loads_indexed_point_features(tmp_path) -> None:
+    db_path = tmp_path / "feature_store.sqlite"
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            """
+            CREATE TABLE items (
+                item_id TEXT PRIMARY KEY,
+                category TEXT NOT NULL DEFAULT '',
+                payload TEXT NOT NULL
+            );
+            CREATE TABLE reviews (
+                review_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                item_id TEXT NOT NULL,
+                rating REAL NOT NULL,
+                category TEXT,
+                timestamp INTEGER NOT NULL DEFAULT 0,
+                payload TEXT NOT NULL
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO items(item_id, category, payload) VALUES (?, ?, ?)",
+            (
+                "item_1",
+                "kitchen",
+                json.dumps(
+                    {
+                        "item_id": "item_1",
+                        "name": "Practical Blender",
+                        "category": "kitchen",
+                        "summary": "Reliable daily blender.",
+                        "average_rating": 4.2,
+                    }
+                ),
+            ),
+        )
+        conn.execute(
+            (
+                "INSERT INTO reviews"
+                "(review_id, user_id, item_id, rating, category, timestamp, payload) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)"
+            ),
+            (
+                "r1",
+                "user_1",
+                "item_1",
+                5,
+                "kitchen",
+                1,
+                json.dumps(
+                    {
+                        "review_id": "r1",
+                        "user_id": "user_1",
+                        "item_id": "item_1",
+                        "item_name": "Practical Blender",
+                        "rating": 5,
+                        "review": "Reliable and simple.",
+                        "category": "kitchen",
+                        "timestamp": 1,
+                    }
+                ),
+            ),
+        )
+
+    store = SQLiteFeatureStore(db_path)
+
+    assert store.get_item("item_1").name == "Practical Blender"
+    assert store.get_user_history("user_1")[0].review == "Reliable and simple."
+    assert store.summary().root.startswith("sqlite://")
+    assert store.summary().counts == {"items": 1, "train": 1}
     assert store.summary().available
 
 
