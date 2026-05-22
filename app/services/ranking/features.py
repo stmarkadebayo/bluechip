@@ -3,6 +3,10 @@ from __future__ import annotations
 from app.models.schemas import ItemProfile, UserProfile
 from app.services.intelligence.aspects import aspect_overlap
 from app.services.retrieval.embeddings import cosine_similarity
+from app.services.retrieval.source_registry import (
+    SOURCE_FAMILY_CONFIDENCE,
+    SOURCES_BY_FAMILY,
+)
 
 
 FEATURE_NAMES = [
@@ -23,7 +27,6 @@ FEATURE_NAMES = [
     "retrieval_match",
     "source_diversity",
 ]
-
 
 def ranker_features(
     user_profile: UserProfile,
@@ -59,11 +62,12 @@ def ranker_features(
     )
     collaborative_match = max(
         source_scores.get("co_visitation", 0.0),
+        source_scores.get("implicit_item_item", 0.0),
         source_scores.get("user_neighbor", 0.0),
-        source_scores.get("graph_walk", 0.0),
         sequential_match,
     )
-    retrieval_match = max(source_scores.values(), default=0.0)
+    calibrated_source_scores = calibrated_source_family_scores(source_scores)
+    retrieval_match = max(calibrated_source_scores.values(), default=0.0)
     return {
         "preference_match": preference_match,
         "context_match": context_match,
@@ -80,7 +84,7 @@ def ranker_features(
         "nigerian_context_match": nigerian_context_match,
         "collaborative_match": collaborative_match,
         "retrieval_match": retrieval_match,
-        "source_diversity": min(len(source_scores) / 4, 1.0),
+        "source_diversity": min(len(calibrated_source_scores) / 4, 1.0),
     }
 
 
@@ -104,6 +108,16 @@ def matched_terms(left: list[str], right: list[str], limit: int = 5) -> list[str
         if len(seen) >= limit:
             break
     return seen
+
+
+def calibrated_source_family_scores(source_scores: dict[str, float]) -> dict[str, float]:
+    calibrated = {}
+    for family, source_names in SOURCES_BY_FAMILY.items():
+        raw_score = max((source_scores.get(source, 0.0) for source in source_names), default=0.0)
+        if raw_score <= 0:
+            continue
+        calibrated[family] = min(max(raw_score, 0.0), 1.0) * SOURCE_FAMILY_CONFIDENCE[family]
+    return calibrated
 
 
 def category_match(user_profile: UserProfile, category: str) -> float:

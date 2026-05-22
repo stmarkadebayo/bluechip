@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from app.models.schemas import Item
+from app.services.retrieval.source_registry import (
+    default_disabled_retrieval_sources,
+    retrieval_source_family,
+)
 from app.services.retrieval.candidates import CandidatePool
 from eval.eval_task_b import (
     _source_diagnostics,
@@ -14,6 +18,7 @@ def test_task_b_source_family_diagnostics_group_counts_and_recall() -> None:
         CandidatePool(
             items=[
                 _item("collab_hit"),
+                _item("implicit_candidate"),
                 _item("lexical_candidate"),
                 _item("vector_candidate"),
                 _item("evidence_candidate"),
@@ -21,6 +26,7 @@ def test_task_b_source_family_diagnostics_group_counts_and_recall() -> None:
             ],
             sources={
                 "collab_hit": ["co_visitation", "user_neighbor"],
+                "implicit_candidate": ["implicit_item_item"],
                 "lexical_candidate": ["review_term_profile", "bm25_profile"],
                 "vector_candidate": ["vector_profile"],
                 "evidence_candidate": ["aspect_evidence_graph"],
@@ -42,7 +48,7 @@ def test_task_b_source_family_diagnostics_group_counts_and_recall() -> None:
         k=5,
     )
 
-    assert diagnostics["collaborative_co_engagement"]["count"] == 2
+    assert diagnostics["collaborative_co_engagement"]["count"] == 3
     assert diagnostics["collaborative_co_engagement"]["hits@5"] == 1
     assert diagnostics["collaborative_co_engagement"]["misses@5"] == 1
     assert diagnostics["collaborative_co_engagement"]["candidate_recall@5"] == 0.5
@@ -52,7 +58,9 @@ def test_task_b_source_family_diagnostics_group_counts_and_recall() -> None:
     assert diagnostics["popularity_fallback"]["count"] == 2
     assert diagnostics["other"]["count"] == 1
     assert diagnostics["other"]["candidate_recall@5"] == 0.5
+    assert _source_family("implicit_item_item") == "collaborative_co_engagement"
     assert _source_family("custom_retriever") == "other"
+    assert retrieval_source_family("implicit_item_item") == "collaborative_co_engagement"
 
 
 def test_task_b_source_diagnostics_report_per_source_hits_and_misses() -> None:
@@ -82,6 +90,18 @@ def test_task_b_source_diagnostics_report_per_source_hits_and_misses() -> None:
     assert diagnostics["bm25_profile"]["misses@2"] == 1
     assert diagnostics["bm25_profile"]["candidate_recall@2"] == 0.5
     assert diagnostics["vector_profile"]["candidate_recall@2"] == 0.0
+
+
+def test_retrieval_source_registry_sets_lean_defaults() -> None:
+    no_context_disabled = default_disabled_retrieval_sources("")
+    contextual_disabled = default_disabled_retrieval_sources("needs hair styling")
+
+    assert "vector_profile" in contextual_disabled
+    assert "neural_vector" in contextual_disabled
+    assert "beauty_sparse_tail" in contextual_disabled
+    assert "sparse_category_tail" in contextual_disabled
+    assert "bm25_profile" in no_context_disabled
+    assert "bm25_profile" not in contextual_disabled
 
 
 def _item(item_id: str) -> Item:
