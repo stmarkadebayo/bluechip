@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from functools import lru_cache
 
@@ -12,6 +13,7 @@ from app.models.schemas import (
 )
 from app.platform.feature_store import get_feature_store
 from app.platform.model_registry import get_model_registry
+from app.platform.artifacts import read_json_artifact
 from app.services.agentic.recommender_agent import RecommenderReasoner
 from app.services.generation.generator import generate_recommendation_reason_result
 from app.services.generation.providers import generation_provider_name
@@ -20,6 +22,8 @@ from app.services.profiling.user_profile import build_user_profile
 from app.services.ranking.recommendation import rank_candidates
 from app.services.retrieval.candidates import generate_candidate_pool
 from app.services.retrieval.embeddings import neural_available
+from app.services.retrieval.item_similarity import SQLiteItemNeighborIndex
+from app.services.retrieval.source_registry import default_disabled_retrieval_sources
 from app.services.retrieval.vector_store import FAISSVectorStore
 from app.services.validation.evidence_critic import recommendation_evidence_issues
 from app.stores.trace_store import trace_store
@@ -117,6 +121,7 @@ class RecommendationAgent:
             except Exception:
                 preference_analysis = None
 
+        disabled_sources = _disabled_retrieval_sources(request.context)
         collaborative_index = _load_collaborative_index()
         neural_index = _load_neural_index()
         if neural_index is not None:
@@ -128,6 +133,7 @@ class RecommendationAgent:
             context=request.context,
             collaborative_index=collaborative_index,
             neural_retriever=neural_index,
+            disabled_sources=disabled_sources,
             limit=min(len(request.candidate_items), 100),
         )
         trace.append(
@@ -137,6 +143,11 @@ class RecommendationAgent:
                 detail=(
                     f"{len(candidate_pool.items)} candidates from {len(request.candidate_items)} "
                     f"input items via {candidate_pool.source_counts()}"
+                    + (
+                        f"; disabled {sorted(disabled_sources)}"
+                        if disabled_sources
+                        else ""
+                    )
                 ),
             )
         )
@@ -165,16 +176,23 @@ class RecommendationAgent:
                 limit=request.limit,
             )
             if reranked and any(r.llm_augmented for r in reranked):
-                reranked_ids = {r.item.item_id for r in reranked}
+                ranked_by_id = {item.item_id: item for item in ranked}
+                reranked_ids = []
+                for item in sorted(reranked, key=lambda row: row.rank):
+                    item_id = item.item.item_id
+                    if item_id in ranked_by_id and item_id not in reranked_ids:
+                        reranked_ids.append(item_id)
                 reranked_ranked = [
-                    item for item in ranked
-                    if item.item_id in reranked_ids
+                    ranked_by_id[item_id]
+                    for item_id in reranked_ids
                 ]
                 plus_others = []
                 for item in ranked:
                     if item.item_id not in reranked_ids:
                         plus_others.append(item)
                 ranked = reranked_ranked + plus_others
+                for index, item in enumerate(ranked, start=1):
+                    item.rank = index
                 trace.append(
                     AgentTraceStep(
                         step="agentic_rerank",
@@ -246,6 +264,7 @@ class RecommendationAgent:
                 input_count=len(request.candidate_items),
                 candidate_count=len(candidate_pool.items),
                 source_counts=candidate_pool.source_counts(),
+                disabled_sources=sorted(disabled_sources),
                 used_collaborative=bool(collaborative_index),
             ),
         )
@@ -271,6 +290,7 @@ def _load_collaborative_index() -> dict | None:
 
 def _attach_optional_indexes(payload: dict) -> dict:
     payload = _attach_review_term_index(payload)
+    payload = _attach_implicit_item_index(payload)
     return _attach_evidence_graph_index(payload)
 
 
@@ -279,7 +299,7 @@ def _attach_review_term_index(payload: dict) -> dict:
     if not review_term_path or not review_term_path.exists():
         return payload
     try:
-        review_term_payload = json.loads(review_term_path.read_text(encoding="utf-8"))
+        review_term_payload = read_json_artifact(review_term_path)
     except (OSError, json.JSONDecodeError):
         return payload
     if review_term_payload.get("term_items"):
@@ -288,12 +308,30 @@ def _attach_review_term_index(payload: dict) -> dict:
     return payload
 
 
+def _attach_implicit_item_index(payload: dict) -> dict:
+    implicit_path = get_model_registry().resolve_path("task_b_implicit_item_index")
+    if not implicit_path or not implicit_path.exists():
+        return payload
+    payload = dict(payload)
+    if implicit_path.suffix == ".sqlite":
+        payload["implicit_item_neighbors"] = SQLiteItemNeighborIndex(implicit_path)
+        return payload
+    try:
+        implicit_payload = read_json_artifact(implicit_path)
+    except (OSError, json.JSONDecodeError):
+        return payload
+    neighbors = implicit_payload.get("neighbors") if isinstance(implicit_payload, dict) else None
+    if neighbors:
+        payload["implicit_item_neighbors"] = neighbors
+    return payload
+
+
 def _attach_evidence_graph_index(payload: dict) -> dict:
     evidence_graph_path = get_model_registry().resolve_path("task_b_evidence_graph_index")
     if not evidence_graph_path or not evidence_graph_path.exists():
         return payload
     try:
-        evidence_graph_payload = json.loads(evidence_graph_path.read_text(encoding="utf-8"))
+        evidence_graph_payload = read_json_artifact(evidence_graph_path)
     except (OSError, json.JSONDecodeError):
         return payload
     if evidence_graph_payload.get("type") == "evidence_graph":
@@ -303,7 +341,18 @@ def _attach_evidence_graph_index(payload: dict) -> dict:
 
 
 def _task_b_ranker_version() -> str:
-    return "default_hybrid"
+    return "lean_hybrid_no_source_diversity"
+
+
+def _disabled_retrieval_sources(context: str) -> set[str]:
+    configured = os.getenv("BLUECHIP_DISABLED_RETRIEVAL_SOURCES")
+    if configured is not None:
+        return {
+            source.strip()
+            for source in configured.split(",")
+            if source.strip()
+        }
+    return default_disabled_retrieval_sources(context)
 
 
 @lru_cache(maxsize=1)
@@ -320,6 +369,7 @@ def _load_neural_index() -> FAISSVectorStore | None:
 def _task_b_index_versions() -> dict[str, str]:
     versions = get_model_registry().versions(
         "task_b_retrieval_index",
+        "task_b_implicit_item_index",
         "task_b_review_term_index",
         "task_b_evidence_graph_index",
     )

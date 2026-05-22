@@ -9,40 +9,17 @@ from app.models.schemas import Item, UserHistoryItem, UserProfile
 from app.services.retrieval.embeddings import embedding_text, terms
 from app.services.retrieval.evidence_graph import candidate_ids_from_evidence_graph
 from app.services.retrieval.item_similarity import (
+    candidate_ids_from_implicit_item_neighbors,
     candidate_ids_from_lexical_item_neighbors,
     candidate_ids_from_review_terms,
     candidate_ids_from_user_neighbors,
     scored_candidate_ids_from_history,
 )
+from app.services.retrieval.source_registry import candidate_selection_score
 from app.services.retrieval.text import BM25Retriever
 from app.services.retrieval.vector_store import FAISSVectorStore, LocalVectorRetriever
 
 
-SOURCE_PRIORITIES = {
-    "neural_vector": 0.90,
-    "beauty_review_term_profile": 0.87,
-    "beauty_lexical_item_neighbor": 0.86,
-    "category_aspect_graph": 0.855,
-    "sequential_transition": 0.845,
-    "beauty_aspect_profile": 0.84,
-    "aspect_evidence_graph": 0.835,
-    "category_transition": 0.825,
-    "review_term_profile": 0.82,
-    "lexical_item_neighbor": 0.81,
-    "aspect_profile": 0.80,
-    "beauty_taxonomy_aspect": 0.812,
-    "beauty_taxonomy_window": 0.805,
-    "beauty_sparse_tail": 0.79,
-    "sparse_category_tail": 0.77,
-    "category_affinity_popular": 0.83,
-    "category_popular": 0.81,
-    "bm25_profile": 0.78,
-    "global_popular": 0.76,
-    "vector_profile": 0.74,
-    "graph_walk": 0.735,
-    "user_neighbor": 0.72,
-    "co_visitation": 0.70,
-}
 EXPLORATION_SOURCES = {
     "aspect_profile",
     "beauty_aspect_profile",
@@ -317,6 +294,7 @@ def generate_candidates(
     vector_retriever: LocalVectorRetriever | None = None,
     neural_retriever: FAISSVectorStore | None = None,
     catalog: CandidateCatalog | None = None,
+    disabled_sources: set[str] | None = None,
     limit: int = 100,
 ) -> list[Item]:
     return generate_candidate_pool(
@@ -329,6 +307,7 @@ def generate_candidates(
         vector_retriever=vector_retriever,
         neural_retriever=neural_retriever,
         catalog=catalog,
+        disabled_sources=disabled_sources,
         limit=limit,
     ).items
 
@@ -344,9 +323,11 @@ def generate_candidate_pool(
     vector_retriever: LocalVectorRetriever | None = None,
     neural_retriever: FAISSVectorStore | None = None,
     catalog: CandidateCatalog | None = None,
+    disabled_sources: set[str] | None = None,
     limit: int = 100,
 ) -> CandidatePool:
     catalog = catalog or CandidateCatalog.from_items(items)
+    disabled_sources = disabled_sources or set()
     by_id = {item.item_id: item for item in items}
     selected: list[Item] = []
     history_item_ids = {item.item_id for item in history}
@@ -355,6 +336,8 @@ def generate_candidate_pool(
     source_scores: dict[str, dict[str, float]] = {}
 
     def add_candidate(item: Item, source: str, score: float = 0.0) -> None:
+        if source in disabled_sources:
+            return
         if item.item_id in history_item_ids:
             return
         if item.item_id not in sources:
@@ -378,8 +361,11 @@ def generate_candidate_pool(
     evidence_graph_index = (
         collaborative_index.get("evidence_graph_retrieval") if collaborative_index else None
     )
+    implicit_item_neighbors = (
+        collaborative_index.get("implicit_item_neighbors") if collaborative_index else None
+    )
 
-    if item_neighbors:
+    if item_neighbors and "co_visitation" not in disabled_sources:
         neighbor_budget = max(1, int(limit * 0.35))
         for item_id, score in scored_candidate_ids_from_history(
             history,
@@ -390,7 +376,7 @@ def generate_candidate_pool(
             if item:
                 add_candidate(item, "co_visitation", score)
 
-    if collaborative_index:
+    if collaborative_index and "user_neighbor" not in disabled_sources:
         user_neighbor_budget = max(1, int(limit * 0.35))
         for item_id, score in candidate_ids_from_user_neighbors(
             history,
@@ -401,40 +387,58 @@ def generate_candidate_pool(
             if item:
                 add_candidate(item, "user_neighbor", score)
 
+    if implicit_item_neighbors and "implicit_item_item" not in disabled_sources:
+        implicit_budget = max(1, int(limit * 0.42))
+        for item_id, score in candidate_ids_from_implicit_item_neighbors(
+            history,
+            implicit_item_neighbors,
+            limit=implicit_budget,
+        ):
+            item = by_id.get(item_id)
+            if item:
+                add_candidate(item, "implicit_item_item", score)
+
     if review_term_index:
         review_term_budget = max(1, int(limit * 0.38))
-        for item_id, score in candidate_ids_from_review_terms(
-            history=history,
-            review_term_index=review_term_index,
-            limit=review_term_budget,
-            extra_terms=query_terms,
-            preferred_categories=user_profile.preferred_categories,
-        ):
-            item = by_id.get(item_id)
-            if item:
-                source = (
-                    "beauty_review_term_profile"
-                    if item.category in BEAUTY_CATEGORIES
-                    else "review_term_profile"
-                )
-                add_candidate(item, source, score)
+        if not {"beauty_review_term_profile", "review_term_profile"} <= disabled_sources:
+            for item_id, score in candidate_ids_from_review_terms(
+                history=history,
+                review_term_index=review_term_index,
+                limit=review_term_budget,
+                extra_terms=query_terms,
+                preferred_categories=user_profile.preferred_categories,
+            ):
+                item = by_id.get(item_id)
+                if item:
+                    source = (
+                        "beauty_review_term_profile"
+                        if item.category in BEAUTY_CATEGORIES
+                        else "review_term_profile"
+                    )
+                    add_candidate(item, source, score)
 
         lexical_budget = max(1, int(limit * 0.30))
-        for item_id, score in candidate_ids_from_lexical_item_neighbors(
-            history,
-            review_term_index,
-            limit=lexical_budget,
-        ):
-            item = by_id.get(item_id)
-            if item:
-                source = (
-                    "beauty_lexical_item_neighbor"
-                    if item.category in BEAUTY_CATEGORIES
-                    else "lexical_item_neighbor"
-                )
-                add_candidate(item, source, score)
+        if not {"beauty_lexical_item_neighbor", "lexical_item_neighbor"} <= disabled_sources:
+            for item_id, score in candidate_ids_from_lexical_item_neighbors(
+                history,
+                review_term_index,
+                limit=lexical_budget,
+            ):
+                item = by_id.get(item_id)
+                if item:
+                    source = (
+                        "beauty_lexical_item_neighbor"
+                        if item.category in BEAUTY_CATEGORIES
+                        else "lexical_item_neighbor"
+                    )
+                    add_candidate(item, source, score)
 
-    if evidence_graph_index:
+    if evidence_graph_index and not {
+        "aspect_evidence_graph",
+        "category_aspect_graph",
+        "sequential_transition",
+        "category_transition",
+    } <= disabled_sources:
         graph_budget = max(1, int(limit * (0.48 if len(history) <= 2 else 0.36)))
         graph_added = 0
         for item_id, score, source in candidate_ids_from_evidence_graph(
@@ -455,28 +459,29 @@ def generate_candidate_pool(
 
     search_limit = min(len(items), limit + len(history_item_ids))
     bm25_target = max(1, int(limit * 0.35))
-    retriever = bm25_retriever or BM25Retriever.from_items(items)
-    bm25_added = 0
-    for item, score in retriever.search_with_scores(query, limit=search_limit):
-        had_source = "bm25_profile" in sources.get(item.item_id, [])
-        add_candidate(item, "bm25_profile", score)
-        if item.item_id not in history_item_ids and not had_source:
-            bm25_added += 1
-        if bm25_added >= bm25_target:
-            break
+    if "bm25_profile" not in disabled_sources:
+        retriever = bm25_retriever or BM25Retriever.from_items(items)
+        bm25_added = 0
+        for item, score in retriever.search_with_scores(query, limit=search_limit):
+            had_source = "bm25_profile" in sources.get(item.item_id, [])
+            add_candidate(item, "bm25_profile", score)
+            if item.item_id not in history_item_ids and not had_source:
+                bm25_added += 1
+            if bm25_added >= bm25_target:
+                break
 
     vector_target = max(bm25_target, int(limit * 0.50))
-    vectors = vector_retriever or LocalVectorRetriever(items)
-    vector_added = 0
-    for item, score in vectors.search_with_scores(query or context, limit=search_limit):
-        had_source = "vector_profile" in sources.get(item.item_id, [])
-        add_candidate(item, "vector_profile", score)
-        if item.item_id not in history_item_ids and not had_source:
-            vector_added += 1
-        if vector_added >= vector_target:
-            break
+    if "vector_profile" not in disabled_sources and vector_retriever is not None:
+        vector_added = 0
+        for item, score in vector_retriever.search_with_scores(query or context, limit=search_limit):
+            had_source = "vector_profile" in sources.get(item.item_id, [])
+            add_candidate(item, "vector_profile", score)
+            if item.item_id not in history_item_ids and not had_source:
+                vector_added += 1
+            if vector_added >= vector_target:
+                break
 
-    if neural_retriever is not None and neural_retriever._built:
+    if neural_retriever is not None and neural_retriever._built and "neural_vector" not in disabled_sources:
         neural_target = max(vector_target, int(limit * 0.65))
         neural_added = 0
         for item, score in neural_retriever.search_with_scores(
@@ -495,55 +500,58 @@ def generate_candidate_pool(
         aspect_share = max(aspect_share, 0.30 if len(history) <= 2 else 0.22)
     aspect_budget = max(1, int(limit * aspect_share))
     aspect_added = 0
-    for item, score, source in _aspect_profile_candidates(
-        user_profile=user_profile,
-        catalog=catalog,
-        query_terms=query_terms,
-        limit=limit,
-    ):
-        had_source = source in sources.get(item.item_id, [])
-        add_candidate(item, source, score)
-        if item.item_id not in history_item_ids and not had_source:
-            aspect_added += 1
-        if aspect_added >= aspect_budget:
-            break
+    if not {"aspect_profile", "beauty_aspect_profile"} <= disabled_sources:
+        for item, score, source in _aspect_profile_candidates(
+            user_profile=user_profile,
+            catalog=catalog,
+            query_terms=query_terms,
+            limit=limit,
+        ):
+            had_source = source in sources.get(item.item_id, [])
+            add_candidate(item, source, score)
+            if item.item_id not in history_item_ids and not had_source:
+                aspect_added += 1
+            if aspect_added >= aspect_budget:
+                break
 
     taxonomy_budget = _beauty_taxonomy_budget(limit=limit, history_size=len(history))
     taxonomy_added = 0
-    for item, score in _beauty_taxonomy_candidates(
-        user_profile=user_profile,
-        catalog=catalog,
-        query_terms=query_terms,
-        history=history,
-        limit=limit,
-    ):
-        had_source = "beauty_taxonomy_aspect" in sources.get(item.item_id, [])
-        add_candidate(item, "beauty_taxonomy_aspect", score)
-        if item.item_id not in history_item_ids and not had_source:
-            taxonomy_added += 1
-        if taxonomy_added >= taxonomy_budget:
-            break
+    if "beauty_taxonomy_aspect" not in disabled_sources:
+        for item, score in _beauty_taxonomy_candidates(
+            user_profile=user_profile,
+            catalog=catalog,
+            query_terms=query_terms,
+            history=history,
+            limit=limit,
+        ):
+            had_source = "beauty_taxonomy_aspect" in sources.get(item.item_id, [])
+            add_candidate(item, "beauty_taxonomy_aspect", score)
+            if item.item_id not in history_item_ids and not had_source:
+                taxonomy_added += 1
+            if taxonomy_added >= taxonomy_budget:
+                break
 
     taxonomy_window_budget = _beauty_taxonomy_window_budget(
         limit=limit,
         history_size=len(history),
     )
     taxonomy_window_added = 0
-    for item, score in _beauty_taxonomy_window_candidates(
-        user_profile=user_profile,
-        catalog=catalog,
-        query_terms=query_terms,
-        history=history,
-        limit=limit,
-    ):
-        had_source = "beauty_taxonomy_window" in sources.get(item.item_id, [])
-        add_candidate(item, "beauty_taxonomy_window", score)
-        if item.item_id not in history_item_ids and not had_source:
-            taxonomy_window_added += 1
-        if taxonomy_window_added >= taxonomy_window_budget:
-            break
+    if "beauty_taxonomy_window" not in disabled_sources:
+        for item, score in _beauty_taxonomy_window_candidates(
+            user_profile=user_profile,
+            catalog=catalog,
+            query_terms=query_terms,
+            history=history,
+            limit=limit,
+        ):
+            had_source = "beauty_taxonomy_window" in sources.get(item.item_id, [])
+            add_candidate(item, "beauty_taxonomy_window", score)
+            if item.item_id not in history_item_ids and not had_source:
+                taxonomy_window_added += 1
+            if taxonomy_window_added >= taxonomy_window_budget:
+                break
 
-    if len(history) <= 2:
+    if len(history) <= 2 and not {"sparse_category_tail", "beauty_sparse_tail"} <= disabled_sources:
         tail_budget = max(1, int(limit * 0.08))
         tail_added = 0
         for item, score, source in _sparse_category_tail_candidates(user_profile, catalog, limit):
@@ -556,16 +564,21 @@ def generate_candidate_pool(
 
     category_affinity_budget = max(1, int(limit * (0.42 if len(history) <= 2 else 0.30)))
     category_affinity_added = 0
-    for item, score in _category_affinity_candidates(user_profile, catalog, limit):
-        had_source = "category_affinity_popular" in sources.get(item.item_id, [])
-        add_candidate(item, "category_affinity_popular", score)
-        if item.item_id not in history_item_ids and not had_source:
-            category_affinity_added += 1
-        if category_affinity_added >= category_affinity_budget:
-            break
+    if "category_affinity_popular" not in disabled_sources:
+        for item, score in _category_affinity_candidates(user_profile, catalog, limit):
+            had_source = "category_affinity_popular" in sources.get(item.item_id, [])
+            add_candidate(item, "category_affinity_popular", score)
+            if item.item_id not in history_item_ids and not had_source:
+                category_affinity_added += 1
+            if category_affinity_added >= category_affinity_budget:
+                break
 
     category_target = max(vector_target, int(limit * 0.60))
-    if len(selected) < category_target and user_profile.preferred_categories:
+    if (
+        "category_popular" not in disabled_sources
+        and len(selected) < category_target
+        and user_profile.preferred_categories
+    ):
         category_budget = max(1, category_target - len(selected))
         category_candidates = []
         for category in user_profile.preferred_categories:
@@ -581,9 +594,10 @@ def generate_candidate_pool(
 
     fallback = catalog.global_popular
     fallback_budget = min(len(fallback), max(limit * 2, int(limit * 0.50)))
-    for index, item in enumerate(fallback[:fallback_budget]):
-        rank_score = 1.0 - (index / max(fallback_budget, 1))
-        add_candidate(item, "global_popular", max(rank_score, _quality_popularity_score(item)))
+    if "global_popular" not in disabled_sources:
+        for index, item in enumerate(fallback[:fallback_budget]):
+            rank_score = 1.0 - (index / max(fallback_budget, 1))
+            add_candidate(item, "global_popular", max(rank_score, _quality_popularity_score(item)))
 
     limited = _select_balanced_candidates(selected, sources, source_scores, limit)
     limited_ids = {item.item_id for item in limited}
@@ -1096,101 +1110,144 @@ def _select_balanced_candidates(
     source_scores: dict[str, dict[str, float]],
     limit: int,
 ) -> list[Item]:
-    order = {item.item_id: index for index, item in enumerate(selected)}
+    return CandidateMixer(
+        selected=selected,
+        sources=sources,
+        source_scores=source_scores,
+        limit=limit,
+    ).mix()
 
-    def priority(item: Item) -> tuple[float, int, float, int]:
-        scores = source_scores.get(item.item_id, {})
+
+class CandidateMixer:
+    def __init__(
+        self,
+        selected: list[Item],
+        sources: dict[str, list[str]],
+        source_scores: dict[str, dict[str, float]],
+        limit: int,
+    ) -> None:
+        self.selected = selected
+        self.sources = sources
+        self.source_scores = source_scores
+        self.limit = limit
+        self.order = {item.item_id: index for index, item in enumerate(selected)}
+
+    def mix(self) -> list[Item]:
+        ranked = sorted(self.selected, key=self._priority, reverse=True)
+        user_neighbor_floor = self._floor(ranked, "user_neighbor", 0.05)
+        implicit_item_floor = self._floor(ranked, "implicit_item_item", 0.08)
+        foundation = self._popularity_floor()
+        exploration_limit = self._exploration_limit(ranked)
+        protected_limit = max(self.limit - exploration_limit, 0)
+        protected, exploration = self._split_protected_and_exploration(ranked)
+
+        limited: list[Item] = []
+        limited_ids: set[str] = set()
+        self._append_unique(limited, limited_ids, user_neighbor_floor, self.limit)
+        self._append_unique(limited, limited_ids, implicit_item_floor, self.limit)
+        self._append_unique(limited, limited_ids, foundation, self.limit)
+        self._append_unique(limited, limited_ids, protected, protected_limit)
+        self._append_unique(limited, limited_ids, exploration, self.limit)
+        self._append_unique(limited, limited_ids, ranked, self.limit)
+        return limited
+
+    def _priority(self, item: Item) -> tuple[float, int, float, int]:
+        scores = self.source_scores.get(item.item_id, {})
         source_score = max(
             (
-                SOURCE_PRIORITIES.get(source, 0.50) + (0.18 * score)
+                candidate_selection_score(source, score)
                 for source, score in scores.items()
             ),
             default=0.0,
         )
         diversity_bonus = min(len(scores), 4) * 0.025
-        popularity = int(item.metadata.get("rating_number") or item.metadata.get("review_count") or 0)
+        popularity = int(
+            item.metadata.get("rating_number") or item.metadata.get("review_count") or 0
+        )
         return (
             round(source_score + diversity_bonus, 6),
             popularity,
             item.average_rating or 0.0,
-            -order.get(item.item_id, 0),
+            -self.order.get(item.item_id, 0),
         )
 
-    ranked = sorted(selected, key=priority, reverse=True)
-    user_neighbor_floor = (
-        _source_floor_candidates(
+    def _floor(self, ranked: list[Item], source: str, share: float) -> list[Item]:
+        if self.limit < 100:
+            return []
+        return _source_floor_candidates(
             ranked=ranked,
-            sources=sources,
-            source_scores=source_scores,
-            source="user_neighbor",
-            limit=max(1, int(limit * 0.05)),
+            sources=self.sources,
+            source_scores=self.source_scores,
+            source=source,
+            limit=max(1, int(self.limit * share)),
         )
-        if limit >= 100
-        else []
-    )
-    exploration_limit = max(10, int(limit * 0.08)) if limit >= 50 else max(1, int(limit * 0.10))
-    popularity_floor = (
-        max(20, int(limit * 0.06))
-        if limit >= 100
-        else max(1, int(limit * 0.10))
-    )
-    foundation = sorted(
-        (
-            item
-            for item in selected
-            if "global_popular" in sources.get(item.item_id, [])
-        ),
-        key=_popularity_quality_key,
-        reverse=True,
-    )[:popularity_floor]
-    has_beauty_exploration = any(
-        set(sources.get(item.item_id, [])) & BEAUTY_EXPLORATION_SOURCES for item in ranked
-    )
-    if has_beauty_exploration:
+
+    def _popularity_floor(self) -> list[Item]:
+        popularity_floor = (
+            max(20, int(self.limit * 0.06))
+            if self.limit >= 100
+            else max(1, int(self.limit * 0.10))
+        )
+        return sorted(
+            (
+                item
+                for item in self.selected
+                if "global_popular" in self.sources.get(item.item_id, [])
+            ),
+            key=_popularity_quality_key,
+            reverse=True,
+        )[:popularity_floor]
+
+    def _exploration_limit(self, ranked: list[Item]) -> int:
+        exploration_limit = (
+            max(10, int(self.limit * 0.08))
+            if self.limit >= 50
+            else max(1, int(self.limit * 0.10))
+        )
+        has_beauty_exploration = any(
+            set(self.sources.get(item.item_id, [])) & BEAUTY_EXPLORATION_SOURCES
+            for item in ranked
+        )
+        if not has_beauty_exploration:
+            return exploration_limit
         beauty_exploration_limit = (
-            min(180, max(12, int(limit * 0.16)))
-            if limit >= 50
-            else max(1, int(limit * 0.16))
+            min(180, max(12, int(self.limit * 0.16)))
+            if self.limit >= 50
+            else max(1, int(self.limit * 0.16))
         )
-        exploration_limit = min(limit, max(exploration_limit, beauty_exploration_limit))
-    protected_limit = max(limit - exploration_limit, 0)
-    protected = [
-        item
-        for item in ranked
-        if set(sources.get(item.item_id, [])) - EXPLORATION_SOURCES
-    ]
-    protected_source_ids = {item.item_id for item in protected}
-    exploration = [
-        item
-        for item in ranked
-        if item.item_id not in protected_source_ids
-        and set(sources.get(item.item_id, [])) & EXPLORATION_SOURCES
-    ]
-    limited = list(user_neighbor_floor)
-    limited_ids = {item.item_id for item in limited}
-    for item in foundation:
-        if item.item_id not in limited_ids:
-            limited.append(item)
-            limited_ids.add(item.item_id)
-    for item in protected:
-        if len(limited) >= protected_limit:
-            break
-        if item.item_id not in limited_ids:
-            limited.append(item)
-            limited_ids.add(item.item_id)
-    for item in exploration:
-        if len(limited) >= limit:
-            break
-        if item.item_id not in limited_ids:
-            limited.append(item)
-            limited_ids.add(item.item_id)
-    for item in ranked:
-        if len(limited) >= limit:
-            break
-        if item.item_id not in limited_ids:
-            limited.append(item)
-            limited_ids.add(item.item_id)
-    return limited
+        return min(self.limit, max(exploration_limit, beauty_exploration_limit))
+
+    def _split_protected_and_exploration(
+        self,
+        ranked: list[Item],
+    ) -> tuple[list[Item], list[Item]]:
+        protected = [
+            item
+            for item in ranked
+            if set(self.sources.get(item.item_id, [])) - EXPLORATION_SOURCES
+        ]
+        protected_source_ids = {item.item_id for item in protected}
+        exploration = [
+            item
+            for item in ranked
+            if item.item_id not in protected_source_ids
+            and set(self.sources.get(item.item_id, [])) & EXPLORATION_SOURCES
+        ]
+        return protected, exploration
+
+    def _append_unique(
+        self,
+        output: list[Item],
+        output_ids: set[str],
+        candidates: list[Item],
+        limit: int,
+    ) -> None:
+        for item in candidates:
+            if len(output) >= limit:
+                break
+            if item.item_id not in output_ids:
+                output.append(item)
+                output_ids.add(item.item_id)
 
 
 def _source_floor_candidates(

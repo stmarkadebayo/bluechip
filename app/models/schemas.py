@@ -165,6 +165,7 @@ class CandidateDiagnostics(BaseModel):
     input_count: int
     candidate_count: int
     source_counts: dict[str, int] = Field(default_factory=dict)
+    disabled_sources: list[str] = Field(default_factory=list)
     used_collaborative: bool = False
 
 

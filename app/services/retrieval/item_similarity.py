@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import math
 import re
+import sqlite3
 from collections import Counter, defaultdict
+from pathlib import Path
 
 from app.models.schemas import UserHistoryItem
 from app.services.retrieval.embeddings import embedding_text, terms
@@ -69,6 +71,40 @@ REVIEW_TERM_STOPWORDS = {
     "you",
     "your",
 }
+
+
+class SQLiteItemNeighborIndex:
+    """Lazy SQLite-backed item-item neighbor lookup.
+
+    The implicit item-item artifact can contain millions of neighbor edges, so
+    serving and eval should not load it as a large Python dict. This wrapper
+    exposes the minimal mapping API used by candidate generation.
+    """
+
+    def __init__(self, path: str | Path) -> None:
+        self.path = Path(path)
+        self._connection: sqlite3.Connection | None = None
+
+    def get(self, item_id: str, default: list | None = None) -> list[list[object]]:
+        if not self.path.exists():
+            return [] if default is None else default
+        rows = self._connect().execute(
+            """
+            SELECT neighbor_id, score
+            FROM item_neighbors
+            WHERE item_id = ?
+            ORDER BY rank ASC
+            """,
+            (str(item_id),),
+        ).fetchall()
+        if not rows:
+            return [] if default is None else default
+        return [[str(neighbor_id), float(score)] for neighbor_id, score in rows]
+
+    def _connect(self) -> sqlite3.Connection:
+        if self._connection is None:
+            self._connection = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
+        return self._connection
 
 
 def build_item_neighbors_from_reviews(
@@ -301,6 +337,46 @@ def scored_candidate_ids_from_history(
     return _normalized_counter(scores, limit)
 
 
+def candidate_ids_from_implicit_item_neighbors(
+    history: list[UserHistoryItem],
+    implicit_item_neighbors,
+    limit: int = 100,
+    max_seed_items: int = 12,
+    max_neighbors_per_seed: int = 120,
+) -> list[tuple[str, float]]:
+    """Retrieve from the implicit cosine item-item artifact.
+
+    This mirrors the strongest conventional baseline while keeping it bounded:
+    only recent positive history items can vote, seen items are filtered, and
+    the large artifact may be a lazy SQLite index instead of an in-memory dict.
+    """
+
+    if not implicit_item_neighbors:
+        return []
+    positive_history = [item for item in history if item.rating >= 4]
+    if not positive_history:
+        return []
+
+    seen = {item.item_id for item in history}
+    seeds = sorted(
+        positive_history,
+        key=lambda item: (item.timestamp or 0, float(item.rating), item.item_id),
+        reverse=True,
+    )[:max_seed_items]
+    scores = Counter()
+    for seed_index, item in enumerate(seeds):
+        rating_weight = max((float(item.rating) - 3.0) / 2.0, 0.25)
+        recency_weight = 1.0 / math.sqrt(seed_index + 1)
+        for neighbor_id, neighbor_score in _postings(
+            implicit_item_neighbors.get(item.item_id, [])
+        )[:max_neighbors_per_seed]:
+            if neighbor_id in seen:
+                continue
+            scores[neighbor_id] += rating_weight * recency_weight * neighbor_score
+
+    return _normalized_counter(scores, limit)
+
+
 def candidate_ids_from_user_neighbors(
     history: list[UserHistoryItem],
     collaborative_index: dict,
@@ -331,88 +407,6 @@ def candidate_ids_from_user_neighbors(
             item_scores[item_id] += user_score * rating_weight
 
     return _normalized_counter(item_scores, limit)
-
-
-def candidate_ids_from_graph_walk(
-    history: list[UserHistoryItem],
-    collaborative_index: dict,
-    limit: int = 100,
-    max_direct_neighbors: int = 80,
-    max_second_hop_neighbors: int = 12,
-    max_neighbor_users: int = 180,
-    max_user_items: int = 35,
-) -> list[tuple[str, float]]:
-    """Retrieve candidates from a bounded user-item graph walk.
-
-    This is a dependency-free approximation of graph retrieval: liked history
-    items vote for direct item neighbors, similar users' positives, and a small
-    second hop from those positives. It complements direct co-visitation by
-    reaching items that are not immediate neighbors of the seed item.
-    """
-
-    item_neighbors = collaborative_index.get("item_neighbors") or {}
-    item_users = collaborative_index.get("item_positive_users") or {}
-    user_items = collaborative_index.get("user_positive_items") or {}
-    liked_history = [item for item in history if item.rating >= 4]
-    if not liked_history:
-        return []
-
-    seen = {item.item_id for item in history}
-    scores = Counter()
-    seed_categories = {item.item_id: item.category for item in liked_history}
-
-    for item in liked_history:
-        history_weight = max((float(item.rating) - 3.0) / 2.0, 0.2)
-        seed_category = item.category
-
-        direct_neighbors = _postings_from_dicts(item_neighbors.get(item.item_id, []))
-        for direct_id, direct_score in direct_neighbors[:max_direct_neighbors]:
-            if direct_id not in seen:
-                scores[direct_id] += history_weight * direct_score * 0.65
-            for second_id, second_score in _postings_from_dicts(
-                item_neighbors.get(direct_id, [])
-            )[:max_second_hop_neighbors]:
-                if second_id in seen or second_id == item.item_id:
-                    continue
-                scores[second_id] += history_weight * direct_score * second_score * 0.18
-
-        user_scores = Counter()
-        for neighbor_user in item_users.get(item.item_id, [])[:max_neighbor_users]:
-            rating_weight = max((float(neighbor_user.get("rating") or 0) - 3.0) / 2.0, 0.1)
-            user_scores[str(neighbor_user["user_id"])] += history_weight * rating_weight
-
-        for user_id, user_score in user_scores.most_common(max_neighbor_users):
-            for rank, record in enumerate(user_items.get(user_id, [])[:max_user_items]):
-                candidate_id = str(record["item_id"])
-                if candidate_id in seen:
-                    continue
-                rating_weight = max((float(record.get("rating") or 0) - 3.0) / 2.0, 0.1)
-                category_boost = (
-                    1.12
-                    if seed_category and record.get("category") == seed_category
-                    else 1.0
-                )
-                scores[candidate_id] += (
-                    user_score
-                    * rating_weight
-                    * category_boost
-                    * 0.34
-                    / math.sqrt(rank + 1)
-                )
-                for expanded_id, expanded_score in _postings_from_dicts(
-                    item_neighbors.get(candidate_id, [])
-                )[:4]:
-                    if expanded_id in seen or expanded_id in seed_categories:
-                        continue
-                    scores[expanded_id] += (
-                        user_score
-                        * rating_weight
-                        * expanded_score
-                        * category_boost
-                        * 0.08
-                    )
-
-    return _normalized_counter(scores, limit)
 
 
 def candidate_ids_from_review_terms(
