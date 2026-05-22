@@ -3,6 +3,8 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.models.schemas import CandidateDiagnostics, ConversationTurnResponse
+from app.api import routes
 from app.serving.orchestrators import recommendation as recommendation_orchestrator
 from app.services.generation import generator
 
@@ -140,6 +142,63 @@ def test_recommend_contract_exposes_score_components(monkeypatch) -> None:
     assert trace["model_versions"]["task_b_ranker"]
     assert trace["index_versions"]
     assert trace["retrieval_source_counts"]
+
+
+def test_conversation_turn_preserves_enhancement_and_feedback_flags(monkeypatch) -> None:
+    captured = {}
+
+    class CapturingRecommendationAgent:
+        def run(self, request):
+            captured["enhance_with_llm"] = request.enhance_with_llm
+            captured["accepted_item_ids"] = request.accepted_item_ids
+            captured["rejected_item_ids"] = request.rejected_item_ids
+            return ConversationTurnResponse(
+                conversation_id="unused",
+                turn_index=0,
+                recommendations=[],
+                agent_response="unused",
+                candidate_diagnostics=CandidateDiagnostics(
+                    strategy="test",
+                    input_count=0,
+                    candidate_count=0,
+                ),
+            )
+
+    monkeypatch.setattr(routes, "RecommendationAgent", lambda: CapturingRecommendationAgent())
+
+    first = client.post(
+        "/api/conversation/turn",
+        json={
+            "user_persona": "A practical diner.",
+            "user_history": [],
+            "context": "quiet dinner",
+            "candidate_items": [],
+            "enhance_with_llm": True,
+        },
+    )
+    assert first.status_code == 200
+    conversation_id = first.json()["conversation_id"]
+    feedback = client.post(
+        f"/api/conversation/{conversation_id}/feedback",
+        params={"item_id": "bad_item", "accepted": False},
+    )
+    assert feedback.status_code == 200
+
+    second = client.post(
+        "/api/conversation/turn",
+        json={
+            "conversation_id": conversation_id,
+            "user_persona": "A practical diner.",
+            "user_history": [],
+            "context": "still quiet",
+            "candidate_items": [],
+            "enhance_with_llm": True,
+        },
+    )
+
+    assert second.status_code == 200
+    assert captured["enhance_with_llm"] is True
+    assert captured["rejected_item_ids"] == ["bad_item"]
 
 
 def test_ui_demo_surface_exposes_submission_flow() -> None:

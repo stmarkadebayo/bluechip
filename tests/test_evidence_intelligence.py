@@ -128,7 +128,9 @@ def test_review_plan_fallback_is_grounded() -> None:
     plan = build_review_plan(user_profile, item_profile, predicted_rating=4)
     review = fallback_review_from_plan(item_profile, plan)
 
-    assert "Mainland Grill 4 out of 5" in review
+    assert "Mainland Grill" in review
+    assert "4 out of 5" in review
+    assert not review.startswith("I would rate Mainland Grill")
     assert "Nigerian shopper" in review
     assert plan.aspect_scores
 

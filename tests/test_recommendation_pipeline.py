@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from app.agents.recommendation_agent import RecommendationAgent
 from app.models.schemas import Item, RecommendationRequest, UserHistoryItem
+from app.serving.orchestrators import recommendation as recommendation_orchestrator
 from app.services.profiling.user_profile import build_user_profile
 from app.services.ranking.context_intents import context_category_hint
-from app.services.ranking.recommendation import rank_candidates
+from app.services.ranking.recommendation import adaptive_recommendation_policy, rank_candidates
 from app.services.retrieval.candidates import generate_candidate_pool
 from app.services.retrieval.item_similarity import (
     build_collaborative_retrieval_index,
@@ -47,6 +48,105 @@ def test_recommendation_agent_filters_seen_items() -> None:
     response = RecommendationAgent().run(request)
 
     assert [item.item_id for item in response.recommendations] == ["song_new"]
+
+
+def test_cold_start_policy_enriches_active_ranking_path(monkeypatch) -> None:
+    monkeypatch.setattr(recommendation_orchestrator, "_load_neural_index", lambda: None)
+    request = RecommendationRequest(
+        user_persona=(
+            "A Lagos-based student on a tight budget who wants calm places, "
+            "fast service, spicy food, and no surprise fees."
+        ),
+        user_history=[],
+        context="Dinner with two friends after class. Keep it affordable and conversation-friendly.",
+        candidate_items=[
+            Item(
+                item_id="popular_loud",
+                name="Party Yard",
+                category="restaurant",
+                metadata={"price": "premium", "ambience": "loud", "review_count": 900},
+                summary="Loud premium outdoor seating with a longer wait.",
+                average_rating=4.8,
+            ),
+            Item(
+                item_id="quiet_value",
+                name="Campus Pepper Bowl",
+                category="restaurant",
+                metadata={"price": "low", "ambience": "quiet", "review_count": 120},
+                summary="Affordable spicy bowls, quiet seating, and fast counter service.",
+                average_rating=4.2,
+            ),
+        ],
+        limit=2,
+    )
+
+    response = RecommendationAgent().run(request)
+
+    assert response.candidate_diagnostics is not None
+    assert "cold_start" in response.candidate_diagnostics.ranking_policy
+    assert response.candidate_diagnostics.semantic_retrieval_enabled
+    assert response.recommendations[0].score_components["personalization_weight"] >= 0.22
+
+
+def test_rejected_item_ids_are_removed_before_ranking(monkeypatch) -> None:
+    monkeypatch.setattr(recommendation_orchestrator, "_load_neural_index", lambda: None)
+    request = RecommendationRequest(
+        user_persona="A practical diner who wants quiet affordable restaurants.",
+        user_history=[],
+        context="Dinner where conversation is easy.",
+        candidate_items=[
+            Item(
+                item_id="rejected_loud",
+                name="Loud Premium Yard",
+                category="restaurant",
+                metadata={"review_count": 5000},
+                summary="Very popular but loud premium seating.",
+                average_rating=4.9,
+            ),
+            Item(
+                item_id="quiet_value",
+                name="Quiet Value Grill",
+                category="restaurant",
+                metadata={"review_count": 50},
+                summary="Quiet affordable grill for conversation.",
+                average_rating=4.2,
+            ),
+        ],
+        rejected_item_ids=["rejected_loud"],
+        limit=2,
+    )
+
+    response = RecommendationAgent().run(request)
+
+    assert [item.item_id for item in response.recommendations] == ["quiet_value"]
+
+
+def test_profile_keeps_cold_start_identity_terms() -> None:
+    profile = build_user_profile(
+        "A Lagos-based student who needs quiet affordable places near campus.",
+        [],
+    )
+
+    assert "lagos-based" in profile.preferred_terms
+    assert "student" in profile.preferred_terms
+
+
+def test_adaptive_policy_changes_for_sparse_contextual_profiles() -> None:
+    profile = build_user_profile(
+        "A budget-conscious student who likes affordable quiet places.",
+        [],
+    )
+
+    policy = adaptive_recommendation_policy(
+        user_profile=profile,
+        context="Affordable dinner where conversation is easy.",
+        strategy="cold_start",
+    )
+
+    assert "cold_start" in policy.name
+    assert "budget_sensitive" in policy.name
+    assert policy.base_popularity < 0.85
+    assert policy.weights.context > 0.16
 
 
 def test_candidate_pool_uses_collaborative_sources() -> None:

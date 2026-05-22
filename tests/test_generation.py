@@ -51,7 +51,7 @@ def test_review_generation_prompt_contains_llm_contract(monkeypatch) -> None:
         def generate(self, instructions: str, prompt: str) -> str:
             captured["instructions"] = instructions
             captured["prompt"] = prompt
-            return "I would rate Calm Grill 4 out of 5. Quiet and affordable enough for me."
+            return "Calm Grill is quiet enough for me, and I would put it at 4 out of 5."
 
     monkeypatch.setattr(generator, "get_generation_provider", lambda: CapturingProvider())
     user_profile = build_user_profile(
@@ -70,10 +70,14 @@ def test_review_generation_prompt_contains_llm_contract(monkeypatch) -> None:
 
     review = generate_review(user_profile, item_profile, predicted_rating=4)
 
-    assert review.startswith("I would rate Calm Grill")
+    assert review.startswith("Calm Grill is quiet enough")
     assert "Do not invent item facts" in captured["instructions"]
+    assert "not completing a template" in captured["instructions"]
     assert "Predicted rating: 4/5" in captured["prompt"]
-    assert "Required first sentence: I would rate Calm Grill 4 out of 5." in captured["prompt"]
+    assert "Review archetype:" in captured["prompt"]
+    assert "Archetype guidance:" in captured["prompt"]
+    assert "Required first sentence" not in captured["prompt"]
+    assert "Do not use the same opening or closing every time" in captured["prompt"]
     assert "Calm Grill" in captured["prompt"]
 
 
@@ -140,7 +144,8 @@ def test_review_generation_repairs_missing_rating_contract(monkeypatch) -> None:
     result = generate_review_result(user_profile, item_profile, predicted_rating=4)
     validation = validate_review_simulation(4, result.text, user_profile, item_profile)
 
-    assert result.text.startswith("I would rate Pepper House 4 out of 5.")
+    assert result.text.startswith("Pepper House is affordable")
+    assert "That puts it at 4 out of 5 for me." in result.text
     assert validation.is_consistent
 
 
@@ -167,7 +172,7 @@ def test_mock_provider_exercises_prompt_mode_generation(monkeypatch) -> None:
     assert result.provider == "mock"
     assert "Calm Grill" in result.text
     assert "4 out of 5" in result.text
-    assert "Nigerian English" in result.text
+    assert "Nigerian shopper" in result.text
 
 
 def test_openrouter_provider_uses_deepseek_v4_flash_free_by_default(monkeypatch) -> None:
