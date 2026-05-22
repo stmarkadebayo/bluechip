@@ -79,7 +79,7 @@ def _quality_score(item: Item) -> float:
     return min(max((item.average_rating - 1) / 4, 0), 1)
 
 
-def _extract_terms(text: str, limit: int = 16) -> list[str]:
+def _extract_terms(text: str, limit: int = 32) -> list[str]:
     tokens = re.findall(r"[a-zA-Z][a-zA-Z0-9_-]{2,}", text.lower())
     seen = []
     for token in tokens:

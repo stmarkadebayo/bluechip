@@ -108,6 +108,24 @@ def default_disabled_retrieval_sources(context: str) -> set[str]:
     }
 
 
+def adaptive_disabled_retrieval_sources(
+    context: str,
+    user_profile: object | None = None,
+    strategy: str = "",
+) -> set[str]:
+    disabled = default_disabled_retrieval_sources(context)
+    evidence_count = int(getattr(user_profile, "evidence_count", 0) or 0)
+    has_context = bool(context.strip())
+    sparse_or_cold = evidence_count <= 2 or strategy == "cold_start"
+    if sparse_or_cold or has_context:
+        disabled.discard("vector_profile")
+        disabled.discard("neural_vector")
+    if sparse_or_cold:
+        disabled.discard("sparse_category_tail")
+        disabled.discard("beauty_sparse_tail")
+    return disabled
+
+
 def calibrated_source_score(source: str, raw_score: float) -> float:
     family = retrieval_source_family(source)
     confidence = SOURCE_FAMILY_CONFIDENCE.get(family, SOURCE_FAMILY_CONFIDENCE["other"])

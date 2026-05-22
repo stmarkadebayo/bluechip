@@ -144,6 +144,8 @@ class RecommendationRequest(BaseModel):
     locale: Optional[str] = None
     limit: int = Field(default=5, ge=1, le=20)
     enhance_with_llm: bool = False
+    accepted_item_ids: list[str] = Field(default_factory=list)
+    rejected_item_ids: list[str] = Field(default_factory=list)
 
 
 class RecommendationItem(BaseModel):
@@ -167,6 +169,8 @@ class CandidateDiagnostics(BaseModel):
     source_counts: dict[str, int] = Field(default_factory=dict)
     disabled_sources: list[str] = Field(default_factory=list)
     used_collaborative: bool = False
+    ranking_policy: str = ""
+    semantic_retrieval_enabled: bool = False
 
 
 class RuntimeMetrics(BaseModel):

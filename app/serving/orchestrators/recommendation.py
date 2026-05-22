@@ -10,20 +10,23 @@ from app.models.schemas import (
     CandidateDiagnostics,
     RecommendationRequest,
     RecommendationResponse,
+    UserProfile,
 )
 from app.platform.feature_store import get_feature_store
 from app.platform.model_registry import get_model_registry
 from app.platform.artifacts import read_json_artifact
-from app.services.agentic.recommender_agent import RecommenderReasoner
+from app.services.agentic.recommender_agent import ColdStartInference, RecommenderReasoner
 from app.services.generation.generator import generate_recommendation_reason_result
 from app.services.generation.providers import generation_provider_name
 from app.services.nigerian.context import NigerianContextEngine
 from app.services.profiling.user_profile import build_user_profile
-from app.services.ranking.recommendation import rank_candidates
+from app.services.ranking.recommendation import adaptive_recommendation_policy, rank_candidates
 from app.services.retrieval.candidates import generate_candidate_pool
+from app.services.retrieval.embeddings import embedding_text, hashed_embedding
 from app.services.retrieval.embeddings import neural_available
 from app.services.retrieval.item_similarity import SQLiteItemNeighborIndex
-from app.services.retrieval.source_registry import default_disabled_retrieval_sources
+from app.services.retrieval.source_registry import adaptive_disabled_retrieval_sources
+from app.services.retrieval.vector_store import LocalVectorRetriever
 from app.services.retrieval.vector_store import FAISSVectorStore
 from app.services.validation.evidence_critic import recommendation_evidence_issues
 from app.stores.trace_store import trace_store
@@ -54,9 +57,15 @@ class RecommendationAgent:
         )
 
         strategy = "history_aware"
+        cold_start = None
         if not request.user_history:
             strategy = "cold_start"
             cold_start = self._reasoner.handle_cold_start(request.user_persona)
+            user_profile = _apply_cold_start_to_profile(
+                user_profile=user_profile,
+                persona=request.user_persona,
+                cold_start=cold_start,
+            )
             trace.append(
                 AgentTraceStep(
                     step="cold_start_inference",
@@ -121,19 +130,40 @@ class RecommendationAgent:
             except Exception:
                 preference_analysis = None
 
-        disabled_sources = _disabled_retrieval_sources(request.context)
+        ranking_policy = adaptive_recommendation_policy(
+            user_profile=user_profile,
+            context=request.context,
+            strategy=strategy,
+            preference_analysis=preference_analysis,
+        )
+        trace.append(
+            AgentTraceStep(
+                step="ranking_policy",
+                status="ok",
+                detail=ranking_policy.name,
+            )
+        )
+
+        disabled_sources = _disabled_retrieval_sources(request.context, user_profile, strategy)
         collaborative_index = _load_collaborative_index()
         neural_index = _load_neural_index()
         if neural_index is not None:
             neural_index = neural_index.bind_items(request.candidate_items)
+        vector_retriever = (
+            LocalVectorRetriever(request.candidate_items)
+            if "vector_profile" not in disabled_sources
+            else None
+        )
         candidate_pool = generate_candidate_pool(
             user_profile=user_profile,
             history=request.user_history,
             items=request.candidate_items,
             context=request.context,
             collaborative_index=collaborative_index,
+            vector_retriever=vector_retriever,
             neural_retriever=neural_index,
             disabled_sources=disabled_sources,
+            excluded_item_ids=set(request.rejected_item_ids),
             limit=min(len(request.candidate_items), 100),
         )
         trace.append(
@@ -157,8 +187,11 @@ class RecommendationAgent:
             context=request.context,
             candidate_items=candidate_pool.items,
             limit=request.limit,
+            policy=ranking_policy,
             candidate_sources=candidate_pool.sources,
             candidate_source_scores=candidate_pool.source_scores,
+            accepted_item_ids=request.accepted_item_ids,
+            rejected_item_ids=request.rejected_item_ids,
         )
         trace.append(
             AgentTraceStep(
@@ -212,6 +245,7 @@ class RecommendationAgent:
                 user_profile=user_profile,
                 recommendation=item,
                 context=request.context,
+                history=request.user_history,
             )
             reason = generated_reason.text
             generation_provider = generated_reason.provider or generation_provider
@@ -266,8 +300,82 @@ class RecommendationAgent:
                 source_counts=candidate_pool.source_counts(),
                 disabled_sources=sorted(disabled_sources),
                 used_collaborative=bool(collaborative_index),
+                ranking_policy=ranking_policy.name,
+                semantic_retrieval_enabled=(
+                    "vector_profile" not in disabled_sources
+                    or "neural_vector" not in disabled_sources
+                ),
             ),
         )
+
+
+def _apply_cold_start_to_profile(
+    user_profile: UserProfile,
+    persona: str,
+    cold_start: ColdStartInference,
+) -> UserProfile:
+    preferred_terms = _merge_values(user_profile.preferred_terms, cold_start.key_terms, limit=12)
+    preferred_categories = _merge_values(
+        user_profile.preferred_categories,
+        cold_start.preferred_categories,
+        limit=8,
+    )
+    category_affinity = dict(user_profile.category_affinity)
+    for category in preferred_categories:
+        category_affinity[category] = max(category_affinity.get(category, 0.0), 0.35)
+    positive_aspects = list(user_profile.positive_aspects)
+    if cold_start.price_sensitivity.lower() == "high":
+        positive_aspects = _merge_values(positive_aspects, ["affordable", "value"], limit=10)
+    if cold_start.quality_expectation.lower() == "high":
+        positive_aspects = _merge_values(positive_aspects, ["quality", "reliable"], limit=10)
+    confidence = round(max(user_profile.confidence, min(cold_start.confidence, 0.72)), 2)
+    voice_style = (
+        cold_start.likely_voice_style
+        if cold_start.likely_voice_style and user_profile.voice_style == "balanced"
+        else user_profile.voice_style
+    )
+    signals = list(user_profile.signals)
+    signals.append(
+        "cold-start profile inference: "
+        + ("LLM" if cold_start.llm_augmented else "deterministic")
+    )
+    if cold_start.key_terms:
+        signals.append("cold-start terms: " + ", ".join(cold_start.key_terms[:5]))
+    embedding = hashed_embedding(
+        embedding_text(
+            persona,
+            preferred_terms,
+            preferred_categories,
+            positive_aspects,
+            user_profile.recent_terms,
+        )
+    )
+    return user_profile.model_copy(
+        update={
+            "preferred_terms": preferred_terms,
+            "preferred_categories": preferred_categories,
+            "category_affinity": category_affinity,
+            "positive_aspects": positive_aspects,
+            "confidence": confidence,
+            "voice_style": voice_style,
+            "signals": signals[: len(user_profile.signals) + 3],
+            "embedding": embedding,
+        }
+    )
+
+
+def _merge_values(existing: list[str], additions: list[str], limit: int) -> list[str]:
+    output = list(existing)
+    normalized = {value.lower() for value in output}
+    for value in additions:
+        cleaned = str(value or "").strip()
+        if not cleaned or cleaned.lower() in normalized:
+            continue
+        output.append(cleaned)
+        normalized.add(cleaned.lower())
+        if len(output) >= limit:
+            break
+    return output
 
 
 @lru_cache(maxsize=1)
@@ -341,10 +449,14 @@ def _attach_evidence_graph_index(payload: dict) -> dict:
 
 
 def _task_b_ranker_version() -> str:
-    return "lean_hybrid_no_source_diversity"
+    return "adaptive_hybrid_policy_v2"
 
 
-def _disabled_retrieval_sources(context: str) -> set[str]:
+def _disabled_retrieval_sources(
+    context: str,
+    user_profile: UserProfile,
+    strategy: str,
+) -> set[str]:
     configured = os.getenv("BLUECHIP_DISABLED_RETRIEVAL_SOURCES")
     if configured is not None:
         return {
@@ -352,7 +464,11 @@ def _disabled_retrieval_sources(context: str) -> set[str]:
             for source in configured.split(",")
             if source.strip()
         }
-    return default_disabled_retrieval_sources(context)
+    return adaptive_disabled_retrieval_sources(
+        context=context,
+        user_profile=user_profile,
+        strategy=strategy,
+    )
 
 
 @lru_cache(maxsize=1)

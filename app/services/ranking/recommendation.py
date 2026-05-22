@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
+from typing import Any
 
 from app.models.schemas import Item, ItemProfile, RecommendationItem, UserProfile
 from app.services.ranking.context_intents import (
@@ -54,20 +55,135 @@ class RecommendationWeights:
         }
 
 
+@dataclass(frozen=True)
+class RecommendationPolicy:
+    name: str = "balanced"
+    weights: RecommendationWeights = field(default_factory=RecommendationWeights)
+    personalization_floor: float = 0.02
+    personalization_ceiling: float = 0.65
+    base_popularity: float = 0.85
+    base_quality: float = 0.10
+    base_novelty: float = 0.05
+    feedback_rejection_penalty: float = 0.45
+    feedback_acceptance_boost: float = 0.06
+
+
+def adaptive_recommendation_policy(
+    user_profile: UserProfile,
+    context: str,
+    strategy: str = "history_aware",
+    preference_analysis: Any | None = None,
+) -> RecommendationPolicy:
+    """Build a ranking policy that changes with evidence depth and intent.
+
+    The default ranker intentionally remains deterministic, but the weights
+    should not be one-size-fits-all. Sparse profiles need more context,
+    semantic, and category evidence; rich profiles can trust collaborative and
+    preference features more heavily.
+    """
+    policy = RecommendationPolicy()
+    weights = policy.weights
+    names = ["balanced"]
+    context_terms = set(_terms(context))
+    sparse_profile = user_profile.evidence_count <= 2 or strategy == "cold_start"
+
+    if sparse_profile:
+        names.append("cold_start")
+        weights = replace(
+            weights,
+            preference=max(weights.preference, 0.30),
+            context=max(weights.context, 0.28),
+            category=max(weights.category, 0.26),
+            vector=max(weights.vector, 0.24),
+            aspect=max(weights.aspect, 0.22),
+            retrieval=max(weights.retrieval, 0.10),
+            source_diversity=max(weights.source_diversity, 0.08),
+            popularity=min(weights.popularity, 0.12),
+        )
+        policy = replace(
+            policy,
+            personalization_floor=0.22,
+            personalization_ceiling=0.72,
+            base_popularity=0.52,
+            base_quality=0.28,
+            base_novelty=0.20,
+        )
+
+    if context_terms:
+        names.append("contextual")
+        weights = replace(
+            weights,
+            context=max(weights.context, 0.30),
+            aspect=max(weights.aspect, 0.20),
+            retrieval=max(weights.retrieval, 0.08),
+        )
+
+    price_tolerance = str(getattr(preference_analysis, "price_tolerance", "")).lower()
+    quality_priority = str(getattr(preference_analysis, "quality_priority", "")).lower()
+    exploration = str(getattr(preference_analysis, "exploration_openness", "")).lower()
+
+    budget_terms = {"budget", "cheap", "affordable", "value", "price", "fees"}
+    if price_tolerance == "high" or context_terms & budget_terms:
+        names.append("budget_sensitive")
+        weights = replace(
+            weights,
+            dislike_penalty=max(weights.dislike_penalty, 0.40),
+            context=max(weights.context, 0.32),
+            aspect=max(weights.aspect, 0.24),
+            popularity=min(weights.popularity, 0.12),
+        )
+
+    if quality_priority in {"yes", "high", "quality"}:
+        names.append("quality_first")
+        weights = replace(
+            weights,
+            quality=max(weights.quality, 0.22),
+            aspect=max(weights.aspect, 0.24),
+            popularity=min(weights.popularity, 0.14),
+        )
+
+    if exploration == "high" or user_profile.rating_std > 1.0:
+        names.append("exploratory")
+        weights = replace(
+            weights,
+            novelty=max(weights.novelty, 0.12),
+            source_diversity=max(weights.source_diversity, 0.10),
+            vector=max(weights.vector, 0.24),
+        )
+
+    if user_profile.evidence_count >= 5:
+        names.append("history_rich")
+        weights = replace(
+            weights,
+            collaborative=max(weights.collaborative, 0.26),
+            sequential=max(weights.sequential, 0.16),
+            evidence_graph=max(weights.evidence_graph, 0.16),
+        )
+
+    return replace(policy, name="+".join(dict.fromkeys(names)), weights=weights)
+
+
 def rank_candidates(
     user_profile: UserProfile,
     context: str,
     candidate_items: list[Item],
     limit: int,
     weights: RecommendationWeights | None = None,
+    policy: RecommendationPolicy | None = None,
     candidate_sources: dict[str, list[str]] | None = None,
     candidate_source_scores: dict[str, dict[str, float]] | None = None,
     item_profile_cache: dict[str, ItemProfile] | None = None,
+    accepted_item_ids: list[str] | None = None,
+    rejected_item_ids: list[str] | None = None,
 ) -> list[RecommendationItem]:
-    weights = weights or RecommendationWeights()
-    feature_weights = weights.as_feature_weights()
+    policy = policy or RecommendationPolicy()
+    if weights is not None:
+        policy = replace(policy, weights=weights)
+    feature_weights = policy.weights.as_feature_weights()
     candidate_sources = candidate_sources or {}
     candidate_source_scores = candidate_source_scores or {}
+    accepted = set(accepted_item_ids or [])
+    rejected = set(rejected_item_ids or [])
     ranked: list[tuple[float, RecommendationItem]] = []
     context_terms = _terms(context)
     profiled_items = [
@@ -75,7 +191,10 @@ def rank_candidates(
         for item in candidate_items
     ]
     max_popularity = max((profile.popularity for _, profile in profiled_items), default=0)
-    personalization_weight = min(max((user_profile.confidence - 0.45) / 0.80, 0.02), 0.65)
+    personalization_weight = min(
+        max((user_profile.confidence - 0.45) / 0.80, policy.personalization_floor),
+        policy.personalization_ceiling,
+    )
 
     for item, profile in profiled_items:
         features = ranker_features(
@@ -92,9 +211,9 @@ def rank_candidates(
         )
 
         base_score = (
-            0.85 * features["popularity"]
-            + 0.10 * features["item_quality"]
-            + 0.05 * features["novelty"]
+            policy.base_popularity * features["popularity"]
+            + policy.base_quality * features["item_quality"]
+            + policy.base_novelty * features["novelty"]
         )
         personalized_score = weighted_score(features, feature_weights)
         context_penalty = _context_penalty(context_terms, item, profile.negative_aspects)
@@ -111,6 +230,9 @@ def rank_candidates(
             - context_category_penalty
             - context_intent_penalty_value
         )
+        feedback_acceptance_boost = policy.feedback_acceptance_boost if item.item_id in accepted else 0.0
+        feedback_rejection_penalty = policy.feedback_rejection_penalty if item.item_id in rejected else 0.0
+        score += feedback_acceptance_boost - feedback_rejection_penalty
         score_components = {name: round(value, 4) for name, value in features.items()}
         score_components.update(
             {
@@ -120,14 +242,16 @@ def rank_candidates(
                 "context_intent_boost": round(context_intent_boost_value, 4),
                 "context_intent_penalty": round(context_intent_penalty_value, 4),
                 "personalization_weight": round(personalization_weight, 4),
+                "feedback_acceptance_boost": round(feedback_acceptance_boost, 4),
+                "feedback_rejection_penalty": round(feedback_rejection_penalty, 4),
             }
         )
 
-        tradeoffs = "No major tradeoff detected from available metadata."
+        tradeoffs = "No obvious drawback stands out from the available metadata."
         if item.metadata.get("price") in {"high", "premium", "expensive"}:
-            tradeoffs = "Price may be higher than the user's usual preference."
+            tradeoffs = "The main watch-out is price; it may sit above this user's usual budget."
         elif profile.negative_aspects:
-            tradeoffs = "Potential mismatch: " + ", ".join(profile.negative_aspects[:3])
+            tradeoffs = "Watch out for " + ", ".join(profile.negative_aspects[:3]) + "."
 
         display_score = round(min(max(score, 0), 1), 2)
         score_components["raw_score"] = round(score, 4)

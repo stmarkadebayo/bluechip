@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import json
 import re
 from collections import Counter
+from threading import Lock
 
 from app.models.schemas import UserHistoryItem, UserProfile
 from app.services.intelligence.aspects import user_aspect_evidence
@@ -29,13 +31,9 @@ STOPWORDS = {
     "based",
     "did",
     "does",
-    "student",
-    "students",
     "like",
     "likes",
     "liked",
-    "lagos-based",
-    "not",
     "who",
     "good",
     "great",
@@ -83,8 +81,37 @@ NEGATIVE_ASPECT_HINTS = {
     "weak",
 }
 
+_PROFILE_CACHE_MAX_SIZE = 512
+_PROFILE_CACHE: dict[str, UserProfile] = {}
+_PROFILE_CACHE_LOCK = Lock()
+
 
 def build_user_profile(
+    persona: str,
+    history: list[UserHistoryItem],
+    locale: str | None = None,
+    enhance_with_llm: bool | None = None,
+) -> UserProfile:
+    key = _profile_cache_key(persona, history, locale, enhance_with_llm)
+    with _PROFILE_CACHE_LOCK:
+        cached = _PROFILE_CACHE.get(key)
+    if cached is not None:
+        return cached.model_copy(deep=True)
+
+    profile = _build_user_profile_uncached(
+        persona=persona,
+        history=history,
+        locale=locale,
+        enhance_with_llm=enhance_with_llm,
+    )
+    with _PROFILE_CACHE_LOCK:
+        if len(_PROFILE_CACHE) >= _PROFILE_CACHE_MAX_SIZE:
+            _PROFILE_CACHE.pop(next(iter(_PROFILE_CACHE)))
+        _PROFILE_CACHE[key] = profile.model_copy(deep=True)
+    return profile
+
+
+def _build_user_profile_uncached(
     persona: str,
     history: list[UserHistoryItem],
     locale: str | None = None,
@@ -199,6 +226,24 @@ def build_user_profile(
             locale=locale,
         )
     return profile
+
+
+def _profile_cache_key(
+    persona: str,
+    history: list[UserHistoryItem],
+    locale: str | None,
+    enhance_with_llm: bool | None,
+) -> str:
+    payload = {
+        "persona": persona,
+        "locale": locale,
+        "enhance": _should_enhance(enhance_with_llm),
+        "history": [
+            item.model_dump(mode="json", exclude_none=True)
+            for item in history
+        ],
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
 def _should_enhance(value: bool | None) -> bool:

@@ -293,9 +293,9 @@ class RecommenderReasoner:
             raw = self._provider.generate(
                 instructions="One-sentence explanation.", prompt=prompt,
             )
-            return raw.strip() if raw else f"Matches user preferences with score {candidate.score:.2f}."
+            return raw.strip() if raw else _natural_reason_fallback(candidate)
         except Exception:
-            return f"Matches user preferences with score {candidate.score:.2f}."
+            return _natural_reason_fallback(candidate)
 
     # ------------------------------------------------------------------
     # Explanation generation
@@ -310,9 +310,9 @@ class RecommenderReasoner:
     ) -> str:
         """Generate a personal, convincing explanation for a recommendation."""
         fallback = (
-            f"{item.name} ranks well because it matches your preferences "
-            f"for {', '.join(user_profile.preferred_terms[:3] or ['quality and value'])}. "
-            f"{'Considered in context: ' + context + '.' if context else ''}"
+            f"{item.name} looks like a practical fit"
+            f"{' for ' + _first_context_clause(context) if context else ''}, "
+            f"especially around {', '.join(user_profile.preferred_terms[:3] or ['quality and value'])}."
         )
 
         if isinstance(self._provider, TemplateGenerationProvider):
@@ -476,7 +476,7 @@ class RecommenderReasoner:
                 ),
                 rank=idx + 1,
                 score=c.score,
-                reasoning=f"Ranked by score ({c.score:.2f}) with deterministic ordering.",
+                reasoning=_natural_reason_fallback(c),
                 tradeoffs=c.tradeoffs,
                 explanation="",
                 provider=self._provider_name,
@@ -578,3 +578,17 @@ def _extract_context_terms(context: str) -> list[str]:
             "they", "their", "would", "could", "about", "based", "item", "items",
             "product", "products", "review", "reviews", "very", "really"}
     return list(dict.fromkeys(w for w in words if w not in stop))[:6]
+
+
+def _natural_reason_fallback(candidate: RecommendationItem) -> str:
+    signals = ", ".join(candidate.matched_signals[:3] or candidate.signals[:2] or ["the available signals"])
+    return f"{candidate.name} stays competitive because it lines up with {signals}."
+
+
+def _first_context_clause(context: str) -> str:
+    clean = " ".join(context.split()).strip(" .;:,")
+    for delimiter in (".", ";"):
+        if delimiter in clean:
+            clean = clean.split(delimiter, 1)[0].strip(" .;:,")
+            break
+    return clean

@@ -295,6 +295,7 @@ def generate_candidates(
     neural_retriever: FAISSVectorStore | None = None,
     catalog: CandidateCatalog | None = None,
     disabled_sources: set[str] | None = None,
+    excluded_item_ids: set[str] | None = None,
     limit: int = 100,
 ) -> list[Item]:
     return generate_candidate_pool(
@@ -308,6 +309,7 @@ def generate_candidates(
         neural_retriever=neural_retriever,
         catalog=catalog,
         disabled_sources=disabled_sources,
+        excluded_item_ids=excluded_item_ids,
         limit=limit,
     ).items
 
@@ -324,6 +326,7 @@ def generate_candidate_pool(
     neural_retriever: FAISSVectorStore | None = None,
     catalog: CandidateCatalog | None = None,
     disabled_sources: set[str] | None = None,
+    excluded_item_ids: set[str] | None = None,
     limit: int = 100,
 ) -> CandidatePool:
     catalog = catalog or CandidateCatalog.from_items(items)
@@ -331,6 +334,7 @@ def generate_candidate_pool(
     by_id = {item.item_id: item for item in items}
     selected: list[Item] = []
     history_item_ids = {item.item_id for item in history}
+    excluded_item_ids = excluded_item_ids or set()
     seen: set[str] = set(history_item_ids)
     sources: dict[str, list[str]] = {}
     source_scores: dict[str, dict[str, float]] = {}
@@ -338,7 +342,7 @@ def generate_candidate_pool(
     def add_candidate(item: Item, source: str, score: float = 0.0) -> None:
         if source in disabled_sources:
             return
-        if item.item_id in history_item_ids:
+        if item.item_id in history_item_ids or item.item_id in excluded_item_ids:
             return
         if item.item_id not in sources:
             sources[item.item_id] = []
@@ -593,7 +597,13 @@ def generate_candidate_pool(
                 break
 
     fallback = catalog.global_popular
-    fallback_budget = min(len(fallback), max(limit * 2, int(limit * 0.50)))
+    fallback_budget = _global_popular_budget(
+        limit=limit,
+        history_size=len(history),
+        query_terms=query_terms,
+        selected_count=len(selected),
+        catalog_size=len(fallback),
+    )
     if "global_popular" not in disabled_sources:
         for index, item in enumerate(fallback[:fallback_budget]):
             rank_score = 1.0 - (index / max(fallback_budget, 1))
@@ -608,6 +618,25 @@ def generate_candidate_pool(
             item_id: values for item_id, values in source_scores.items() if item_id in limited_ids
         },
     )
+
+
+def _global_popular_budget(
+    limit: int,
+    history_size: int,
+    query_terms: list[str],
+    selected_count: int,
+    catalog_size: int,
+) -> int:
+    if catalog_size <= 0:
+        return 0
+    sparse_profile = history_size <= 2
+    if sparse_profile:
+        return min(catalog_size, max(limit * 2, int(limit * 0.50)))
+    if selected_count < limit:
+        return min(catalog_size, max(limit, limit - selected_count))
+    context_heavy = len([term for term in query_terms if term not in ASPECT_STOPWORDS]) >= 5
+    share = 0.20 if context_heavy else 0.35
+    return min(catalog_size, max(1, int(limit * share)))
 
 
 def _quality_popularity_score(item: Item) -> float:
