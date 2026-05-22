@@ -98,7 +98,9 @@ class ReviewSimulationAgent:
         decision = self._simulator.simulate_review_decision(user_profile, item_profile)
         agentic_rating = decision.predicted_rating if decision.llm_augmented else None
 
-        final_rating = agentic_rating if agentic_rating is not None else rating_result.predicted_rating
+        # The promoted rating head owns the numeric metric; LLM reasoning may
+        # shape wording, but should not override the RMSE-validated rating.
+        final_rating = rating_result.predicted_rating
         trace.append(
             AgentTraceStep(
                 step="predict_rating",
@@ -106,7 +108,7 @@ class ReviewSimulationAgent:
                 detail=(
                     f"predicted {final_rating}/5"
                     f" using {rating_result.model_name or 'default rating model'}"
-                    f"{' + LLM reasoning' if agentic_rating is not None else ''}"
+                    f"{' with LLM advisory ignored for rating' if agentic_rating is not None else ''}"
                 ),
             )
         )

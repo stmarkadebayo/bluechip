@@ -38,7 +38,7 @@ def build_review_plan(
     positive_evidence = _ordered_unique(
         item_profile.positive_aspects
         + item_profile.nigerian_context
-        + item_profile.signals[:2]
+        + _human_evidence_from_signals(item_profile.signals)
         + user_profile.positive_aspects[:3],
         limit=6,
     )
@@ -56,7 +56,7 @@ def build_review_plan(
         verdict=_verdict(predicted_rating),
         voice=user_profile.voice_style,
         locale_tone=locale_tone,
-        positive_evidence=positive_evidence or item_profile.signals[:2],
+        positive_evidence=positive_evidence or _human_evidence_from_signals(item_profile.signals),
         negative_evidence=negative_evidence,
         aspect_scores=aspect_scores,
         must_mention=[item_profile.name, f"{predicted_rating} out of 5"],
@@ -109,6 +109,19 @@ def _ordered_unique(values: list[str], limit: int) -> list[str]:
         if len(output) >= limit:
             break
     return output
+
+
+def _human_evidence_from_signals(signals: list[str]) -> list[str]:
+    evidence = []
+    for signal in signals:
+        text = str(signal).strip()
+        lower = text.lower()
+        if not text:
+            continue
+        if lower.startswith(("category:", "quality score:", "average rating:", "review count:")):
+            continue
+        evidence.append(text)
+    return evidence[:3]
 
 
 def _sentence_fragment(values: list[str]) -> str:
