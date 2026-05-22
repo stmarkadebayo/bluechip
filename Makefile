@@ -1,4 +1,4 @@
-.PHONY: run test test-api api-smoke api-smoke-live lint data index evidence-graph registry sqlite-feature-store human-eval-csv implicit-baselines eval eval-all eval-generation eval-generation-strict eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker docker-build docker-test docker-smoke
+.PHONY: run test test-api api-smoke api-smoke-live lint data index evidence-graph registry sqlite-feature-store dataset-eda human-eval-csv implicit-baselines eval eval-all eval-generation eval-generation-strict eval-evidence tune-task-a train-task-a train-task-a-rmse promote-task-a docker docker-build docker-test docker-smoke
 
 PYTHON ?= python3
 PROCESSED_DIR ?= data/processed
@@ -23,6 +23,9 @@ registry:
 
 sqlite-feature-store:
 	$(PYTHON) scripts/build_sqlite_feature_store.py --processed-dir $(PROCESSED_DIR) --output $(PROCESSED_DIR)/feature_store.sqlite
+
+dataset-eda:
+	$(PYTHON) scripts/build_dataset_eda.py --processed-dir $(PROCESSED_DIR)
 
 human-eval-csv:
 	$(PYTHON) eval/export_human_eval_csv.py

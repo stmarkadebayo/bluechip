@@ -1,0 +1,436 @@
+{
+  "processed_dir": "data/processed/all_categories",
+  "reviews": {
+    "reviews": 1071963,
+    "users": 923201,
+    "items": 188236,
+    "user_item_pairs": 1059332,
+    "rating_distribution": {
+      "1": 132793,
+      "2": 53509,
+      "3": 72750,
+      "4": 110058,
+      "5": 702853
+    },
+    "top_categories_by_reviews": [
+      [
+        "All_Beauty",
+        701421
+      ],
+      [
+        "Digital_Music",
+        130388
+      ],
+      [
+        "For Him",
+        66885
+      ],
+      [
+        "Subscription_Boxes",
+        16215
+      ],
+      [
+        "Chanukah",
+        14912
+      ],
+      [
+        "Restaurants",
+        12164
+      ],
+      [
+        "Christmas",
+        11695
+      ],
+      [
+        "Amazon Incentives Brand Guidelines",
+        8346
+      ],
+      [
+        "Clothing, Shoes & Accessories",
+        8307
+      ],
+      [
+        "Specialty Cards",
+        7386
+      ]
+    ],
+    "reviews_per_user": {
+      "min": 1.0,
+      "p50": 1.0,
+      "mean": 1.1611,
+      "p90": 2.0,
+      "p95": 2.0,
+      "p99": 4.0,
+      "max": 341.0
+    },
+    "reviews_per_item": {
+      "min": 1.0,
+      "p50": 1.0,
+      "mean": 5.6948,
+      "p90": 8.0,
+      "p95": 16.0,
+      "p99": 63.0,
+      "max": 36859.0
+    },
+    "sparse_users_1_2_reviews": 900621,
+    "sparse_users_1_2_reviews_pct": 0.9755,
+    "missing_review_text_rows": 709,
+    "missing_category_rows": 0,
+    "timestamp_min": 874557536000,
+    "timestamp_max": 1694219976666
+  },
+  "items": {
+    "items": 188236,
+    "category_distribution": {
+      "All_Beauty": 112559,
+      "Digital_Music": 70501,
+      "$5.00 to $5.99": 2,
+      "$8.00 to $8.99": 2,
+      "Far East & Asia": 1,
+      "Country": 1,
+      "Rock": 1,
+      "Specialty Cards": 140,
+      "Gift_Cards": 24,
+      "Gift Cards": 33,
+      "For Him": 231,
+      "Grocery, Gourmet & Floral": 23,
+      "Restaurants": 297,
+      "Spa & Salon": 5,
+      "Clothing, Shoes & Accessories": 93,
+      "Toys, Kids & Baby": 4,
+      "Books, Movies & Music": 36,
+      "Home Improvement": 8,
+      "Video Games & Online Games": 20,
+      "Electronics & Office": 10,
+      "For Her": 22,
+      "Gift Card Holders": 25,
+      "Automotive & Industrial": 15,
+      "Amazon Incentives Audible Brand Guidelines": 3,
+      "Sports, Outdoors & Fitness": 5,
+      "Pet Supplies": 2,
+      "Travel & Leisure": 22,
+      "Chanukah": 1,
+      "Christmas": 45,
+      "Gift Cards: Amazon Shipping": 15,
+      "Health & Beauty": 7,
+      "Social Networking": 1,
+      "Holiday Gift Cards": 3,
+      "Birthday": 6,
+      "Wedding & Engagement": 3,
+      "Thank You and Appreciation Gift Cards": 2,
+      "Father's Day": 3,
+      "Gift Cards: Non-Amazon Branded": 5,
+      "Gift Boxes": 1,
+      "Home & Decor": 2,
+      "Free One-Day Shipping I Gift Cards": 4,
+      "Mother's Day": 4,
+      "Gift Cards for New Baby": 2,
+      "Congratulations": 1,
+      "Baby & Expecting": 2,
+      "Valentine's Day": 2,
+      "Amazon Incentives Brand Guidelines": 4,
+      "Physical Gift Cards with Free Same-Day Delivery": 3,
+      "Exclusive for Amazon eGift Cards Customers": 2,
+      "Amazon Incentives Prime Brand Guidelines": 1,
+      "Magazine_Subscriptions": 834,
+      "Economics & Economic Theory": 78,
+      "Entertainment & Media": 110,
+      "Sports & Recreation": 11,
+      "Baseball": 198,
+      "Transportation": 37,
+      "Flying": 6,
+      "Remote Control Vehicles": 6,
+      "Women": 47,
+      "History": 43,
+      "Design & Decoration": 148,
+      "Art & Art History": 13,
+      "New Age": 1,
+      "Photography": 77,
+      "Gardening & Horticulture": 15,
+      "Technology": 25,
+      "Midwest": 205,
+      "Religion & Spirituality": 80,
+      "Psychology": 44,
+      "Wine & Spirits": 62,
+      "International": 75,
+      "Puzzles & Games": 8,
+      "Hunting & Firearms": 32,
+      "Boating": 16,
+      "Home Organization": 5,
+      "Men": 23,
+      "Ideas & Commentary": 32,
+      "Finance": 1,
+      "Health": 11,
+      "Nature & Ecology": 2,
+      "Hiking & Camping": 9,
+      "Automotive": 89,
+      "Archaeology": 14,
+      "Bridal & Weddings": 8,
+      "Music": 38,
+      "Recipes & Techniques": 61,
+      "Crafts & Collectibles": 18,
+      "United States": 9,
+      "Humor": 7,
+      "Political Science": 1,
+      "Celebrities & Gossip": 26,
+      "Earth Sciences": 60,
+      "Needlecrafts": 51,
+      "Northeast": 2,
+      "Performing Arts": 10,
+      "Science Fiction": 2,
+      "Water Sports": 8,
+      "Children": 36,
+      "Entrepreneurship": 6,
+      "Ages 4-8": 32,
+      "Cooking, Food & Wine": 9,
+      "Men's Health & Fitness": 6,
+      "Woodworking": 2,
+      "Running": 7,
+      "Arts, Music & Photography": 4,
+      "Literary Magazines & Journals": 10,
+      "Sports & Activities": 3,
+      "Women in Business": 11,
+      "How-To & Home Improvements": 7,
+      "Teen": 3,
+      "West": 4,
+      "Ages 9-12": 16,
+      "Fantasy": 5,
+      "Nutrition": 3,
+      "Christianity": 9,
+      "South": 4,
+      "Quilts & Quilting": 6,
+      "Baby-3": 7,
+      "Knitting": 10,
+      "Architecture": 16,
+      "Newsletters": 1,
+      "Education": 12,
+      "Parenting & Families": 3,
+      "Linguistics": 17,
+      "Beauty": 2,
+      "Antiques & Collectibles": 9,
+      "Crafts & Hobbies": 7,
+      "Basketball": 3,
+      "Business & Investing": 7,
+      "Educational": 17,
+      "By Age": 1,
+      "Biological & Natural Sciences": 19,
+      "Engineering": 28,
+      "Military Science": 10,
+      "Agricultural Sciences": 1,
+      "Professional & Trade": 16,
+      "Arts": 16,
+      "Decorative Arts": 11,
+      "Pets & Animals": 25,
+      "Theory & Practice": 5,
+      "Computer Science & Mathematics": 3,
+      "Africa": 21,
+      "History of Education": 3,
+      "Drawing, Design & Illustration": 10,
+      "Sociology": 4,
+      "LGBTQ+": 2,
+      "Medicine": 9,
+      "Cycling": 2,
+      "News & Current Events": 2,
+      "Health, Fitness & Wellness": 2,
+      "Movies": 10,
+      "Lifestyles, Cultures & Religions": 2,
+      "Europe": 40,
+      "Painting": 7,
+      "Law": 3,
+      "International Law & Relations": 1,
+      "Government & Policy": 1,
+      "Science & Technology": 2,
+      "Rodeos": 1,
+      "Art & Music": 1,
+      "Buddhism": 2,
+      "Australia": 1,
+      "Museums & Collectors": 2,
+      "Geography": 2,
+      "Boys": 3,
+      "Women's Health & Fitness": 16,
+      "Motorcycles": 5,
+      "Newspapers": 3,
+      "Business Life": 10,
+      "12 & Up": 4,
+      "Electronics": 6,
+      "Individual Sports": 6,
+      "Fashion & Style": 2,
+      "Parenting": 5,
+      "Extreme Sports": 1,
+      "Television": 6,
+      "Country Life": 7,
+      "Philosophy": 2,
+      "Business Management": 4,
+      "Football": 1,
+      "Sculpture": 1,
+      "Humanities & Social Sciences": 1,
+      "Banking": 3,
+      "Regional": 1,
+      "Astronomy": 4,
+      "Luxury Homes": 2,
+      "Spanish-Language": 2,
+      "Hockey": 1,
+      "Trucks": 1,
+      "Children & Teen": 3,
+      "Log Homes": 3,
+      "Special Diet": 9,
+      "Travel, City & Regional": 9,
+      "Farming": 2,
+      "Golf": 3,
+      "Video Games": 5,
+      "Home & Garden": 1,
+      "News & Political Commentary": 4,
+      "Sustainable Living": 3,
+      "Computers & Internet": 3,
+      "Equestrian": 4,
+      "Skiing & Snowboarding": 2,
+      "Motherhood": 2,
+      "Outdoors": 2,
+      "Investing": 1,
+      "Men's Lifestyle": 3,
+      "Science Fiction & Fantasy": 2,
+      "Essays & Commentary": 1,
+      "Women's Lifestyle": 3,
+      "Girls": 4,
+      "Animals": 4,
+      "Economics": 1,
+      "Entertainment & Pop Culture": 1,
+      "Automotive & Motorcycles": 1,
+      "Mountaineering": 1,
+      "Subscription_Boxes": 641
+    },
+    "top_categories_by_items": [
+      [
+        "All_Beauty",
+        112559
+      ],
+      [
+        "Digital_Music",
+        70501
+      ],
+      [
+        "Magazine_Subscriptions",
+        834
+      ],
+      [
+        "Subscription_Boxes",
+        641
+      ],
+      [
+        "Restaurants",
+        297
+      ],
+      [
+        "For Him",
+        231
+      ],
+      [
+        "Midwest",
+        205
+      ],
+      [
+        "Baseball",
+        198
+      ],
+      [
+        "Design & Decoration",
+        148
+      ],
+      [
+        "Specialty Cards",
+        140
+      ]
+    ],
+    "missing_name_rows": 0,
+    "missing_summary_rows": 56,
+    "metadata_rating_number": {
+      "min": 1.0,
+      "p50": 1.0,
+      "mean": 5.6948,
+      "p90": 8.0,
+      "p95": 16.0,
+      "p99": 63.0,
+      "max": 36859.0
+    },
+    "average_rating": {
+      "min": 1.0,
+      "p50": 4.667,
+      "mean": 4.0876,
+      "p90": 5.0,
+      "p95": 5.0,
+      "p99": 5.0,
+      "max": 5.0
+    }
+  },
+  "splits": {
+    "train": 978425,
+    "test_task_a": 93538,
+    "test_task_b": 93538
+  },
+  "task_b": {
+    "examples": 93538,
+    "sparse_history_1_2": 84053,
+    "sparse_history_1_2_pct": 0.8986,
+    "medium_history_3_7": 8372,
+    "medium_history_3_7_pct": 0.0895,
+    "warm_history_8_plus": 1113,
+    "warm_history_8_plus_pct": 0.0119,
+    "cross_domain_examples": 23671,
+    "cross_domain_pct": 0.2531,
+    "top_categories": [
+      [
+        "All_Beauty",
+        53612
+      ],
+      [
+        "Digital_Music",
+        14201
+      ],
+      [
+        "For Him",
+        5118
+      ],
+      [
+        "Chanukah",
+        2244
+      ],
+      [
+        "Restaurants",
+        1756
+      ],
+      [
+        "Subscription_Boxes",
+        1458
+      ],
+      [
+        "Christmas",
+        1432
+      ],
+      [
+        "Amazon Incentives Brand Guidelines",
+        1076
+      ],
+      [
+        "Clothing, Shoes & Accessories",
+        975
+      ],
+      [
+        "Specialty Cards",
+        926
+      ]
+    ]
+  },
+  "matrix": {
+    "users": 923201,
+    "items": 188236,
+    "observed_user_item_pairs": 1059332,
+    "possible_user_item_pairs": 173779663436,
+    "density": 6.095834110014452e-06,
+    "sparsity": 0.99999390416589
+  },
+  "notes": [
+    "Rows with missing user_id, missing item_id, empty source review text, or invalid ratings are filtered during ingestion; residual missing-like normalized text is tracked in this report.",
+    "Temporal splits keep each eligible user's latest review as the Task A and Task B holdout target.",
+    "Task A and Task B currently share the same latest-review holdout rows because the brief evaluates different outputs over the same behavioral prediction setup."
+  ]
+}

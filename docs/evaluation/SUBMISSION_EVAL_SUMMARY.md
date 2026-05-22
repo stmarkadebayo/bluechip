@@ -84,13 +84,13 @@ Final validation smoke, 22 May 2026:
 
 ## Implicit Baseline
 
-The first conventional collaborative-filtering baseline run is recorded in [IMPLICIT_BASELINE_RESULTS.md](IMPLICIT_BASELINE_RESULTS.md). It trained ALS, BPR, and item-item cosine with `implicit` on the all-category training split and evaluated 5,000 Task B examples at candidate-limit `1000`.
+The first conventional collaborative-filtering baseline run is recorded in [IMPLICIT_BASELINE_RESULTS.md](IMPLICIT_BASELINE_RESULTS.md). It trained ALS, BPR, and item-item cosine with `implicit` on the all-category training split and evaluated 30,000 Task B examples at candidate-limit `1000`.
 
 | Model | HitRate@10 | NDCG@10 | Recall@50 | Recall@100 | Recall@1000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| ALS | `0.0104` | `0.0059` | `0.0294` | `0.0468` | `0.1280` |
-| BPR | `0.0002` | `0.0001` | `0.0022` | `0.0046` | `0.0356` |
-| Item-item cosine | `0.0516` | `0.0280` | `0.1030` | `0.1254` | `0.2914` |
+| ALS | `0.0115` | `0.0066` | `0.0298` | `0.0441` | `0.1129` |
+| BPR | `0.0009` | `0.0004` | `0.0030` | `0.0059` | `0.0364` |
+| Item-item cosine | `0.0583` | `0.0348` | `0.1067` | `0.1314` | `0.2863` |
 
 Interpretation:
 

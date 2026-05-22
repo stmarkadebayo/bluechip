@@ -29,6 +29,7 @@ Judge-facing docs:
 - [Solution paper](paper/solution_paper.md)
 - [Submission freeze plan](docs/SUBMISSION_FREEZE.md)
 - [Submission evaluation summary](docs/evaluation/SUBMISSION_EVAL_SUMMARY.md)
+- [Dataset EDA](docs/evaluation/DATASET_EDA.md)
 - [Implicit baseline results](docs/evaluation/IMPLICIT_BASELINE_RESULTS.md)
 - [System architecture](docs/architecture/SYSTEM_ARCHITECTURE.md)
 - [Demo script](docs/product/DEMO_SCRIPT.md)
