@@ -1,6 +1,7 @@
 # Implementation Log
 
 Date: 2026-05-19
+Last updated: 2026-05-21
 
 This log tracks the hardening pass requested after the project status review. It is intentionally operational: each entry states what changed, why it matters for the DSN x BCT submission, and how it was validated.
 
@@ -11,6 +12,28 @@ This log tracks the hardening pass requested after the project status review. It
 - Task B ranking quality: HitRate@K, Recall@K, and NDCG@K.
 - Demo readiness: API, UI, sample data, Docker path, and deterministic no-key execution.
 - Staff-level evidence: typed contracts, traces, reproducible eval scripts, tests, and explicit data integrity checks.
+
+## 2026-05-21 Submission Metric Refresh
+
+Current bounded all-category Task B metrics after evidence graph work and the popularity-rank floor:
+
+| Metric | Value |
+| --- | ---: |
+| `hybrid_candidate_recall@50` | `0.13` |
+| `hybrid_candidate_recall@100` | `0.18` |
+| `hybrid_candidate_recall@1000` | `0.34` |
+| `hybrid_ranker_hit_rate@10` | `0.10` |
+| `hybrid_ranker_ndcg@10` | `0.0766` |
+| Sparse candidate recall@1000 | `0.3611` |
+| Cross-domain candidate recall@1000 | `0.5484` |
+| Vector source recall | `0.0` |
+
+Submission interpretation:
+
+- Candidate recall is improving, but early-pool recall remains the Task B bottleneck.
+- Cross-domain retrieval is the strongest measured slice.
+- Ranking remains measured through fixed HitRate@10 and NDCG@10 reports.
+- Vector retrieval is a deterministic diagnostic hook only. With source recall at `0.0`, it should not be described as a quality win.
 
 ## Steps Completed
 
@@ -27,7 +50,7 @@ Validation:
 - `ruff check .`
 - `make PYTHON=./.venv/bin/python eval`
 
-### 2. Added Embedding-Backed Retrieval Signals
+### 2. Added Deterministic Vector Diagnostics
 
 - Added dependency-free hashing embeddings in `app/services/retrieval/embeddings.py`.
 - Added `LocalVectorRetriever` in `app/services/retrieval/vector_store.py`.
@@ -36,20 +59,18 @@ Validation:
 
 Why this matters:
 
-- The system is no longer purely lexical; it has a deterministic vector signal that can later be swapped for OpenAI, sentence-transformer, or managed vector embeddings without changing ranker contracts.
+- The system has a deterministic vector interface that can later be swapped for OpenAI, sentence-transformer, or managed vector embeddings without changing ranker contracts. Current vector source recall is `0.0`, so this is an extensibility and diagnostics feature, not a measured recall improvement.
 
 ### 3. Improved Task B Ranking Transparency
 
 - Added `RecommendationWeights` for explicit ranker weighting.
 - Added vector, category, novelty, popularity, quality, confidence, and dislike components.
 - Added `score_components` to every recommendation response.
-- Added a small offline ranker tuning script in `eval/tune_ranker.py`.
-- Added a dependency-free pairwise learned-ranker trainer in `eval/train_ranker.py`.
 - Added collaborative retrieval artifacts for co-visitation and user-neighbor candidate generation.
 - Added category-affinity popularity retrieval as a high-recall source.
 - Added candidate source tracking, retrieval scores, and `candidate_diagnostics` to Task B responses.
 - Added candidate Recall@50/100, cold-start persona-only, sparse/warm-user, and cross-domain evaluation slices.
-- Added candidate miss analysis and a candidate-aware learned-ranker promotion gate.
+- Added candidate miss analysis for retrieval bottlenecks.
 
 Current sample metrics:
 
@@ -77,14 +98,11 @@ Interpretation:
 - The real-data recommendation result is aligned with the filtered-popularity floor while preserving personalization for smaller/contextual candidate sets.
 - Unfiltered popularity is higher on the slice because it can recommend items the user has already reviewed; the production agent filters seen items.
 - The upgraded eval now separates candidate recall from final ranking, which is the next required evidence before promoting learned Task B weights.
-- A 25-example all-category smoke eval over 188,236 items reports base candidate Recall@200 `0.16` and hybrid candidate Recall@200 `0.16`; the balanced source blend avoids collaborative sources crowding out the base pool.
-- A 100-example all-category eval with full collaborative artifacts reports candidate Recall@200 `0.20`, Recall@500 `0.25`, Recall@1000 `0.28`.
-- After Beauty/sparse retrieval, a 100-example all-category eval reports candidate Recall@1000 `0.29` and candidate misses `71`.
-- After review-term and lexical-neighbor retrieval, the same 100-example all-category eval reports candidate Recall@1000 `0.32` and candidate misses `68`.
-- On that same 100-example slice, hybrid HitRate@10 is `0.10` and NDCG@10 is `0.0766`, beating filtered popularity at `0.09` and `0.068`.
-- The cross-domain slice is materially stronger: HitRate@10 `0.2581`, NDCG@10 `0.2056`.
-- Candidate-aware learned-ranker training did not pass promotion: learned NDCG@10 `0.0700` was below current hybrid NDCG@10 `0.0766`, so no runtime weights were written.
-- Split learned-ranker training still does not pass promotion after the retrieval upgrade: learned NDCG@10 `0.0788` trails same-slice hybrid NDCG@10 `0.1061`, so runtime ranker weights stay unwired.
+- Latest bounded all-category eval after evidence graph work and the popularity-rank floor reports hybrid candidate Recall@50 `0.13`, Recall@100 `0.18`, and Recall@1000 `0.34`.
+- On the same current metric snapshot, hybrid HitRate@10 is `0.10` and NDCG@10 is `0.0766`.
+- Sparse candidate Recall@1000 is `0.3611`; cross-domain candidate Recall@1000 is `0.5484`.
+- Vector source recall is `0.0`, so vector retrieval remains diagnostic only.
+- Runtime uses the fixed hybrid ranker; unpromoted learned-ranker tooling was removed after it failed to beat the same-slice hybrid baseline.
 
 ### 4. Added Runtime Tracing And Metrics
 
@@ -127,7 +145,7 @@ Browser verification:
 
 Current test count:
 
-- 31 tests passing.
+- 43 tests passing.
 
 ### 7. Task A Rating Optimization Pass
 
@@ -167,6 +185,30 @@ Task A restart lesson:
 - Build shrinkage user/item/category priors, recent user tendency, volatility, star shares, and user-category features before text generation.
 - Select candidates by the submission metric and explicitly test ordinal star policies.
 - Report slice metrics so light users, warm users, sparse items, and weak categories are visible.
+
+### 8. Added Evidence Intelligence Layer
+
+- Added aspect-aware user and item evidence extraction in `app/services/intelligence/aspects.py`.
+- Added evidence graph retrieval in `app/services/retrieval/evidence_graph.py`.
+- Added `scripts/build_evidence_graph.py`; `scripts/build_retrieval_index.py` now writes `evidence_graph_retrieval.json` beside other retrieval artifacts.
+- Added evidence graph attachment in runtime and Task B eval, including sparse/empty collaborative-index handling.
+- Added ranker features for aspect match, sequential match, evidence graph match, and Nigerian-context match.
+- Added plan-then-write review generation through `app/services/generation/review_plan.py`.
+- Added evidence critic checks for grounding and sensitive-inference risk.
+- Added `eval/eval_evidence_intelligence.py` and `make eval-evidence`.
+
+Why this matters:
+
+- The repo now implements the chosen local direction: structured evidence first, retrieval/ranking before generation, and validation around the final text.
+- The evidence graph adds graph/sequential signals without requiring cloud provisioning or a managed graph service.
+
+Latest validation:
+
+- `./.venv/bin/ruff check .`
+- `./.venv/bin/pytest`
+- `./.venv/bin/python -m compileall app eval scripts tests`
+- `./.venv/bin/python eval/eval_evidence_intelligence.py --max-examples 3 --candidate-limit 20 --output /private/tmp/bluechip_evidence_intelligence_smoke.json`
+- `./.venv/bin/python eval/eval_task_b.py --collaborative-index /private/tmp/bluechip_retrieval_evidence_smoke/collaborative_retrieval.json --max-examples 3 --candidate-limit 20 --output /private/tmp/bluechip_task_b_evidence_smoke.json --miss-output /private/tmp/bluechip_task_b_evidence_misses_smoke.json`
 
 ## Dataset Status
 
@@ -236,11 +278,12 @@ Current all-category slice metrics:
 - Task A promoted serving head, 5,000 examples: calibrated profile RMSE `1.2654`.
 - Task A trained model raw continuous score, 5,000 examples: MAE `0.9177`, RMSE `1.3395`.
 - Task A trained model rounded raw score, 5,000 examples: MAE `0.8834`, RMSE `1.3795`.
-- Task B, 100 examples over 188,236 items after Beauty/sparse retrieval: hybrid HitRate@10 `0.10`, hybrid NDCG@10 `0.0766`, candidate Recall@1000 `0.29`.
-- Task B, 100 examples over 188,236 items after review-term retrieval and lexical-neighbor retrieval: hybrid HitRate@10 `0.10`, hybrid NDCG@10 `0.0766`, candidate Recall@1000 `0.32`, candidate misses `68`.
+- Task B, bounded all-category current snapshot after evidence graph work and popularity-rank floor: hybrid candidate Recall@50 `0.13`, Recall@100 `0.18`, Recall@1000 `0.34`, hybrid HitRate@10 `0.10`, hybrid NDCG@10 `0.0766`.
+- Task B sparse and cross-domain slices: sparse candidate Recall@1000 `0.3611`, cross-domain candidate Recall@1000 `0.5484`.
+- Task B vector source recall: `0.0`; vector retrieval should be described as diagnostic only.
 - Task B review-term retrieval artifact: `data/processed/all_categories/review_term_retrieval.json` (`421M`), covering all `188,236` items with item terms and term postings.
-- Task B learned-ranker gate after the review-term retrieval upgrade was not promoted: learned holdout NDCG@10 `0.0788` vs same-slice hybrid `0.1061`.
-- Task B graph-walk ablation was implemented and measured but not enabled by default: it kept candidate Recall@1000 `0.32`, HitRate@10 `0.10`, and NDCG@10 `0.0766` while making evaluation slower.
-- Task B Beauty taxonomy ablation was measured on a 25-example smoke slice and gated off because it crowded out stronger sources.
+- Task B ranker changes should only be accepted if same-slice HitRate@10 and NDCG@10 improve without reducing candidate recall.
+- Task B graph-walk retrieval was measured but not enabled by default because it added latency without improving the logged ranking metrics.
+- Task B Beauty taxonomy retrieval is enabled as a measured candidate-generation source.
 - Added context-category guarding in the ranker so explicit Beauty/music/gift contexts suppress off-topic global-popular items.
 - Generated a judge-ready contextual human-eval pack at `docs/human_eval_task_b_contextual.md` with real histories, contexts, top-10 recommendations, source traces, and blank human-score columns.

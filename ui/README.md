@@ -1,14 +1,14 @@
-# UI Demo
+# Bluechip Demo Console
 
 The demo is a dependency-free static browser UI mounted by FastAPI at `/ui/`.
 
-Tabs:
+Flows:
 
-- Simulate Review: calls `POST /api/simulate-review`.
-- Recommend: calls `POST /api/recommend`.
-- Metrics: calls `GET /api/metrics` and `GET /api/traces`.
+- Task B Recommend: calls `POST /api/profile-user` and `POST /api/recommend`.
+- Task A Review: calls `POST /api/profile-user` and `POST /api/simulate-review`.
+- Runtime Trace: calls `GET /api/metrics` and `GET /api/traces`.
 
-Each tab shows request inputs, structured JSON output, a human-readable summary, traces, and ranking score components when available.
+The first screen is the usable demo console. It includes cold-start, cross-domain, and strict-reviewer examples; persona/history inputs; product or candidate JSON editors; ranked product output; generated review output; candidate sources; score components; profile evidence; validation status; trace steps; and raw JSON.
 
 Run it with:
 
@@ -20,4 +20,10 @@ Open:
 
 ```text
 http://127.0.0.1:8000/ui/
+```
+
+Submission demo flow:
+
+```text
+docs/product/DEMO_SCRIPT.md
 ```

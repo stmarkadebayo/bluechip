@@ -10,7 +10,7 @@ This repo is ready to share with a teammate as source code, tests, docs, and rep
 - Added DeepSeek/OpenRouter/OpenAI generation provider support with external-data guards.
 - Added Task B candidate recall reporting, miss analysis, and slice metrics.
 - Added collaborative, review-term, lexical item-neighbor, Beauty/sparse, vector, BM25, category, and popularity retrieval sources.
-- Added learned-ranker training plus a promotion gate; current learned ranker is not promoted because it does not beat the same-slice hybrid.
+- Removed unpromoted learned-ranker tooling; the runtime uses the measured hybrid ranker.
 - Added context-category guards for explicit Beauty, music, and gift recommendation contexts.
 - Added contextual Task B human-eval pack: `docs/human_eval_task_b_contextual.md`.
 - Added API contract, generation, retrieval, downloader, Task A rating, and recommendation regression tests.
@@ -28,7 +28,7 @@ Run before pushing:
 Last local result:
 
 - Ruff: passed
-- Pytest: `31 passed`
+- Pytest: `47 passed`
 - Compileall: passed
 
 ## Git Hygiene
