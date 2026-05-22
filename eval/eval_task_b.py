@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -18,6 +19,7 @@ from eval.common import (  # noqa: E402
 )
 from eval.metrics import hit_rate_at_k, ndcg_at_k, recall_at_k, rounded  # noqa: E402
 from app.models.schemas import Item  # noqa: E402
+from app.platform.artifacts import read_json_artifact  # noqa: E402
 from app.services.profiling.user_profile import build_user_profile  # noqa: E402
 from app.services.ranking.recommendation import rank_candidates  # noqa: E402
 from app.services.retrieval.candidates import (  # noqa: E402
@@ -25,58 +27,21 @@ from app.services.retrieval.candidates import (  # noqa: E402
     CandidatePool,
     generate_candidate_pool,
 )
-from app.services.retrieval.item_similarity import build_collaborative_retrieval_index  # noqa: E402
+from app.services.retrieval.item_similarity import (  # noqa: E402
+    SQLiteItemNeighborIndex,
+    build_collaborative_retrieval_index,
+)
+from app.services.retrieval.source_registry import (  # noqa: E402
+    SOURCE_FAMILY_LABELS,
+    SOURCE_FAMILY_ORDER,
+    retrieval_source_family,
+)
 from app.services.retrieval.text import BM25Retriever  # noqa: E402
 from app.services.retrieval.vector_store import (  # noqa: E402
     FAISSVectorStore,
     LocalVectorRetriever,
     create_retriever,
 )
-
-
-SOURCE_FAMILY_ORDER = (
-    "collaborative_co_engagement",
-    "lexical_review_term",
-    "semantic_vector",
-    "neural_semantic_vector",
-    "aspect_evidence",
-    "popularity_fallback",
-    "other",
-)
-SOURCE_FAMILY_LABELS = {
-    "collaborative_co_engagement": "collaborative/co-engagement",
-    "lexical_review_term": "lexical/review-term",
-    "semantic_vector": "semantic/vector",
-    "neural_semantic_vector": "neural/semantic-vector",
-    "aspect_evidence": "aspect/evidence",
-    "popularity_fallback": "popularity/fallback",
-    "other": "other",
-}
-SOURCE_FAMILY_BY_SOURCE = {
-    "co_visitation": "collaborative_co_engagement",
-    "user_neighbor": "collaborative_co_engagement",
-    "graph_walk": "collaborative_co_engagement",
-    "sequential_transition": "collaborative_co_engagement",
-    "category_transition": "collaborative_co_engagement",
-    "review_term_profile": "lexical_review_term",
-    "beauty_review_term_profile": "lexical_review_term",
-    "lexical_item_neighbor": "lexical_review_term",
-    "beauty_lexical_item_neighbor": "lexical_review_term",
-    "bm25_profile": "lexical_review_term",
-    "vector_profile": "semantic_vector",
-    "aspect_profile": "aspect_evidence",
-    "beauty_aspect_profile": "aspect_evidence",
-    "aspect_evidence_graph": "aspect_evidence",
-    "category_aspect_graph": "aspect_evidence",
-    "beauty_taxonomy_aspect": "aspect_evidence",
-    "beauty_taxonomy_window": "aspect_evidence",
-    "category_affinity_popular": "popularity_fallback",
-    "category_popular": "popularity_fallback",
-    "global_popular": "popularity_fallback",
-    "sparse_category_tail": "popularity_fallback",
-    "beauty_sparse_tail": "popularity_fallback",
-    "neural_vector": "neural_semantic_vector",
-}
 
 
 def main() -> None:
@@ -89,205 +54,516 @@ def main() -> None:
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--candidate-limit", type=int, default=200)
     parser.add_argument("--max-examples", type=int, default=0)
+    parser.add_argument(
+        "--sample-strategy",
+        choices=["first", "stride"],
+        default="first",
+        help="How to select --max-examples rows; stride reduces first-N ordering bias.",
+    )
     parser.add_argument("--build-collaborative", action="store_true")
+    parser.add_argument(
+        "--hybrid-only",
+        action="store_true",
+        help="Skip unchanged baseline and cold-start rankings for larger hybrid-only sweeps.",
+    )
+    parser.add_argument(
+        "--candidate-recall-only",
+        action="store_true",
+        help="Skip ranking and measure candidate recall/source diagnostics only.",
+    )
+    parser.add_argument(
+        "--disabled-sources",
+        default="",
+        help="Comma-separated retrieval sources to disable for ablation/pruning runs.",
+    )
     parser.add_argument("--miss-output", default="")
     parser.add_argument("--max-misses", type=int, default=200)
     parser.add_argument(
         "--retriever",
         choices=["legacy", "neural"],
         default="legacy",
-        help="Vector retriever backend: legacy (LocalVectorRetriever) or neural (FAISSVectorStore).",
+        help=(
+            "Vector retriever backend: legacy (LocalVectorRetriever) "
+            "or neural (FAISSVectorStore)."
+        ),
     )
     args = parser.parse_args()
 
-    train, _, test_b, items = load_eval_data(
-        reviews_path=Path(args.reviews),
-        items_path=Path(args.items),
-        processed_dir=Path(args.processed_dir),
-    )
-    item_list = _items_with_train_popularity(items, train)
-    if args.max_examples:
-        test_b = test_b[: args.max_examples]
-    positives = [row["item_id"] for row in test_b]
-    history_map = histories_by_user(train)
-    retriever = BM25Retriever.from_items(item_list)
-    vector_retriever = LocalVectorRetriever(item_list)
-    neural_retriever: FAISSVectorStore | None = None
-    if args.retriever == "neural":
-        index_path = Path(args.processed_dir) / "neural_index.faiss"
+    EvalRunner(args).run()
+
+
+@dataclass
+class EvalDataset:
+    train: list[dict]
+    test_b: list[dict]
+    items: dict[str, Item]
+    item_list: list[Item]
+    positives: list[str]
+    history_map: dict
+    retriever: BM25Retriever
+    vector_retriever: LocalVectorRetriever | None
+    neural_retriever: FAISSVectorStore | None
+    catalog: CandidateCatalog
+    popularity: list[str]
+    train_item_counts: Counter
+    collaborative_index: dict | None
+    item_neighbor_ids: set[str]
+    review_term_item_ids: set[str]
+    disabled_sources: set[str]
+    item_profile_cache: dict
+
+
+@dataclass
+class EvalResult:
+    rankings: dict[str, list[list[str]]]
+    metrics: dict[str, float]
+    slices: dict
+    source_counts: dict[str, int]
+    source_diagnostics: dict[str, dict]
+    source_family_diagnostics: dict[str, dict]
+    miss_report: dict
+    hybrid_pools: list[CandidatePool]
+    hybrid_ranked_ids: list[list[str]]
+
+
+class EvalDatasetBuilder:
+    def __init__(self, args: argparse.Namespace) -> None:
+        self.args = args
+
+    def build(self) -> EvalDataset:
+        train, _, test_b, items = load_eval_data(
+            reviews_path=Path(self.args.reviews),
+            items_path=Path(self.args.items),
+            processed_dir=Path(self.args.processed_dir),
+        )
+        item_list = _items_with_train_popularity(items, train)
+        if self.args.max_examples:
+            test_b = _sample_eval_rows(
+                test_b,
+                self.args.max_examples,
+                self.args.sample_strategy,
+            )
+        disabled_sources = {
+            source.strip()
+            for source in self.args.disabled_sources.split(",")
+            if source.strip()
+        }
+        positives = [row["item_id"] for row in test_b]
+        history_map = histories_by_user(train)
+        retriever = BM25Retriever.from_items(item_list)
+        vector_retriever = (
+            None if "vector_profile" in disabled_sources else LocalVectorRetriever(item_list)
+        )
+        neural_retriever = self._build_neural_retriever(item_list)
+        catalog = CandidateCatalog.from_items(item_list)
+        popularity = _popularity_rank(train, item_list)
+        train_item_counts = Counter(row["item_id"] for row in train if row["rating"] >= 4)
+        collaborative_index = _load_collaborative_index(self.args, train)
+        return EvalDataset(
+            train=train,
+            test_b=test_b,
+            items=items,
+            item_list=item_list,
+            positives=positives,
+            history_map=history_map,
+            retriever=retriever,
+            vector_retriever=vector_retriever,
+            neural_retriever=neural_retriever,
+            catalog=catalog,
+            popularity=popularity,
+            train_item_counts=train_item_counts,
+            collaborative_index=collaborative_index,
+            item_neighbor_ids=_item_neighbor_ids(collaborative_index),
+            review_term_item_ids=_review_term_item_ids(collaborative_index),
+            disabled_sources=disabled_sources,
+            item_profile_cache={},
+        )
+
+    def _build_neural_retriever(self, item_list: list[Item]) -> FAISSVectorStore | None:
+        if self.args.retriever != "neural":
+            return None
+        index_path = Path(self.args.processed_dir) / "neural_index.faiss"
         if index_path.exists():
             neural_retriever = FAISSVectorStore.deserialize(str(index_path), item_list)
         else:
             neural_retriever = create_retriever(item_list, method="neural")
         if isinstance(neural_retriever, FAISSVectorStore) and neural_retriever._built:
-            print(f"Neural FAISS retriever initialised: {neural_retriever.index.ntotal} items indexed.")
-        else:
-            print("Neural FAISS retriever unavailable; falling back to LocalVectorRetriever only.")
-            neural_retriever = None
-    catalog = CandidateCatalog.from_items(item_list)
-    popularity = _popularity_rank(train, item_list)
-    train_item_counts = Counter(row["item_id"] for row in train if row["rating"] >= 4)
-    collaborative_index = _load_collaborative_index(args, train)
-    item_neighbor_ids = _item_neighbor_ids(collaborative_index)
-    review_term_item_ids = _review_term_item_ids(collaborative_index)
+            print(
+                "Neural FAISS retriever initialised: "
+                f"{neural_retriever.index.ntotal} items indexed."
+            )
+            return neural_retriever
+        print("Neural FAISS retriever unavailable; falling back to LocalVectorRetriever only.")
+        return None
 
-    base_pools: list[CandidatePool] = []
-    hybrid_pools: list[CandidatePool] = []
-    hybrid_ranked_ids: list[list[str]] = []
-    cold_start_ranked_ids: list[list[str]] = []
 
-    for row in test_b:
-        history = history_map.get(row["user_id"], [])
-        base_pool = _candidate_pool(
-            row=row,
-            history=history,
-            retriever=retriever,
-            vector_retriever=vector_retriever,
-            catalog=catalog,
-            item_list=item_list,
-            candidate_limit=args.candidate_limit,
-            collaborative_index=None,
-            neural_retriever=neural_retriever,
+class RecommendationEvaluator:
+    def __init__(self, args: argparse.Namespace, dataset: EvalDataset) -> None:
+        self.args = args
+        self.dataset = dataset
+
+    def evaluate(self) -> EvalResult:
+        base_pools, hybrid_pools, hybrid_ranked_ids, cold_start_ranked_ids = self._run_rows()
+        rankings = self._build_rankings(
+            base_pools,
+            hybrid_pools,
+            hybrid_ranked_ids,
+            cold_start_ranked_ids,
         )
-        hybrid_pool = _candidate_pool(
-            row=row,
-            history=history,
-            retriever=retriever,
-            vector_retriever=vector_retriever,
-            catalog=catalog,
-            item_list=item_list,
-            candidate_limit=args.candidate_limit,
-            collaborative_index=collaborative_index,
-            neural_retriever=neural_retriever,
+        metrics = self._metrics(rankings)
+        slices = self._slices(rankings, hybrid_ranked_ids)
+        source_counts = _aggregate_source_counts(hybrid_pools)
+        source_diagnostics = _source_diagnostics(
+            pools=hybrid_pools,
+            positives=self.dataset.positives,
+            k=self.args.candidate_limit,
         )
-        base_pools.append(base_pool)
-        hybrid_pools.append(hybrid_pool)
-        hybrid_ranked_ids.append(
-            _rank_pool(
+        source_family_diagnostics = _source_family_diagnostics(
+            pools=hybrid_pools,
+            positives=self.dataset.positives,
+            k=self.args.candidate_limit,
+        )
+        miss_report = self._miss_report(
+            base_pools=base_pools,
+            hybrid_pools=hybrid_pools,
+            hybrid_ranked_ids=hybrid_ranked_ids,
+        )
+        return EvalResult(
+            rankings=rankings,
+            metrics=metrics,
+            slices=slices,
+            source_counts=source_counts,
+            source_diagnostics=source_diagnostics,
+            source_family_diagnostics=source_family_diagnostics,
+            miss_report=miss_report,
+            hybrid_pools=hybrid_pools,
+            hybrid_ranked_ids=hybrid_ranked_ids,
+        )
+
+    def _run_rows(
+        self,
+    ) -> tuple[list[CandidatePool], list[CandidatePool], list[list[str]], list[list[str]]]:
+        base_pools: list[CandidatePool] = []
+        hybrid_pools: list[CandidatePool] = []
+        hybrid_ranked_ids: list[list[str]] = []
+        cold_start_ranked_ids: list[list[str]] = []
+
+        for row in self.dataset.test_b:
+            history = self.dataset.history_map.get(row["user_id"], [])
+            base_pool = CandidatePool(items=[])
+            if not self.args.hybrid_only:
+                base_pool = self._candidate_pool(row=row, history=history, collaborative_index=None)
+            hybrid_pool = self._candidate_pool(
                 row=row,
                 history=history,
-                pool=hybrid_pool,
-                limit=max(args.k, len(hybrid_pool.items)),
+                collaborative_index=self.dataset.collaborative_index,
             )
+            base_pools.append(base_pool)
+            hybrid_pools.append(hybrid_pool)
+            if not self.args.candidate_recall_only:
+                hybrid_ranked_ids.append(
+                    _rank_pool(
+                        row=row,
+                        history=history,
+                        pool=hybrid_pool,
+                        limit=max(self.args.k, len(hybrid_pool.items)),
+                        item_profile_cache=self.dataset.item_profile_cache,
+                    )
+                )
+            if not self.args.hybrid_only and not self.args.candidate_recall_only:
+                cold_start_ranked_ids.append(self._cold_start_rank(row))
+        return base_pools, hybrid_pools, hybrid_ranked_ids, cold_start_ranked_ids
+
+    def _candidate_pool(
+        self,
+        row: dict,
+        history: list,
+        collaborative_index: dict | None,
+    ) -> CandidatePool:
+        return _candidate_pool(
+            row=row,
+            history=history,
+            retriever=self.dataset.retriever,
+            vector_retriever=self.dataset.vector_retriever,
+            catalog=self.dataset.catalog,
+            item_list=self.dataset.item_list,
+            candidate_limit=self.args.candidate_limit,
+            collaborative_index=collaborative_index,
+            disabled_sources=self.dataset.disabled_sources,
+            neural_retriever=self.dataset.neural_retriever,
         )
-        cold_start_ranked_ids.append(
-            _cold_start_rank(
-                row=row,
-                retriever=retriever,
-                vector_retriever=vector_retriever,
-                catalog=catalog,
-                item_list=item_list,
-                candidate_limit=args.candidate_limit,
-                limit=max(args.k, min(args.candidate_limit, len(item_list))),
-                neural_retriever=neural_retriever,
+
+    def _cold_start_rank(self, row: dict) -> list[str]:
+        return _cold_start_rank(
+            row=row,
+            retriever=self.dataset.retriever,
+            vector_retriever=self.dataset.vector_retriever,
+            catalog=self.dataset.catalog,
+            item_list=self.dataset.item_list,
+            candidate_limit=self.args.candidate_limit,
+            limit=max(self.args.k, min(self.args.candidate_limit, len(self.dataset.item_list))),
+            disabled_sources=self.dataset.disabled_sources,
+            item_profile_cache=self.dataset.item_profile_cache,
+            neural_retriever=self.dataset.neural_retriever,
+        )
+
+    def _build_rankings(
+        self,
+        base_pools: list[CandidatePool],
+        hybrid_pools: list[CandidatePool],
+        hybrid_ranked_ids: list[list[str]],
+        cold_start_ranked_ids: list[list[str]],
+    ) -> dict[str, list[list[str]]]:
+        rankings = {
+            "hybrid_candidate_recall": [
+                [item.item_id for item in pool.items] for pool in hybrid_pools
+            ],
+        }
+        if not self.args.candidate_recall_only:
+            rankings["hybrid_ranker"] = hybrid_ranked_ids
+        if not self.args.hybrid_only:
+            rankings.update(
+                {
+                    "popularity": [self.dataset.popularity for _ in self.dataset.test_b],
+                    "filtered_popularity": [
+                        _filtered_popularity_rank(
+                            row,
+                            self.dataset.history_map,
+                            self.dataset.popularity,
+                        )
+                        for row in self.dataset.test_b
+                    ],
+                    "base_candidate_recall": [
+                        [item.item_id for item in pool.items] for pool in base_pools
+                    ],
+                    "cold_start_persona_only": cold_start_ranked_ids,
+                }
             )
+            if "bm25_profile" not in self.dataset.disabled_sources:
+                rankings["bm25_profile"] = [
+                    _bm25_rank(
+                        row,
+                        self.dataset.history_map,
+                        self.dataset.retriever,
+                        self.args.candidate_limit,
+                    )
+                    for row in self.dataset.test_b
+                ]
+            if self.dataset.vector_retriever is not None:
+                rankings["vector_profile"] = [
+                    _vector_rank(
+                        row,
+                        self.dataset.history_map,
+                        self.dataset.vector_retriever,
+                        self.args.candidate_limit,
+                    )
+                    for row in self.dataset.test_b
+                ]
+        return rankings
+
+    def _metrics(self, rankings: dict[str, list[list[str]]]) -> dict[str, float]:
+        metrics = {}
+        for name, ranked_ids in rankings.items():
+            metrics[f"{name}_hit_rate@{self.args.k}"] = rounded(
+                hit_rate_at_k(ranked_ids, self.dataset.positives, self.args.k)
+            )
+            metrics[f"{name}_recall@{self.args.k}"] = rounded(
+                recall_at_k(ranked_ids, self.dataset.positives, self.args.k)
+            )
+            metrics[f"{name}_ndcg@{self.args.k}"] = rounded(
+                ndcg_at_k(ranked_ids, self.dataset.positives, self.args.k)
+            )
+        for recall_k in (50, 100, self.args.candidate_limit):
+            if recall_k <= 0:
+                continue
+            if "base_candidate_recall" in rankings:
+                metrics[f"base_candidate_recall@{recall_k}"] = rounded(
+                    recall_at_k(
+                        rankings["base_candidate_recall"],
+                        self.dataset.positives,
+                        recall_k,
+                    )
+                )
+            metrics[f"hybrid_candidate_recall@{recall_k}"] = rounded(
+                recall_at_k(
+                    rankings["hybrid_candidate_recall"],
+                    self.dataset.positives,
+                    recall_k,
+                )
+            )
+        return metrics
+
+    def _slices(
+        self,
+        rankings: dict[str, list[list[str]]],
+        hybrid_ranked_ids: list[list[str]],
+    ) -> dict:
+        if self.args.candidate_recall_only:
+            return _slice_candidate_metrics(
+                test_b=self.dataset.test_b,
+                history_map=self.dataset.history_map,
+                positives=self.dataset.positives,
+                candidate_ids=rankings["hybrid_candidate_recall"],
+                candidate_k=self.args.candidate_limit,
+            )
+        return _slice_metrics(
+            test_b=self.dataset.test_b,
+            history_map=self.dataset.history_map,
+            positives=self.dataset.positives,
+            ranked_ids=hybrid_ranked_ids,
+            candidate_ids=rankings["hybrid_candidate_recall"],
+            k=self.args.k,
+            candidate_k=self.args.candidate_limit,
         )
 
-    rankings = {
-        "popularity": [popularity for _ in test_b],
-        "filtered_popularity": [
-            _filtered_popularity_rank(row, history_map, popularity) for row in test_b
-        ],
-        "bm25_profile": [
-            _bm25_rank(row, history_map, retriever, args.candidate_limit) for row in test_b
-        ],
-        "vector_profile": [
-            _vector_rank(row, history_map, vector_retriever, args.candidate_limit) for row in test_b
-        ],
-        "base_candidate_recall": [[item.item_id for item in pool.items] for pool in base_pools],
-        "hybrid_candidate_recall": [[item.item_id for item in pool.items] for pool in hybrid_pools],
-        "hybrid_ranker": hybrid_ranked_ids,
-        "cold_start_persona_only": cold_start_ranked_ids,
-    }
+    def _miss_report(
+        self,
+        base_pools: list[CandidatePool],
+        hybrid_pools: list[CandidatePool],
+        hybrid_ranked_ids: list[list[str]],
+    ) -> dict:
+        if self.args.candidate_recall_only:
+            return _build_candidate_only_miss_report(
+                test_b=self.dataset.test_b,
+                history_map=self.dataset.history_map,
+                items=self.dataset.items,
+                hybrid_pools=hybrid_pools,
+                candidate_limit=self.args.candidate_limit,
+                max_misses=self.args.max_misses,
+            )
+        if self.args.hybrid_only:
+            return _build_hybrid_only_miss_report(
+                test_b=self.dataset.test_b,
+                history_map=self.dataset.history_map,
+                items=self.dataset.items,
+                hybrid_pools=hybrid_pools,
+                hybrid_ranked_ids=hybrid_ranked_ids,
+                candidate_limit=self.args.candidate_limit,
+                max_misses=self.args.max_misses,
+            )
+        return _build_miss_report(
+            test_b=self.dataset.test_b,
+            history_map=self.dataset.history_map,
+            items=self.dataset.items,
+            train_item_counts=self.dataset.train_item_counts,
+            item_neighbor_ids=self.dataset.item_neighbor_ids,
+            review_term_item_ids=self.dataset.review_term_item_ids,
+            base_pools=base_pools,
+            hybrid_pools=hybrid_pools,
+            hybrid_ranked_ids=hybrid_ranked_ids,
+            candidate_limit=self.args.candidate_limit,
+            max_misses=self.args.max_misses,
+        )
 
-    metrics = {}
-    for name, ranked_ids in rankings.items():
-        metrics[f"{name}_hit_rate@{args.k}"] = rounded(hit_rate_at_k(ranked_ids, positives, args.k))
-        metrics[f"{name}_recall@{args.k}"] = rounded(recall_at_k(ranked_ids, positives, args.k))
-        metrics[f"{name}_ndcg@{args.k}"] = rounded(ndcg_at_k(ranked_ids, positives, args.k))
-    for recall_k in (50, 100, args.candidate_limit):
-        if recall_k <= 0:
-            continue
-        metrics[f"base_candidate_recall@{recall_k}"] = rounded(
-            recall_at_k(rankings["base_candidate_recall"], positives, recall_k)
-        )
-        metrics[f"hybrid_candidate_recall@{recall_k}"] = rounded(
-            recall_at_k(rankings["hybrid_candidate_recall"], positives, recall_k)
-        )
 
-    slices = _slice_metrics(
-        test_b=test_b,
-        history_map=history_map,
-        positives=positives,
-        ranked_ids=hybrid_ranked_ids,
-        candidate_ids=rankings["hybrid_candidate_recall"],
-        k=args.k,
-        candidate_k=args.candidate_limit,
-    )
-    source_counts = _aggregate_source_counts(hybrid_pools)
-    source_diagnostics = _source_diagnostics(
-        pools=hybrid_pools,
-        positives=positives,
-        k=args.candidate_limit,
-    )
-    source_family_diagnostics = _source_family_diagnostics(
-        pools=hybrid_pools,
-        positives=positives,
-        k=args.candidate_limit,
-    )
-    miss_report = _build_miss_report(
-        test_b=test_b,
-        history_map=history_map,
-        items=items,
-        train_item_counts=train_item_counts,
-        item_neighbor_ids=item_neighbor_ids,
-        review_term_item_ids=review_term_item_ids,
-        base_pools=base_pools,
-        hybrid_pools=hybrid_pools,
-        hybrid_ranked_ids=hybrid_ranked_ids,
-        candidate_limit=args.candidate_limit,
-        max_misses=args.max_misses,
-    )
-    if args.miss_output:
-        Path(args.miss_output).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.miss_output).write_text(
-            json.dumps(miss_report, ensure_ascii=True, indent=2) + "\n",
-            encoding="utf-8",
-        )
-    retriever_note = (
-        "Neural FAISS vector retriever active; neural_vector source contributes "
-        "additional candidates and is tracked separately in source diagnostics."
-        if neural_retriever is not None and neural_retriever._built
-        else "Legacy LocalVectorRetriever used for semantic vector retrieval."
-    )
-    payload = {
-        "task": "Task B",
-        "dataset": str(Path(args.processed_dir) if Path(args.processed_dir).exists() else Path(args.reviews)),
-        "examples": len(test_b),
-        "retriever": args.retriever,
-        "neural_retriever_active": neural_retriever is not None and neural_retriever._built if neural_retriever else False,
-        "metrics": metrics,
-        "slices": slices,
-        "retrieval_sources": source_counts,
-        "retrieval_source_diagnostics": source_diagnostics,
-        "retrieval_source_families": source_family_diagnostics,
-        "miss_analysis": miss_report["summary"],
-        "notes": [
-            "Positive item is the held-out next review for each eligible user.",
-            "Filtered popularity removes items already seen in the user's training history.",
-            "Candidate recall measures whether retrieval surfaced the held-out item before ranking.",
-            "Hybrid candidates blend co-visitation, user-neighbor CF, review-term, evidence graph, BM25, vector, category-affinity, and popularity sources when artifacts are available.",
-            "Cold-start persona-only uses the derived persona without history items.",
-            "Hybrid ranker uses preference, context, category, aspect, sequential, evidence graph, vector, collaborative, quality, novelty, and confidence signals.",
-            retriever_note,
-        ],
-    }
-    write_report(Path(args.output), payload)
-    print_report(payload)
+class EvalRunner:
+    def __init__(self, args: argparse.Namespace) -> None:
+        self.args = args
+
+    def run(self) -> None:
+        dataset = EvalDatasetBuilder(self.args).build()
+        result = RecommendationEvaluator(self.args, dataset).evaluate()
+        if self.args.miss_output:
+            Path(self.args.miss_output).parent.mkdir(parents=True, exist_ok=True)
+            Path(self.args.miss_output).write_text(
+                json.dumps(result.miss_report, ensure_ascii=True, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        payload = self._payload(dataset, result)
+        write_report(Path(self.args.output), payload)
+        print_report(payload)
+
+    def _payload(self, dataset: EvalDataset, result: EvalResult) -> dict:
+        return {
+            "task": "Task B",
+            "dataset": str(
+                Path(self.args.processed_dir)
+                if Path(self.args.processed_dir).exists()
+                else Path(self.args.reviews)
+            ),
+            "examples": len(dataset.test_b),
+            "retriever": self.args.retriever,
+            "neural_retriever_active": (
+                dataset.neural_retriever is not None and dataset.neural_retriever._built
+                if dataset.neural_retriever
+                else False
+            ),
+            "disabled_sources": sorted(dataset.disabled_sources),
+            "metrics": result.metrics,
+            "slices": result.slices,
+            "retrieval_sources": result.source_counts,
+            "retrieval_source_diagnostics": result.source_diagnostics,
+            "retrieval_source_families": result.source_family_diagnostics,
+            "miss_analysis": result.miss_report["summary"],
+            "notes": self._notes(dataset),
+        }
+
+    def _notes(self, dataset: EvalDataset) -> list[str]:
+        if dataset.neural_retriever is not None and dataset.neural_retriever._built:
+            retriever_note = (
+                "Neural FAISS vector retriever active; neural_vector source contributes "
+                "additional candidates and is tracked separately in source diagnostics."
+            )
+        elif dataset.vector_retriever is None:
+            retriever_note = "Semantic vector retrieval disabled for this pruning run."
+        else:
+            retriever_note = "Legacy LocalVectorRetriever used for semantic vector retrieval."
+        return [
+            note
+            for note in [
+                "Positive item is the held-out next review for each eligible user.",
+                (
+                    "Filtered popularity removes items already seen in the user's training history."
+                    if not self.args.hybrid_only
+                    else ""
+                ),
+                (
+                    "Candidate recall measures whether retrieval surfaced the held-out item "
+                    "before ranking."
+                ),
+                (
+                    "Hybrid candidates blend co-visitation, implicit item-item, user-neighbor CF, "
+                    "review-term, evidence graph, BM25, vector, category-affinity, and popularity "
+                    "sources when artifacts are available."
+                ),
+                (
+                    "Cold-start persona-only uses the derived persona without history items."
+                    if not self.args.hybrid_only
+                    else ""
+                ),
+                (
+                    "Hybrid ranker uses preference, context, category, aspect, sequential, "
+                    "evidence graph, vector, collaborative, quality, novelty, "
+                    "and confidence signals."
+                ),
+                "Hybrid-only eval mode skipped unchanged baseline and cold-start rankings."
+                if self.args.hybrid_only
+                else "",
+                "Candidate-recall-only mode skipped ranking."
+                if self.args.candidate_recall_only
+                else "",
+                (
+                    f"Disabled retrieval sources: {', '.join(sorted(dataset.disabled_sources))}."
+                    if dataset.disabled_sources
+                    else ""
+                ),
+                retriever_note,
+            ]
+            if note
+        ]
 
 
 def _popularity_rank(train: list[dict], items: list[Item]) -> list[str]:
     return popularity_ranking(train, [item.item_id for item in items])
+
+
+def _sample_eval_rows(rows: list[dict], max_examples: int, strategy: str) -> list[dict]:
+    if max_examples <= 0 or len(rows) <= max_examples:
+        return rows
+    if strategy == "stride":
+        step = len(rows) / max_examples
+        return [rows[min(int(index * step), len(rows) - 1)] for index in range(max_examples)]
+    return rows[:max_examples]
 
 
 def _filtered_popularity_rank(
@@ -336,11 +612,12 @@ def _candidate_pool(
     row: dict,
     history: list,
     retriever: BM25Retriever,
-    vector_retriever: LocalVectorRetriever,
+    vector_retriever: LocalVectorRetriever | None,
     catalog: CandidateCatalog,
     item_list: list[Item],
     candidate_limit: int,
     collaborative_index: dict | None,
+    disabled_sources: set[str] | None = None,
     neural_retriever: FAISSVectorStore | None = None,
 ) -> CandidatePool:
     persona = persona_from_history(history)
@@ -354,12 +631,19 @@ def _candidate_pool(
         bm25_retriever=retriever,
         vector_retriever=vector_retriever,
         catalog=catalog,
+        disabled_sources=disabled_sources,
         limit=min(candidate_limit, len(item_list)),
         neural_retriever=neural_retriever,
     )
 
 
-def _rank_pool(row: dict, history: list, pool: CandidatePool, limit: int) -> list[str]:
+def _rank_pool(
+    row: dict,
+    history: list,
+    pool: CandidatePool,
+    limit: int,
+    item_profile_cache: dict | None = None,
+) -> list[str]:
     persona = persona_from_history(history)
     user_profile = build_user_profile(persona=persona, history=history, locale=None)
     ranked = rank_candidates(
@@ -369,6 +653,7 @@ def _rank_pool(row: dict, history: list, pool: CandidatePool, limit: int) -> lis
         limit=limit,
         candidate_sources=pool.sources,
         candidate_source_scores=pool.source_scores,
+        item_profile_cache=item_profile_cache,
     )
     return [item.item_id for item in ranked]
 
@@ -376,11 +661,13 @@ def _rank_pool(row: dict, history: list, pool: CandidatePool, limit: int) -> lis
 def _cold_start_rank(
     row: dict,
     retriever: BM25Retriever,
-    vector_retriever: LocalVectorRetriever,
+    vector_retriever: LocalVectorRetriever | None,
     catalog: CandidateCatalog,
     item_list: list[Item],
     candidate_limit: int,
     limit: int,
+    disabled_sources: set[str] | None = None,
+    item_profile_cache: dict | None = None,
     neural_retriever: FAISSVectorStore | None = None,
 ) -> list[str]:
     persona = _cold_start_persona(row)
@@ -393,6 +680,7 @@ def _cold_start_rank(
         bm25_retriever=retriever,
         vector_retriever=vector_retriever,
         catalog=catalog,
+        disabled_sources=disabled_sources,
         limit=min(candidate_limit, len(item_list)),
         neural_retriever=neural_retriever,
     )
@@ -403,6 +691,7 @@ def _cold_start_rank(
         limit=limit,
         candidate_sources=pool.sources,
         candidate_source_scores=pool.source_scores,
+        item_profile_cache=item_profile_cache,
     )
     return [item.item_id for item in ranked]
 
@@ -434,6 +723,13 @@ def _load_collaborative_index(args: argparse.Namespace, train: list[dict]) -> di
                 {"type": "legacy_item_neighbors", "item_neighbors": payload["items"]},
                 path,
             )
+    for path in (
+        Path(args.processed_dir) / "implicit_item_neighbors.sqlite",
+        Path(args.processed_dir) / "implicit_item_neighbors.json.gz",
+        Path(args.processed_dir) / "implicit_item_neighbors.json",
+    ):
+        if path.exists():
+            return _attach_implicit_item_index({"type": "implicit_item_item"}, path)
     if args.build_collaborative or len(train) <= 100_000:
         return build_collaborative_retrieval_index(train, top_k=50)
     return None
@@ -442,14 +738,41 @@ def _load_collaborative_index(args: argparse.Namespace, train: list[dict]) -> di
 def _attach_review_term_index(payload: dict, source_path: Path) -> dict:
     review_term_path = source_path.parent / "review_term_retrieval.json"
     if not review_term_path.exists():
-        return _attach_evidence_graph_index(payload, source_path)
+        return _attach_implicit_item_index(payload, source_path)
     try:
-        review_term_payload = json.loads(review_term_path.read_text(encoding="utf-8"))
+        review_term_payload = read_json_artifact(review_term_path)
     except (OSError, json.JSONDecodeError):
-        return _attach_evidence_graph_index(payload, source_path)
+        return _attach_implicit_item_index(payload, source_path)
     if review_term_payload.get("term_items"):
         payload = dict(payload)
         payload["review_term_retrieval"] = review_term_payload
+    return _attach_implicit_item_index(payload, source_path)
+
+
+def _attach_implicit_item_index(payload: dict, source_path: Path) -> dict:
+    for path in (
+        source_path.parent / "implicit_item_neighbors.sqlite",
+        source_path.parent / "implicit_item_neighbors.json.gz",
+        source_path.parent / "implicit_item_neighbors.json",
+    ):
+        if not path.exists():
+            continue
+        payload = dict(payload)
+        if path.suffix == ".sqlite":
+            payload["implicit_item_neighbors"] = SQLiteItemNeighborIndex(path)
+            return _attach_evidence_graph_index(payload, source_path)
+        try:
+            implicit_payload = read_json_artifact(path)
+        except (OSError, json.JSONDecodeError):
+            continue
+        neighbors = (
+            implicit_payload.get("neighbors")
+            if isinstance(implicit_payload, dict)
+            else None
+        )
+        if neighbors:
+            payload["implicit_item_neighbors"] = neighbors
+            return _attach_evidence_graph_index(payload, source_path)
     return _attach_evidence_graph_index(payload, source_path)
 
 
@@ -458,7 +781,7 @@ def _attach_evidence_graph_index(payload: dict, source_path: Path) -> dict:
     if not evidence_graph_path.exists():
         return payload
     try:
-        evidence_graph_payload = json.loads(evidence_graph_path.read_text(encoding="utf-8"))
+        evidence_graph_payload = read_json_artifact(evidence_graph_path)
     except (OSError, json.JSONDecodeError):
         return payload
     if evidence_graph_payload.get("type") == "evidence_graph":
@@ -517,7 +840,11 @@ def _build_miss_report(
         target_popularity = int(train_item_counts[positive])
         history_len = len(history)
         bucket = _history_bucket(history_len)
-        positive_categories = {item.category for item in history if item.category and item.rating >= 4}
+        positive_categories = {
+            item.category
+            for item in history
+            if item.category and item.rating >= 4
+        }
         likely_causes = _miss_causes(
             target_popularity=target_popularity,
             target_category=target_category,
@@ -555,6 +882,111 @@ def _build_miss_report(
             "candidate_limit": candidate_limit,
             "candidate_misses": sum(category_counts.values()),
             "miss_cause_counts": dict(sorted(summary_counts.items())),
+            "miss_category_counts": dict(category_counts.most_common(10)),
+            "miss_history_buckets": dict(sorted(history_buckets.items())),
+        },
+        "misses": misses,
+    }
+
+
+def _build_hybrid_only_miss_report(
+    test_b: list[dict],
+    history_map: dict[str, list],
+    items: dict[str, Item],
+    hybrid_pools: list[CandidatePool],
+    hybrid_ranked_ids: list[list[str]],
+    candidate_limit: int,
+    max_misses: int,
+) -> dict:
+    misses = []
+    category_counts = Counter()
+    history_buckets = Counter()
+    ranker_misses = 0
+    for index, row in enumerate(test_b):
+        positive = row["item_id"]
+        history = history_map.get(row["user_id"], [])
+        hybrid_ids = [item.item_id for item in hybrid_pools[index].items]
+        hybrid_rank = _rank_position(hybrid_ids, positive)
+        final_rank = _rank_position(hybrid_ranked_ids[index], positive)
+        if hybrid_rank is not None:
+            if final_rank is None or final_rank > 10:
+                ranker_misses += 1
+            continue
+
+        target = items.get(positive)
+        target_category = (target.category if target else row.get("category")) or "unknown"
+        bucket = _history_bucket(len(history))
+        category_counts[target_category] += 1
+        history_buckets[bucket] += 1
+        if len(misses) < max_misses:
+            misses.append(
+                {
+                    "user_id": row["user_id"],
+                    "target_item_id": positive,
+                    "target_name": target.name if target else row.get("item_name"),
+                    "target_category": target_category,
+                    "history_length": len(history),
+                    "history_bucket": bucket,
+                    "hybrid_candidate_rank": hybrid_rank,
+                    "hybrid_final_rank": final_rank,
+                    "likely_causes": ["hybrid_retrieval_miss"],
+                }
+            )
+
+    return {
+        "summary": {
+            "candidate_limit": candidate_limit,
+            "candidate_misses": sum(category_counts.values()),
+            "ranker_misses_after_retrieval_hit": ranker_misses,
+            "miss_cause_counts": {"hybrid_retrieval_miss": sum(category_counts.values())},
+            "miss_category_counts": dict(category_counts.most_common(10)),
+            "miss_history_buckets": dict(sorted(history_buckets.items())),
+        },
+        "misses": misses,
+    }
+
+
+def _build_candidate_only_miss_report(
+    test_b: list[dict],
+    history_map: dict[str, list],
+    items: dict[str, Item],
+    hybrid_pools: list[CandidatePool],
+    candidate_limit: int,
+    max_misses: int,
+) -> dict:
+    misses = []
+    category_counts = Counter()
+    history_buckets = Counter()
+    for index, row in enumerate(test_b):
+        positive = row["item_id"]
+        hybrid_ids = [item.item_id for item in hybrid_pools[index].items]
+        hybrid_rank = _rank_position(hybrid_ids, positive)
+        if hybrid_rank is not None:
+            continue
+        history = history_map.get(row["user_id"], [])
+        target = items.get(positive)
+        target_category = (target.category if target else row.get("category")) or "unknown"
+        bucket = _history_bucket(len(history))
+        category_counts[target_category] += 1
+        history_buckets[bucket] += 1
+        if len(misses) < max_misses:
+            misses.append(
+                {
+                    "user_id": row["user_id"],
+                    "target_item_id": positive,
+                    "target_name": target.name if target else row.get("item_name"),
+                    "target_category": target_category,
+                    "history_length": len(history),
+                    "history_bucket": bucket,
+                    "hybrid_candidate_rank": hybrid_rank,
+                    "likely_causes": ["hybrid_retrieval_miss"],
+                }
+            )
+    return {
+        "summary": {
+            "candidate_limit": candidate_limit,
+            "candidate_misses": sum(category_counts.values()),
+            "miss_cause_counts": {"hybrid_retrieval_miss": sum(category_counts.values())},
             "miss_category_counts": dict(category_counts.most_common(10)),
             "miss_history_buckets": dict(sorted(history_buckets.items())),
         },
@@ -642,6 +1074,46 @@ def _slice_metrics(
     }
 
 
+def _slice_candidate_metrics(
+    test_b: list[dict],
+    history_map: dict[str, list],
+    positives: list[str],
+    candidate_ids: list[list[str]],
+    candidate_k: int,
+) -> dict[str, dict[str, float]]:
+    slice_indices = {
+        "sparse_history_1_2": [],
+        "medium_history_3_7": [],
+        "warm_history_8_plus": [],
+        "cross_domain": [],
+    }
+    for index, row in enumerate(test_b):
+        history = history_map.get(row["user_id"], [])
+        history_len = len(history)
+        if history_len <= 2:
+            slice_indices["sparse_history_1_2"].append(index)
+        elif history_len <= 7:
+            slice_indices["medium_history_3_7"].append(index)
+        else:
+            slice_indices["warm_history_8_plus"].append(index)
+        if _is_cross_domain(row, history):
+            slice_indices["cross_domain"].append(index)
+    return {
+        name: {
+            "examples": len(indices),
+            f"hybrid_candidate_recall@{candidate_k}": rounded(
+                recall_at_k(
+                    [candidate_ids[index] for index in indices],
+                    [positives[index] for index in indices],
+                    candidate_k,
+                )
+            ),
+        }
+        for name, indices in slice_indices.items()
+        if indices
+    }
+
+
 def _metrics_for_indices(
     indices: list[int],
     positives: list[str],
@@ -669,7 +1141,11 @@ def _is_cross_domain(row: dict, history: list) -> bool:
     target_category = row.get("category")
     if not target_category:
         return False
-    positive_categories = {item.category for item in history if item.category and item.rating >= 4}
+    positive_categories = {
+        item.category
+        for item in history
+        if item.category and item.rating >= 4
+    }
     return bool(positive_categories) and target_category not in positive_categories
 
 
@@ -790,7 +1266,7 @@ def _hit_count_at_k(ranked_ids: list[list[str]], positives: list[str], k: int) -
 
 
 def _source_family(source: str) -> str:
-    return SOURCE_FAMILY_BY_SOURCE.get(source, "other")
+    return retrieval_source_family(source)
 
 
 if __name__ == "__main__":
