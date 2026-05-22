@@ -17,6 +17,34 @@ SENSITIVE_INFERENCE_TERMS = {
     "sick",
 }
 
+GENERIC_REVIEW_TERMS = {
+    "again",
+    "buying",
+    "call",
+    "carries",
+    "enough",
+    "fair",
+    "feels",
+    "first",
+    "here",
+    "lands",
+    "main",
+    "matters",
+    "overall",
+    "out",
+    "price",
+    "puts",
+    "rate",
+    "rating",
+    "reason",
+    "shopper",
+    "stood",
+    "supports",
+    "taste",
+    "value",
+    "would",
+}
+
 
 def review_evidence_issues(
     review: str,
@@ -31,7 +59,7 @@ def review_evidence_issues(
         for term in claim_terms
         if term not in supported_terms
         and term not in _content_terms(item_profile.name)
-        and term not in {"rate", "rating", "would", "shopper", "supports", "feels"}
+        and term not in GENERIC_REVIEW_TERMS
     ]
     if len(unsupported) > max(12, len(claim_terms) * 0.55):
         issues.append("review contains too many terms unsupported by user or item evidence")

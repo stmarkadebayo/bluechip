@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.models.schemas import ItemProfile, UserProfile
+from app.models.schemas import ItemProfile, UserHistoryItem, UserProfile
 from app.services.generation.providers import (
     TemplateGenerationProvider,
     get_generation_provider,
@@ -144,6 +144,7 @@ class UserSimulator:
         item_profile: ItemProfile,
         rating: int,
         decision_context: ReviewDecision | None = None,
+        history: list[UserHistoryItem] | None = None,
     ) -> str:
         """Generate a review in the user's authentic voice.
 
@@ -171,23 +172,29 @@ class UserSimulator:
             )
 
         instructions = (
-            "You generate concise personalized reviews in the exact voice of a "
-            "specific user. Ground every claim in the provided profile, item, and "
-            "review plan. Do not invent item facts. The first sentence MUST state: "
-            "'I would rate <item> <rating> out of 5.'"
+            "You generate a review in the exact voice of a specific user. This is a "
+            "simulation of a human review, not a template fill. Ground every claim in "
+            "the provided profile, item, and review plan. Do not invent item facts. "
+            "Mention the item and numeric rating naturally somewhere, but do not force "
+            "the first sentence to be the rating. Mirror the user's prior review examples: "
+            "short if they write short, detailed if they write detailed, blunt if they "
+            "write blunt. Avoid boilerplate phrases like 'supports that rating' and "
+            "'fits what I usually look for'."
         )
         prompt = (
             f"{plan.prompt_block()}\n"
             f"User voice style: {user_profile.voice_style}\n"
-            f"User signals: {user_profile.signals}\n"
+            f"User signals: {_format_list(user_profile.signals)}\n"
+            f"Prior review examples:\n{_history_examples(history)}\n"
             f"User mental model:\n{json.dumps(mental_model, indent=2)}\n"
             f"{decision_text}\n"
             f"Item: {item_profile.name}\n"
             f"Item signals: {', '.join(item_profile.signals)}\n"
             f"Locale: {user_profile.locale or 'unspecified'}\n"
-            f"Required first sentence: I would rate {item_profile.name} {rating} out of 5.\n"
-            f"IMPORTANT: Write in the user's authentic voice. Match their writing style. "
-            f"Use phrasing this user would naturally use. Write ONE review paragraph only."
+            f"Predicted rating to express naturally: {rating} out of 5.\n"
+            f"IMPORTANT: Write in the user's authentic voice. Use phrasing this user "
+            f"would naturally use. Write ONE review paragraph only, with varied opening "
+            f"and ending."
         )
         try:
             generated = self._provider.generate(instructions=instructions, prompt=prompt)
@@ -351,9 +358,54 @@ def _repair_review(
     user_profile: UserProfile,
 ) -> str:
     review = " ".join(text.split())
-    required = f"I would rate {item_profile.name} {predicted_rating} out of 5."
-    if item_profile.name.lower() not in review.lower() or str(predicted_rating) not in review:
-        review = f"{required} {review}"
-    if user_profile.locale and user_profile.locale.lower() == "nigeria" and "Nigerian" not in review:
-        review = f"{review} It still sounds practical for a Nigerian shopper."
+    mentions_item = item_profile.name.lower() in review.lower()
+    mentions_rating = str(predicted_rating) in review
+    if not mentions_item and not mentions_rating:
+        review = (
+            f"{review} For {item_profile.name}, that lands at "
+            f"{predicted_rating} out of 5 for me."
+        )
+    elif not mentions_rating:
+        review = f"{review} That puts it at {predicted_rating} out of 5 for me."
+    elif not mentions_item:
+        review = f"{review} That is my take on {item_profile.name}."
+    if (
+        user_profile.locale
+        and user_profile.locale.lower() == "nigeria"
+        and not _has_nigerian_marker(review)
+    ):
+        review = f"{review} As a Nigerian shopper, value still matters here."
     return review
+
+
+def _history_examples(history: list[UserHistoryItem] | None, limit: int = 5) -> str:
+    if not history:
+        return "- No prior examples available; infer style from the profile."
+    examples = []
+    ordered = sorted(history, key=lambda item: item.timestamp or 0)
+    for item in ordered[-limit:]:
+        review = " ".join(item.review.split())
+        examples.append(f"- {item.item_name} ({item.rating:g}/5): {review[:500]}")
+    return "\n".join(examples)
+
+
+def _format_list(values: list[str], limit: int = 12) -> str:
+    clean = [str(value).strip() for value in values if str(value).strip()]
+    return "; ".join(clean[:limit]) if clean else "none"
+
+
+def _has_nigerian_marker(text: str) -> bool:
+    lower = text.lower()
+    return any(
+        marker in lower
+        for marker in (
+            "nigeria",
+            "nigerian",
+            "lagos",
+            "naira",
+            "delivery",
+            "seller",
+            "original",
+            "value",
+        )
+    )

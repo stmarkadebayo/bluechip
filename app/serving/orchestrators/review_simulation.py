@@ -113,24 +113,32 @@ class ReviewSimulationAgent:
             )
         )
 
-        generated_review = generate_review_result(
-            user_profile=user_profile,
-            item_profile=item_profile,
-            predicted_rating=final_rating,
-        )
-
-        if decision.llm_augmented and generated_review.used_fallback:
+        generated_review = None
+        if decision.llm_augmented:
             agentic_review = self._simulator.generate_authentic_review(
                 user_profile=user_profile,
                 item_profile=item_profile,
                 rating=final_rating,
                 decision_context=decision,
+                history=request.user_history,
             )
             if agentic_review:
                 review = agentic_review
             else:
+                generated_review = generate_review_result(
+                    user_profile=user_profile,
+                    item_profile=item_profile,
+                    predicted_rating=final_rating,
+                    history=request.user_history,
+                )
                 review = generated_review.text
         else:
+            generated_review = generate_review_result(
+                user_profile=user_profile,
+                item_profile=item_profile,
+                predicted_rating=final_rating,
+                history=request.user_history,
+            )
             review = generated_review.text
 
         if nigerian_relevance > 0.25:
@@ -174,12 +182,20 @@ class ReviewSimulationAgent:
             endpoint="simulate-review",
             latency_ms=(time.perf_counter() - started) * 1000,
             steps=trace,
-            generation_provider=generated_review.provider or generation_provider_name(),
+            generation_provider=(
+                decision.provider
+                if decision.llm_augmented
+                else (generated_review.provider if generated_review else generation_provider_name())
+            ),
             estimated_generation_tokens=max(len(review) // 4, 1),
             model_versions=_task_a_model_versions(rating_result.model_name),
             index_versions={"feature_store": get_feature_store().version()},
             validation_status="ok" if validation.is_consistent else "warning",
-            fallback_reason=generated_review.error if generated_review.used_fallback else None,
+            fallback_reason=(
+                generated_review.error
+                if generated_review is not None and generated_review.used_fallback
+                else None
+            ),
         )
 
         return SimulateReviewResponse(

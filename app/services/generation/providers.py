@@ -14,6 +14,10 @@ from time import sleep
 OPENROUTER_DEFAULT_MODEL = "deepseek/deepseek-v4-flash:free"
 DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-flash"
 DEEPSEEK_DEFAULT_BASE_URL = "https://api.deepseek.com"
+DEFAULT_CHAT_TEMPERATURE = 0.9
+DEFAULT_CHAT_TOP_P = 0.92
+DEFAULT_FREQUENCY_PENALTY = 0.7
+DEFAULT_PRESENCE_PENALTY = 0.4
 
 
 class GenerationProvider:
@@ -88,7 +92,10 @@ class OpenRouterChatProvider(GenerationProvider):
                 {"role": "system", "content": instructions},
                 {"role": "user", "content": prompt},
             ],
-            "temperature": 0.2,
+            "temperature": _float_env("LLM_TEMPERATURE", DEFAULT_CHAT_TEMPERATURE),
+            "top_p": _float_env("LLM_TOP_P", DEFAULT_CHAT_TOP_P),
+            "frequency_penalty": _float_env("LLM_FREQUENCY_PENALTY", DEFAULT_FREQUENCY_PENALTY),
+            "presence_penalty": _float_env("LLM_PRESENCE_PENALTY", DEFAULT_PRESENCE_PENALTY),
             "max_tokens": 220,
             "thinking": {"type": "disabled"},
         }
@@ -123,7 +130,10 @@ class DeepSeekChatProvider(GenerationProvider):
                 {"role": "system", "content": instructions},
                 {"role": "user", "content": prompt},
             ],
-            "temperature": 0.2,
+            "temperature": _float_env("LLM_TEMPERATURE", DEFAULT_CHAT_TEMPERATURE),
+            "top_p": _float_env("LLM_TOP_P", DEFAULT_CHAT_TOP_P),
+            "frequency_penalty": _float_env("LLM_FREQUENCY_PENALTY", DEFAULT_FREQUENCY_PENALTY),
+            "presence_penalty": _float_env("LLM_PRESENCE_PENALTY", DEFAULT_PRESENCE_PENALTY),
             "max_tokens": 220,
             "thinking": {"type": "disabled"},
         }
@@ -285,16 +295,16 @@ def _mock_review(prompt: str) -> str:
     item = _line_value(prompt, "Item") or "the item"
     locale = (_line_value(prompt, "Locale") or "").lower()
     signals = _line_value(prompt, "Item signals") or "the provided item details"
-    locale_clause = " In natural Nigerian English," if "nigeria" in locale else ""
+    locale_clause = " For a Nigerian shopper, the value still matters." if "nigeria" in locale else ""
     if rating_number in {"4", "5"}:
-        verdict = "it matches the things I usually value."
+        verdict = "That is enough for me to feel good about it."
     elif rating_number == "3":
-        verdict = "it has useful strengths, but I would still be selective."
+        verdict = "I see the useful parts, but I would still be selective."
     else:
-        verdict = "it misses enough of my preferences that I would be cautious."
+        verdict = "I would be cautious because it misses enough of what I care about."
     return (
-        f"I would rate {item} {rating_number} out of 5."
-        f"{locale_clause} Based on the provided signals, {signals}. For me, {verdict}"
+        f"{item} comes across as a {rating_number} out of 5 for me. "
+        f"Based on the provided signals, {signals}. {verdict}{locale_clause}"
     )
 
 
@@ -302,10 +312,7 @@ def _mock_recommendation_reason(prompt: str) -> str:
     candidate = _line_value(prompt, "Candidate") or "This item"
     context = _line_value(prompt, "Context")
     context_clause = f" for {context}" if context else ""
-    return (
-        f"{candidate} ranks well{context_clause} because its candidate signals match "
-        "the user's stated preferences, with only the listed tradeoffs considered."
-    )
+    return f"I would start with {candidate}{context_clause}; it lines up with what you seem to care about."
 
 
 def _line_value(text: str, label: str) -> str:
@@ -318,6 +325,16 @@ def _env(name: str) -> str | None:
     if value is not None:
         return value
     return _env_file_values().get(name)
+
+
+def _float_env(name: str, fallback: float) -> float:
+    value = _env(name)
+    if value is None or not value.strip():
+        return fallback
+    try:
+        return float(value)
+    except ValueError:
+        return fallback
 
 
 @lru_cache(maxsize=1)

@@ -131,7 +131,7 @@ def write_markdown(path: Path, rows: list[dict[str, object]], processed_dir: Pat
         "- `groundedness`: claims are supported by user history and item facts.",
         "- `specificity`: review is concrete rather than generic.",
         "",
-        "Generated reviews are produced by the local deterministic Task A fallback shape so the pack can be created without sending eval rows to an external LLM provider.",
+        "Generated reviews are produced by the local deterministic Task A fallback, so the pack can be created without sending eval rows to an external LLM provider. The fallback intentionally varies openings and avoids first-sentence rating boilerplate.",
         "",
     ]
     for row in rows:
@@ -255,19 +255,30 @@ def _generated_review(
     positive = _sentence_fragment(terms[:6]) or "the available product details"
     negatives = _negative_terms(history)
     if predicted_rating >= 4:
-        verdict = "it fits what I usually look for"
+        verdict = "this would probably work for me"
     elif predicted_rating == 3:
-        verdict = "it has useful strengths but also a few tradeoffs"
+        verdict = "I see the useful parts, but I am not fully sold"
     else:
-        verdict = "it misses too many things I care about"
+        verdict = "I would be cautious about it"
     tradeoff = ""
     if negatives and predicted_rating <= 3:
         tradeoff = " I would still watch out for " + _sentence_fragment(negatives[:4]) + "."
     elif negatives:
         tradeoff = " The only thing I would keep in mind is " + _sentence_fragment(negatives[:4]) + "."
+    variant = (sum(ord(char) for char in item_name) + predicted_rating) % 3
+    if variant == 0:
+        return (
+            f"{item_name} feels like a {predicted_rating} out of 5 for me. "
+            f"{positive.capitalize()} stood out first, and {verdict}.{tradeoff}"
+        )
+    if variant == 1:
+        return (
+            f"I am at {predicted_rating} out of 5 on {item_name}. "
+            f"{positive.capitalize()} is what carries it, though {verdict}.{tradeoff}"
+        )
     return (
-        f"I would rate {item_name} {predicted_rating} out of 5. "
-        f"{positive.capitalize()} supports that rating, and {verdict}.{tradeoff}"
+        f"{positive.capitalize()} is the main reason {item_name} lands at "
+        f"{predicted_rating} out of 5. For my taste, {verdict}.{tradeoff}"
     )
 
 
