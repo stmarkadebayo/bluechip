@@ -10,6 +10,7 @@
         --bg: #eef2f7;
         --surface: #ffffff;
         --surface-soft: #f8fafc;
+        --surface-warm: #fffdf7;
         --ink: #111827;
         --muted: #64748b;
         --line: #d7dee8;
@@ -18,6 +19,7 @@
         --teal-dark: #115e59;
         --blue: #1d4ed8;
         --amber: #b7791f;
+        --violet: #6d28d9;
         --rose: #be123c;
         --green: #166534;
         --shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
@@ -147,6 +149,7 @@
       .button-row,
       .scenario-row,
       .mode-row,
+      .toggle-row,
       .chip-row {
         display: flex;
         align-items: center;
@@ -267,6 +270,75 @@
         text-align: left;
       }
 
+      .toggle-row {
+        justify-content: space-between;
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 10px 11px;
+      }
+
+      .toggle-copy {
+        min-width: 0;
+      }
+
+      .toggle-copy strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .toggle-copy span {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .switch {
+        position: relative;
+        flex: 0 0 46px;
+        height: 26px;
+        margin-bottom: 0;
+        text-transform: none;
+      }
+
+      .switch input {
+        position: absolute;
+        opacity: 0;
+      }
+
+      .switch span {
+        position: absolute;
+        inset: 0;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: #e2e8f0;
+      }
+
+      .switch span::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #ffffff;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+        transition: transform 0.16s ease;
+      }
+
+      .switch input:checked + span {
+        border-color: #5eead4;
+        background: var(--teal);
+      }
+
+      .switch input:checked + span::after {
+        transform: translateX(20px);
+      }
+
       .field {
         margin-top: 12px;
       }
@@ -370,6 +442,45 @@
         padding: 10px;
       }
 
+      .quality-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(140px, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .quality-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-warm);
+        padding: 10px;
+      }
+
+      .quality-item span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .quality-item strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .quality-item.ok {
+        border-color: #a7f3d0;
+        background: #ecfdf5;
+      }
+
+      .quality-item.warn {
+        border-color: #fed7aa;
+        background: #fff7ed;
+      }
+
       .kpi span {
         display: block;
         color: var(--muted);
@@ -432,6 +543,11 @@
         border-radius: 8px;
         background: #ffffff;
         padding: 12px;
+      }
+
+      .reco-card:first-child {
+        border-color: #99f6e4;
+        background: linear-gradient(180deg, #f0fdfa 0, #ffffff 110px);
       }
 
       .reco-head {
@@ -599,9 +715,13 @@
 
       .review-body {
         margin-top: 10px;
-        border-left: 4px solid var(--teal);
-        padding-left: 12px;
-        line-height: 1.55;
+        border-left: 0;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 14px;
+        color: #0f172a;
+        font-size: 16px;
+        line-height: 1.6;
       }
 
       .raw-block {
@@ -650,7 +770,8 @@
         }
 
         .task-strip,
-        .kpi-grid {
+        .kpi-grid,
+        .quality-strip {
           grid-template-columns: repeat(2, minmax(140px, 1fr));
         }
       }
@@ -678,6 +799,7 @@
 
         .task-strip,
         .kpi-grid,
+        .quality-strip,
         .metric-grid {
           grid-template-columns: 1fr;
         }
@@ -780,6 +902,17 @@
                 <textarea id="history" class="json-editor compact-editor"></textarea>
               </div>
 
+              <div class="toggle-row">
+                <div class="toggle-copy">
+                  <strong>LLM profile enhancement</strong>
+                  <span>Request bounded LLM enrichment for profile terms and aspects when a provider is configured.</span>
+                </div>
+                <label class="switch" for="enhance-llm" aria-label="Toggle LLM profile enhancement">
+                  <input id="enhance-llm" type="checkbox" />
+                  <span></span>
+                </label>
+              </div>
+
               <div id="candidate-field" class="field">
                 <label for="candidate-items">Candidate items JSON <span>Task B product pool</span></label>
                 <textarea id="candidate-items" class="json-editor"></textarea>
@@ -809,6 +942,7 @@
           </div>
 
           <div class="output-body">
+            <div id="quality-strip" class="quality-strip"></div>
             <div id="kpi-grid" class="kpi-grid"></div>
 
             <div class="output-grid">
@@ -1129,6 +1263,11 @@
           ["Endpoint", mode === "recommend" ? "/api/recommend" : "/api/simulate-review"],
           ["Status", "Ready"]
         ]);
+        renderQualityStrip([
+          ["Generation", mode === "review" ? "Human-style review path" : "Conversational reasons"],
+          ["LLM profile", $("enhance-llm").checked ? "Requested" : "Off by default"],
+          ["Fallback", "Deterministic, varied shape"]
+        ]);
         $("result-count").textContent = "0 results";
         $("evidence-status").textContent = "Waiting";
         $("trace-count").textContent = "0 steps";
@@ -1145,6 +1284,19 @@
           .map(
             ([label, value]) => `
               <div class="kpi">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function renderQualityStrip(items) {
+        $("quality-strip").innerHTML = items
+          .map(
+            ([label, value, state = ""]) => `
+              <div class="quality-item ${escapeHtml(state)}">
                 <span>${escapeHtml(label)}</span>
                 <strong>${escapeHtml(value)}</strong>
               </div>
@@ -1237,6 +1389,15 @@
             ${chipList(profile.signals || [], "signal", "No profile signals returned.")}
           </div>
           <div class="evidence-box">
+            <h4>Profile Enhancement</h4>
+            ${
+              profile.profile_enhancement && profile.profile_enhancement.llm_augmented
+                ? `<p>${escapeHtml(profile.profile_enhancement.rationale || "LLM enrichment applied.")}</p>
+                   ${chipList(Object.values(profile.profile_enhancement.added_terms || {}).flat().slice(0, 8), "signal", "No added terms returned.")}`
+                : "<p>Rule-based profile only. Toggle LLM profile enhancement to request bounded enrichment.</p>"
+            }
+          </div>
+          <div class="evidence-box">
             <h4>Preference Terms</h4>
             ${chipList([...(profile.preferred_terms || []), ...(profile.positive_aspects || [])].slice(0, 10))}
           </div>
@@ -1254,7 +1415,8 @@
           context: $("context").value,
           candidate_items: parseJsonField("candidate-items", []),
           locale: "Nigeria",
-          limit: 5
+          limit: 5,
+          enhance_with_llm: $("enhance-llm").checked
         };
       }
 
@@ -1263,7 +1425,8 @@
           user_persona: $("persona").value,
           user_history: parseJsonField("history", []),
           target_item: parseJsonField("target-item", {}),
-          locale: "Nigeria"
+          locale: "Nigeria",
+          enhance_with_llm: $("enhance-llm").checked
         };
       }
 
@@ -1271,7 +1434,8 @@
         return {
           user_persona: $("persona").value,
           user_history: history,
-          locale: "Nigeria"
+          locale: "Nigeria",
+          enhance_with_llm: $("enhance-llm").checked
         };
       }
 
@@ -1307,6 +1471,11 @@
           ["Strategy", diagnostics.strategy || "n/a"],
           ["Candidates", `${diagnostics.candidate_count || 0}/${diagnostics.input_count || 0}`],
           ["Sources", Object.keys(diagnostics.source_counts || {}).length || "n/a"]
+        ]);
+        renderQualityStrip([
+          ["Reason style", "Conversational, user-facing", "ok"],
+          ["Profile", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "LLM enriched" : "Rule-based", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "ok" : ""],
+          ["Fallback", data.fallback_reason || "No fallback reported", data.fallback_reason ? "warn" : "ok"]
         ]);
 
         $("primary-output").className = "reco-list";
@@ -1362,6 +1531,11 @@
           ["Confidence", Number(data.confidence || 0).toFixed(2)],
           ["Model", data.model_name || "default"]
         ]);
+        renderQualityStrip([
+          ["Review style", (data.review || "").toLowerCase().startsWith("i would rate") ? "Template-like opening" : "Natural opening", (data.review || "").toLowerCase().startsWith("i would rate") ? "warn" : "ok"],
+          ["Validation", data.validation && data.validation.is_consistent ? "Consistent" : "Needs review", data.validation && data.validation.is_consistent ? "ok" : "warn"],
+          ["Profile", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "LLM enriched" : "Rule-based", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "ok" : ""]
+        ]);
 
         $("primary-output").className = "review-card";
         $("primary-output").innerHTML = `
@@ -1402,6 +1576,11 @@
           ["Avg latency", `${Number(metrics.average_latency_ms || 0).toFixed(1)} ms`],
           ["Fallback rate", Number(metrics.fallback_rate || 0).toFixed(2)],
           ["Validation failures", metrics.validation_failures || 0]
+        ]);
+        renderQualityStrip([
+          ["Generation", `${metrics.estimated_generation_tokens || 0} est. tokens`],
+          ["Fallbacks", `${metrics.fallback_count || 0} total`, metrics.fallback_count ? "warn" : "ok"],
+          ["Validation", `${metrics.validation_failure_rate ? Number(metrics.validation_failure_rate).toFixed(2) : "0.00"} failure rate`, metrics.validation_failures ? "warn" : "ok"]
         ]);
 
         $("primary-output").className = "reco-list";
@@ -1465,6 +1644,11 @@
           ["Confidence", Number(data.profile.confidence || 0).toFixed(2)],
           ["Strictness", data.profile.rating_strictness || "n/a"],
           ["Avg rating", Number(data.profile.average_rating || 0).toFixed(2)]
+        ]);
+        renderQualityStrip([
+          ["Profile", data.profile.profile_enhancement && data.profile.profile_enhancement.llm_augmented ? "LLM enriched" : "Rule-based", data.profile.profile_enhancement && data.profile.profile_enhancement.llm_augmented ? "ok" : ""],
+          ["Evidence", `${data.profile.evidence_count || 0} history items`, (data.profile.evidence_count || 0) ? "ok" : "warn"],
+          ["Voice", data.profile.voice_style || "Not inferred"]
         ]);
         $("primary-output").className = "review-card";
         $("primary-output").innerHTML = `
