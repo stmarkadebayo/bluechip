@@ -117,6 +117,7 @@ ARTIFACT_NAMES = (
     "task_a_rating_stats",
     "task_a_serving_policy",
     "task_b_retrieval_index",
+    "task_b_implicit_item_index",
     "task_b_review_term_index",
     "task_b_evidence_graph_index",
     "task_b_neural_index",
@@ -172,6 +173,26 @@ def _artifact_candidates(name: str) -> tuple[str | Path | None, ...]:
             feature_root / "review_term_retrieval.json",
             "data/processed/all_categories/review_term_retrieval.json",
             "data/processed/review_term_retrieval.json",
+        )
+    if name == "task_b_implicit_item_index":
+        retrieval_index = get_model_registry().resolve_path("task_b_retrieval_index")
+        sqlite_adjacent = retrieval_index.parent / "implicit_item_neighbors.sqlite" if retrieval_index else None
+        json_gz_adjacent = retrieval_index.parent / "implicit_item_neighbors.json.gz" if retrieval_index else None
+        json_adjacent = retrieval_index.parent / "implicit_item_neighbors.json" if retrieval_index else None
+        return (
+            os.getenv("TASK_B_IMPLICIT_ITEM_INDEX"),
+            sqlite_adjacent,
+            json_gz_adjacent,
+            json_adjacent,
+            feature_root / "implicit_item_neighbors.sqlite",
+            feature_root / "implicit_item_neighbors.json.gz",
+            feature_root / "implicit_item_neighbors.json",
+            "data/processed/all_categories/implicit_item_neighbors.sqlite",
+            "data/processed/all_categories/implicit_item_neighbors.json.gz",
+            "data/processed/all_categories/implicit_item_neighbors.json",
+            "data/processed/implicit_item_neighbors.sqlite",
+            "data/processed/implicit_item_neighbors.json.gz",
+            "data/processed/implicit_item_neighbors.json",
         )
     if name == "task_b_evidence_graph_index":
         retrieval_index = get_model_registry().resolve_path("task_b_retrieval_index")

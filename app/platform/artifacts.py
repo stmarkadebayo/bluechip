@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gzip
+import json
 from pathlib import Path
 
 
@@ -20,3 +22,9 @@ def artifact_version(path: Path) -> str:
         return str(path)
     return f"{path}@{int(stat.st_mtime)}:{stat.st_size}"
 
+
+def read_json_artifact(path: Path) -> dict:
+    if path.suffix == ".gz":
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            return json.load(handle)
+    return json.loads(path.read_text(encoding="utf-8"))
