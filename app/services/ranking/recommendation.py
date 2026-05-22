@@ -3,7 +3,13 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from app.models.schemas import Item, RecommendationItem, UserProfile
+from app.models.schemas import Item, ItemProfile, RecommendationItem, UserProfile
+from app.services.ranking.context_intents import (
+    context_category_hint,
+    context_intent_boost,
+    context_intent_penalty,
+    is_gift_category,
+)
 from app.services.ranking.features import matched_terms, ranker_features, weighted_score
 from app.services.profiling.item_profile import build_item_profile
 
@@ -23,8 +29,8 @@ class RecommendationWeights:
     evidence_graph: float = 0.12
     nigerian_context: float = 0.04
     collaborative: float = 0.22
-    retrieval: float = 0.06
-    source_diversity: float = 0.04
+    retrieval: float = 0.04
+    source_diversity: float = 0.0
     dislike_penalty: float = 0.30
 
     def as_feature_weights(self) -> dict[str, float]:
@@ -56,6 +62,7 @@ def rank_candidates(
     weights: RecommendationWeights | None = None,
     candidate_sources: dict[str, list[str]] | None = None,
     candidate_source_scores: dict[str, dict[str, float]] | None = None,
+    item_profile_cache: dict[str, ItemProfile] | None = None,
 ) -> list[RecommendationItem]:
     weights = weights or RecommendationWeights()
     feature_weights = weights.as_feature_weights()
@@ -63,7 +70,10 @@ def rank_candidates(
     candidate_source_scores = candidate_source_scores or {}
     ranked: list[tuple[float, RecommendationItem]] = []
     context_terms = _terms(context)
-    profiled_items = [(item, build_item_profile(item)) for item in candidate_items]
+    profiled_items = [
+        (item, _item_profile(item, item_profile_cache))
+        for item in candidate_items
+    ]
     max_popularity = max((profile.popularity for _, profile in profiled_items), default=0)
     personalization_weight = min(max((user_profile.confidence - 0.45) / 0.80, 0.02), 0.65)
 
@@ -90,12 +100,16 @@ def rank_candidates(
         context_penalty = _context_penalty(context_terms, item, profile.negative_aspects)
         context_category_penalty = _context_category_penalty(context_terms, item)
         context_category_boost = _context_category_boost(context_terms, item)
+        context_intent_boost_value = context_intent_boost(context_terms, item)
+        context_intent_penalty_value = context_intent_penalty(context_terms, item)
         score = (
             (1 - personalization_weight) * base_score
             + personalization_weight * personalized_score
             + context_category_boost
+            + context_intent_boost_value
             - context_penalty
             - context_category_penalty
+            - context_intent_penalty_value
         )
         score_components = {name: round(value, 4) for name, value in features.items()}
         score_components.update(
@@ -103,6 +117,8 @@ def rank_candidates(
                 "context_penalty": round(context_penalty, 4),
                 "context_category_penalty": round(context_category_penalty, 4),
                 "context_category_boost": round(context_category_boost, 4),
+                "context_intent_boost": round(context_intent_boost_value, 4),
+                "context_intent_penalty": round(context_intent_penalty_value, 4),
                 "personalization_weight": round(personalization_weight, 4),
             }
         )
@@ -162,47 +178,34 @@ def _context_penalty(context_terms: list[str], item: Item, negative_aspects: lis
 
 
 def _context_category_penalty(context_terms: list[str], item: Item) -> float:
-    hinted_category = _context_category_hint(context_terms)
+    hinted_category = context_category_hint(context_terms)
     if not hinted_category or item.category == hinted_category:
         return 0.0
-    if hinted_category == "gift" and _is_gift_category(item.category):
+    if hinted_category == "gift" and is_gift_category(item.category):
         return 0.0
     return 0.42
 
 
 def _context_category_boost(context_terms: list[str], item: Item) -> float:
-    hinted_category = _context_category_hint(context_terms)
+    hinted_category = context_category_hint(context_terms)
     if not hinted_category:
         return 0.0
     if item.category == hinted_category:
         return 0.14
-    if hinted_category == "gift" and _is_gift_category(item.category):
+    if hinted_category == "gift" and is_gift_category(item.category):
         return 0.14
     return 0.0
 
 
-def _context_category_hint(context_terms: list[str]) -> str | None:
-    terms = set(context_terms)
-    if terms & {
-        "beauty",
-        "hair",
-        "makeup",
-        "manicure",
-        "nail",
-        "skincare",
-        "skin",
-        "styling",
-    }:
-        return "All_Beauty"
-    if terms & {"music", "playlist", "replay", "song", "songs"}:
-        return "Digital_Music"
-    if terms & {"gift", "gifting", "low-risk"}:
-        return "gift"
-    return None
-
-
-def _is_gift_category(category: str) -> bool:
-    return category in {"For Him", "For Her", "Gift Cards", "Restaurants", "Specialty Cards"}
+def _item_profile(item: Item, cache: dict[str, ItemProfile] | None) -> ItemProfile:
+    if cache is None:
+        return build_item_profile(item)
+    cached = cache.get(item.item_id)
+    if cached is not None:
+        return cached
+    profile = build_item_profile(item)
+    cache[item.item_id] = profile
+    return profile
 
 
 def _seen_item_ids(user_profile: UserProfile) -> set[str]:

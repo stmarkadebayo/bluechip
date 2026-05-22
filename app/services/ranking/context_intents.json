@@ -1,0 +1,90 @@
+{
+  "category_hints": [
+    {
+      "category": "gift",
+      "priority": 100,
+      "terms": ["gift", "gifting", "low-risk"]
+    },
+    {
+      "category": "All_Beauty",
+      "priority": 80,
+      "terms": ["beauty", "hair", "makeup", "manicure", "nail", "skincare", "skin", "styling"]
+    },
+    {
+      "category": "Digital_Music",
+      "priority": 80,
+      "terms": ["music", "playlist", "replay", "song", "songs"]
+    }
+  ],
+  "intents": [
+    {
+      "name": "hair",
+      "priority": 100,
+      "category_hint": "All_Beauty",
+      "penalty_category": "All_Beauty",
+      "boost": 0.32,
+      "penalty": 0.55,
+      "trigger_terms": ["hair", "hairspray", "shampoo", "styling", "style", "wig"],
+      "item_terms": [
+        "body_wave",
+        "brush",
+        "comb",
+        "conditioner",
+        "curl",
+        "extension",
+        "extensions",
+        "hair",
+        "hairbrush",
+        "hairspray",
+        "scalp",
+        "shampoo",
+        "spray",
+        "styling",
+        "texturizing",
+        "weave",
+        "wig"
+      ]
+    },
+    {
+      "name": "skin",
+      "priority": 100,
+      "category_hint": "All_Beauty",
+      "penalty_category": "All_Beauty",
+      "boost": 0.32,
+      "penalty": 0.55,
+      "trigger_terms": ["face", "facial", "gentle", "serum", "skin", "skincare"],
+      "item_terms": [
+        "cleanser",
+        "cream",
+        "face",
+        "facial",
+        "gentle",
+        "lotion",
+        "moisturizer",
+        "serum",
+        "skin",
+        "skincare",
+        "sunscreen"
+      ]
+    },
+    {
+      "name": "nail",
+      "priority": 100,
+      "category_hint": "All_Beauty",
+      "penalty_category": "All_Beauty",
+      "boost": 0.32,
+      "penalty": 0.55,
+      "trigger_terms": ["manicure", "nail", "nails", "polish"],
+      "item_terms": ["acrylic", "gel", "manicure", "nail", "nails", "polish"]
+    },
+    {
+      "name": "gift",
+      "priority": 70,
+      "category_hint": "gift",
+      "boost": 0.32,
+      "penalty": 0.55,
+      "trigger_terms": ["gift", "gifting", "low-risk"],
+      "item_terms": []
+    }
+  ]
+}

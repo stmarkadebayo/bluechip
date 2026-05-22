@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.agents.recommendation_agent import RecommendationAgent
 from app.models.schemas import Item, RecommendationRequest, UserHistoryItem
 from app.services.profiling.user_profile import build_user_profile
+from app.services.ranking.context_intents import context_category_hint
 from app.services.ranking.recommendation import rank_candidates
 from app.services.retrieval.candidates import generate_candidate_pool
 from app.services.retrieval.item_similarity import (
@@ -114,6 +115,41 @@ def test_candidate_pool_uses_collaborative_sources() -> None:
 
     assert [item.item_id for item in pool.items] == ["neighbor"]
     assert set(pool.sources["neighbor"]) & {"co_visitation", "user_neighbor"}
+
+
+def test_candidate_pool_uses_implicit_item_item_source() -> None:
+    history = [
+        UserHistoryItem(
+            item_id="seed",
+            item_name="Quiet Guitar",
+            rating=5,
+            review="Calm acoustic guitar and a very relaxing listen.",
+            category="music",
+        )
+    ]
+    user_profile = build_user_profile("A listener who likes calm acoustic music.", history)
+    items = [
+        Item(item_id="seed", name="Quiet Guitar", category="music"),
+        Item(item_id="implicit_neighbor", name="Soft Piano", category="music"),
+        Item(item_id="unrelated", name="Fast Drums", category="music"),
+    ]
+
+    pool = generate_candidate_pool(
+        user_profile=user_profile,
+        history=history,
+        items=items,
+        context="",
+        collaborative_index={
+            "implicit_item_neighbors": {
+                "seed": [["implicit_neighbor", 0.91]],
+            }
+        },
+        limit=3,
+    )
+
+    assert "implicit_neighbor" in {item.item_id for item in pool.items}
+    assert "implicit_item_item" in pool.sources["implicit_neighbor"]
+    assert pool.source_scores["implicit_neighbor"]["implicit_item_item"] == 1.0
 
 
 def test_candidate_pool_uses_review_term_sources_for_lexical_neighbors() -> None:
@@ -386,6 +422,48 @@ def test_context_category_guard_keeps_contextual_recommendations_on_topic() -> N
     assert ranked[0].item_id == "hair_brush"
     assert ranked[0].score_components["context_category_boost"] > 0
     assert ranked[1].score_components["context_category_penalty"] > 0
+
+
+def test_context_subintent_guard_prefers_hair_item_over_generic_beauty() -> None:
+    history = [
+        UserHistoryItem(
+            item_id="seen_beauty",
+            item_name="Gentle Hair Cream",
+            rating=5,
+            review="Useful hair cream for regular styling.",
+            category="All_Beauty",
+        )
+    ]
+    user_profile = build_user_profile("Needs practical beauty products.", history)
+    ranked = rank_candidates(
+        user_profile=user_profile,
+        context="Needs a practical hair or styling product for regular use.",
+        candidate_items=[
+            Item(
+                item_id="generic_beauty",
+                name="Japanese Skin Bath Cloth",
+                category="All_Beauty",
+                metadata={"review_count": 9000},
+                average_rating=4.9,
+            ),
+            Item(
+                item_id="hair_spray",
+                name="Texturizing Hair Spray",
+                category="All_Beauty",
+                metadata={"review_count": 90},
+                average_rating=4.4,
+            ),
+        ],
+        limit=2,
+    )
+
+    assert ranked[0].item_id == "hair_spray"
+    assert ranked[0].score_components["context_intent_boost"] > 0
+    assert ranked[1].score_components["context_intent_penalty"] > 0
+
+
+def test_context_hint_prioritizes_gift_when_context_mentions_beauty_gift() -> None:
+    assert context_category_hint(["beauty", "gift"]) == "gift"
 
 
 def test_ranker_sorts_by_raw_score_not_rounded_display_score() -> None:
