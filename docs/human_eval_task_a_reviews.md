@@ -1,0 +1,611 @@
+# Task A Human Evaluation Review Pack
+
+Dataset: `data/processed/all_categories`
+
+Score 1-5 for each generated review:
+- `rating_fit`: rating matches the user's likely preference.
+- `voice_fit`: review sounds consistent with the user's prior review style.
+- `groundedness`: claims are supported by user history and item facts.
+- `specificity`: review is concrete rather than generic.
+
+Generated reviews are produced by the local deterministic Task A fallback shape so the pack can be created without sending eval rows to an external LLM provider.
+
+## A-001
+
+- User: `AGKHLEW2SOWHNMFQIJGBECAF7INQ`
+- Item: `B00YQ6X8EO` - Herbivore - Natural Sea Mist Texturizing Salt Spray (Coconut, 8 oz)
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Herbivore - Natural Sea Mist Texturizing Salt Spray (Coconut, 8 oz) 4 out of 5. Sea, spray, smell, mist, coconut, and beach supports that rating, and it fits what I usually look for.
+
+User history:
+
+> All Natural Vegan Dry Shampoo Powder - Eco Friendly, Root Touch Up | Hair Powder Volumizer | For Brown Hair, Brunette and Dark Hair. (Brun + Application Brush) Two Goats Apothecary (4.0/5): This product does what I need it to do, I just wish it was odorless or had a soft coconut smell. Having my head smell like an orange coffee is offputting. (granted, I did know the smell was described but I was hoping it would be light)
+
+Reference review:
+
+> This spray is really nice. It smells really good, goes on really fine, and does the trick. I will say it feels like you need a lot of it though to get the texture I want. I have a lot of hair, medium thickness. I am comparing to other brands with yucky chemicals so I'm gonna stick with this. Try it!
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-002
+
+- User: `AFQLNQNQYFWQZPJQZS6V3NZU4QBQ`
+- Item: `B09JS339BZ` - muaowig Ombre Body Wave Bundles 1B Grey Human Hair Bundles 8 10 12 inch Hair Weave Body Wave Brazilian Remy Hair Bundles Ombre Hair Extensions 3 Bundles By Muao,Grey Body Wave
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 1.0
+
+Generated review:
+
+> I would rate muaowig Ombre Body Wave Bundles 1B Grey Human Hair Bundles 8 10 12 inch Hair Weave Body Wave Brazilian Remy Hair Bundles Ombre Hair Extensions 3 Bundles By Muao,Grey Body Wave 4 out of 5. Hair, bundles, grey, body, wave, and can supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Yinhua Electric Nail Drill Kit Portable Professional Nail Drill Manicure Pen Shape Acrylic Nail Tools for Exfoliation Polishing with 6 Drill Bits and Sanding Bands for Home Salon (1 Set, green) (5.0/5): Love it
+
+Reference review:
+
+> Felt synthetic
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-003
+
+- User: `AFSKPY37N3C43SOI5IEXEK5JSIYA`
+- Item: `B08P2DZB4X` - NIRA Skincare Laser & Serum Bundle - Includes Anti-Aging Laser & Hyaluronic Acid Serum - Reduces Appearance of Fine Lines & Wrinkles - FDA Cleared
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate NIRA Skincare Laser & Serum Bundle - Includes Anti-Aging Laser & Hyaluronic Acid Serum - Reduces Appearance of Fine Lines & Wrinkles - FDA Cleared 4 out of 5. Skin, nice, really, highly, recommend, and laser supports that rating, and it fits what I usually look for.
+
+User history:
+
+> GAINWELL (5.0/5): Really nice small brush. Made well, nice wood made with boar bristle, my son absolutely loves this. It brushes his hair well and keeps him looking his best. This compact size makes it nice to keep in the center console of his car or to take on vacation with him. Highly recommend! | Keratin Secrets Do It Yourself Home Keratin System (3.0/5): I try to get Keratin treatments every 3 months, but honestly it has been getting costly. So, when I saw this I was excited to try it. I found it difficult to use and almost impossible to get to saturate the back of my hair and straight iron it the way they do in the salon. Front and sides were ok, but I couldn't maneuver the back to get it straight. Then I saw the ingredients after the first time and saw it contained formaldehyde and that was the last time I used the actual treatment. I did, however, use the shampoo and conditioner (and I still am). I wish they sold the S&C separate because I really did like it and I am always in the market for a good hair wash which won't strip my hair between treatments. I will resume my regular treatments at my salon. | OGANA CELL Peptide Concentrating Amazing Lotion 2.03 fl.oz. (60ml) - 650ppm Peptide Contained Mild Moisturizing Facial Lotion, Hypoallergenic Natural Ingredients for Sensitive Skin (5.0/5): This is a really nice moisturizing lotion. It goes on lightly and is readily absorbed into my skin. My skin feels amazingly softer and smoother and allows for a nice base for my makeup to be applied over. You only need a small pea sized amount to cover your entire face and neck. Highly recommend for all skin types, ages and for women as well as men. | Orange Peel Nature's Cleanse Facial Scrub - by Visage Pure - USDA Organic - Physician Formulated - Research Supported - Natural Exfoliating, Refreshing, Brightening, Skin Tightening Vitamin C Scrub. Cleans the Pores Deeply and Refreshes the Skin Bringing Back Its Glow (3.0/5): I was very disappointed when I got this facial scrub. I had assumed it was like other scrubs I use but it wasn't. This is a powder which you need to mix with water to make a paste before you put it on your face. I have a tendency to like to use scrubs in the shower with me, so this extra step doesn't really work for me. As far as the scrubbing factor goes, it's ok. I didn't feel a real smoothing or softening of my skin after use the way I have with others. The biggest plus is the fragrance (i love the smell of oranges). I won't be repurchasing. | Caroline Keller Keratin Shampoo for dry and damaged hair and scalp. With Argan oil, Avocado oil Keratin and Vitamins. Specially formulated for Post Keratin Treatments. Salt Free. 16.9 fl.Oz (5.0/5): I get Keratin treatments at the salon at least 3-4 times a year (would do it more often if I could afford it). I am always in the market to use products that can help extend my salon visits. This Keratin shampoo is really nice. It is sulfate free (which is the first thing I look for ) and makes my hair feel silky smooth and soft. I highly recommend for anyone who wants to improve the texture and appearance of your hair. I really like the fragrance, too.
+
+Reference review:
+
+> This is perfect for my between salon visits. I have been using this now twice a week for over a month and I absolutely love it! My skin looks amazing and feels super smooth and silky. This is also super easy to use (just follow instructions). I can see already that I will begin expanding the time between visits which will definitely help me save money in the long run. Highly recommend!
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-004
+
+- User: `AHGAOIZVODNHYMNCBV4DECZH42UQ`
+- Item: `B082QX2HP6` - 2 Pieces Hair Brush Cleaner Cleaning Tool Comb Cleaner Hair Brush Cleaner Comb Brushes Mini Hair Dirt Remover Brush with Metal Wire Rake Wooden Handle for Home and Salon Use (Black)
+- Category: All_Beauty
+- Predicted rating: 3 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate 2 Pieces Hair Brush Cleaner Cleaning Tool Comb Cleaner Hair Brush Cleaner Comb Brushes Mini Hair Dirt Remover Brush with Metal Wire Rake Wooden Handle for Home and Salon Use (Black) 3 out of 5. Hair, brush, cleaner, comb, these, and cleaning supports that rating, and it has useful strengths but also a few tradeoffs. I would still watch out for nothing, special, unfortunately, and waited.
+
+User history:
+
+> Sugar Red Drive (5.0/5): awesome sound - cant wait to see them in person - always miss them when they are in town ! | Charcoal Konjac Face Sponge 3 pk | Acne, Psoriasis, Bumpy Skin & Ingrown Hairs (1.0/5): nothing special unfortunately i waited too long to return them .... no results at all dont waste your money | Original Detangler Hair Brush (3.0/5): its OK not as good as the original Wet Brush just a knock off
+
+Reference review:
+
+> i had a small one  that just got destroyed  these wires are much longer and bigger  i expect to live a lot longer than the tiny one i had !
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-005
+
+- User: `AFGEM6BXCYHUILEOA3P2ZYBEF2TA`
+- Item: `B0055JSYHC` - Body + Soul: The '70s (Time-Life)
+- Category: Digital_Music
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Body + Soul: The '70s (Time-Life) 5 out of 5. Butter, good, shea, body, soul, and time-life supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Yellow Brick Road 1lb Shea Butter/1lb Cocoa Butter Combo (5.0/5): I love the cocoa butter and shea butter. I hear the shea butter up and whip it until it softens.
+
+Reference review:
+
+> This is a great cd. Good music and plays well. Seller responded back very quicky and  received it within 3 days
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-006
+
+- User: `AHZ6XMOLEWA67S3TX7IWEXXGWSOA`
+- Item: `B083BDVS36` - Adofect 31 Pairs Gold Eye Mask Collagen Eye Gel Pads Under Eye Mask for Puffiness and Dark Circle Under Eye Patches for Women and Men, Gold
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 2.0
+
+Generated review:
+
+> I would rate Adofect 31 Pairs Gold Eye Mask Collagen Eye Gel Pads Under Eye Mask for Puffiness and Dark Circle Under Eye Patches for Women and Men, Gold 5 out of 5. Eye, under, mask, skin, patches, and gold supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Amazon Reload (5.0/5): Having Amazon money is always good.
+
+Reference review:
+
+> A total waste of money.  I get better results using a tea bag to alleviate under eye swelling.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-007
+
+- User: `AFZUK3MTBIBEDQOPAK3OATUOUKLA`
+- Item: `B0BFR5WF1R` - Halo Hair Extensions Thick Invisible Wire Hair Extension with Transparent Headband Hairpieces 4 Types Adjustable Headwidth Size Wavy Curly Long 18 Inches Artificial Human Hair Hairpiece for Women Girls Heat-resistant Fiber with 2 Pcs Removable Secure Clips 145g(5.11oz) (Golden Blonde Mix Bleach Blonde Highlights)
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 1.0
+
+Generated review:
+
+> I would rate Halo Hair Extensions Thick Invisible Wire Hair Extension with Transparent Headband Hairpieces 4 Types Adjustable Headwidth Size Wavy Curly Long 18 Inches Artificial Human Hair Hairpiece for Women Girls Heat-resistant Fiber with 2 Pcs Removable Secure Clips 145g(5.11oz) (Golden Blonde Mix Bleach Blonde Highlights) 4 out of 5. Hair, they, gift, always, these, and size supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Amazon.com Gift Card in a Holiday Gift Box (Various Designs) (5.0/5): The tin is a nice touch and pretty large. It's about 4&#34; in diameter and about 1/2&#34; thick. I added a pretty red ribbon and it is perfect. Who doesn't love shopping on Amazon? Arrived quickly, I have Prime... but I think they ship the gift cards out SUPER fast... like over night. In case you need it for a FAST gift. | Amazon.com Gift Card in a Gift Box (Various Thank You Designs) (5.0/5): When you have a person who is hard to shop for.. an amazon gift card is P E R F E C T. Man or woman... No matter what their hobby... lifestyle.. or age. All you have to do is pick the $. Don't forget to mention that it is a GIFT when you check out - you will have some gift card options. I've ordered many of these over years. They are always received with glee. Woo hoo! If you're looking for a great fit for me - this is just my size! :) Best to all! | Replacement Discs for Bellasonic 4-in-1 Rechargeable Electric Nail File Set with Patented Oscillating Head – Shape, Smooth, Buff & Shine Nails | Remove Cuticles & Calluses (1 Set) (3.0/5): I purchased the tool for my 80 year old mom because she like to file her own toes and fingers. This tool makes it so she can. The thing I don't like? That you have to purchase ALL four files - the buffing files (2 of the 4) are useless. So - it would be nice to be able just to purchase the green and blue ones. The buffing files just go into the trash. | 1/8 inch Snap On Rollers 8 Pack (Pink) (5.0/5): I purchased these to see if I could set my mom's hair. She has fine, thin, short hair and I think these could be fun once in a while for a fluffy set. Mom is 81. These are super old school - hoping I can do it with a little foam styling product. | Amazon.com Gift Card in a Black Gift Box (Thank You Card Design) (5.0/5): Always the perfect gift. I have never given one and had someone seem or act disappointed. Just the opposite. They are thrilled and excited to have a bit of a spree. Always the perfect size and color! Arrives in 1 day in most cases. So it's never too late! Lots of cards to chose from... thank you... birthday... wedding..baby.. and many that work for many occasions...
+
+Reference review:
+
+> This halo hair extension is simply put, garbage.  Now, you get what you pay for.  And this is a very cheap version.  The faux hair is very shiny and looks literally like bad barbie hair.  It looks WAY better in the photos than in real life.  The color is horrific, in my opinion of course.  The streaks are like paint strips.  And all of that would be one thing - but the worst is that the hair completely fell out!  I had hand fulls of hair strands just trying to put the halo on!  And you might think - well, maybe a little loss is to be expected?  Except this was handfuls and handfuls.  I literally dropped the whole thing right into the trash.  I would say this one is a pass for hair loss alone.  Having said all of this, I never hesitate to update my reviews should new info seem useful. All of my reviews reflect my honest, personal experience with the reviewed item - your experience may be different. I am not influenced by any outside source. I receive/accept NO free products or discounts that are not available to all shoppers- ever. For some reason our shopper ranks are no longer visible - so, to give you a little more info about me, I am a top 50 reviewer (#30 the highest rank achieved). Those numbers used to fluctuate over time - up and down but I noticed that they stopped updating regularly - perhaps to phase them out. It's a shame because it did help you see who has been around the longest and who is a trustworthy reviewer.  I've been doing reviews for over 25 years with Amazon - over 6,000 reviews posted, those reviews have been viewed well over 50,000 times, including well over 25,000 likes. Bottom line, I pay for all my stuff, just like you do.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-008
+
+- User: `AFKNVFEXRGUGJAGMENCOWLVDYVCQ`
+- Item: `B00023J4AW` - Premium Life Rain Hat With Full Visor
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Premium Life Rain Hat With Full Visor 4 out of 5. Rain, hat, full, visor, premium, and life supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Shower Cap - Blue Dot Pattern, Vinyl material, elastic band, extra large, large, won’t fall off your head, (4.0/5): Worked out fine. Just a bit tight, but o.k.
+
+Reference review:
+
+> Rrain hats are really handy when<br />one doesn't have an umbrella, and<br />easy to carry in a purse or pocket.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-009
+
+- User: `AGF42GID7QWDCNFTJRCTMKAITJJA`
+- Item: `B07KDNK11M` - Chialstar (2 Pack) Shampoo Brush | Hair Scalp Massager, Soft Silicone Scalp Care Brush [Wet & Dry] Perfect for Men, Women, Kids and Pets (Pink/Green)
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 2.0
+
+Generated review:
+
+> I would rate Chialstar (2 Pack) Shampoo Brush | Hair Scalp Massager, Soft Silicone Scalp Care Brush [Wet & Dry] Perfect for Men, Women, Kids and Pets (Pink/Green) 4 out of 5. Scalp, hair, your, brush, massager, and chialstar supports that rating, and it fits what I usually look for.
+
+User history:
+
+> ZYNERY 10 Pack Button Headbands for Nurses Doctors - Non Slip Knotted Elastic Twisted Head Wrap, Wide Headbands with Ear Loop Holder Buttons for Women Girls Ears Protection (B) (4.0/5): These are nice and fit well and the masks loop in the right place to stay on your face
+
+Reference review:
+
+> These fall apart easily...I would not buy again
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-010
+
+- User: `AGVVUU3QRQBHNASSGI5YQLPYOI2Q`
+- Item: `B09FF97RHL` - 24 Eyebrow stencil , Meilala Eyebrow Shaper Kit ,Reusable Eyebrow Template Eye Brown Shape Kit With Eyebrow Razor…
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 1.0
+
+Generated review:
+
+> I would rate 24 Eyebrow stencil , Meilala Eyebrow Shaper Kit ,Reusable Eyebrow Template Eye Brown Shape Kit With Eyebrow Razor… 4 out of 5. Eyebrow, kit, eye, your, gift, and stencil supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Krispy Kreme Gift Card (5.0/5): My grandson inlaw loves his gift cards, so it's the perfect gift for Christmas
+
+Reference review:
+
+> Plastic does not bend for matching your brows and will not lay against your skin for tinting at all. The shapes included are way too large and do not match the natural brow lines. Total waste of money.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-011
+
+- User: `AGG3LLILZEGKCA4SAS4Q7X2Y7ISQ`
+- Item: `B07Y5QX37B` - DAWEIF Crystal Rhinestone Bowknot Barrette French Bridal Hair Clips Hairpin Headwear for Women Girls
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate DAWEIF Crystal Rhinestone Bowknot Barrette French Bridal Hair Clips Hairpin Headwear for Women Girls 4 out of 5. Fine, single, pins, daweif, crystal, and rhinestone supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Rhinestones Bobby Pins Silver Plated Words Letter Crystal Hair Pins Metal Hair Clips Hair Barrettes Sparkly Hair Accessories 3PCS (3PCS) (4.0/5): Loved it. The words worked out fine but the single pins broke right out of the package, so I threw them out, but I didn’t buy these for the single pins.
+
+Reference review:
+
+> Adorable and hold up just fine
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-012
+
+- User: `AH4O5W3EM4CKQGHMBVTSPCJRYF7Q`
+- Item: `B07YYWDPSM` - DoorDash Gift Card
+- Category: Specialty Cards
+- Predicted rating: 4 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate DoorDash Gift Card 4 out of 5. Great, tried, many, doordash, gift, and card supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Merit Advanced Eye Serum (5.0/5): I'm loving this!<br />I've been looking for a great serum for fine lines and have tried many. However my skin can be very sensitive so with many that I've tried, I've found that I wake up with puffier than usual eyes and some have even caused significant flaky dryness. Not this one! Have used nightly for a few weeks now and absolutely no issues. Absorbs quickly, nor burning. | Cotton Headbands 6 Pack Stretch Elastic Yoga Soft and Stretchy Sports Fashion Headband for Teens Women Girls by Kenz Laurenz (6 pc 2" Cotton Headbands-Neutral) (5.0/5): Great multi pack of bands for a great price. They wash well in the laundry and don't lose any elasticity | Foot Peel Mask Exfoliating (3 pairs) - Foot Peeling Mask (2 pairs) & Moisturizing Foot Mask (1 pairs), Make Your Feet Baby Soft, Peel Away Calluses and Dead Skin for Women & Men (3.0/5): Be careful there are 3 similar looking packets in the box. 2 are peels and 1 is a moisture mask.
+
+Reference review:
+
+> What can you say about a gift card? Well, it was valid. It's a good gift for someone who doesn't like to cook. Arrived promptly.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-013
+
+- User: `AHSAUHUTLVNKJ72GUIPGI5XZH6ZA`
+- Item: `B0040NQBAG` - S. FERRAGAMO Subtil Homme Edt Spray 3.3 OZ
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate S. FERRAGAMO Subtil Homme Edt Spray 3.3 OZ 5 out of 5. Perfume, pero, ferragamo, subtil, homme, and edt supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Eyelash Curler by Bella and Bear - Your New Lash Curlers Include a Storage Bag and Extra Refill Pads - Curl and Shape Your Eyelashes Without Pinching or Pulling (5.0/5): Wife gave them to a friend
+
+Reference review:
+
+> Use it for my everyday cologne
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-014
+
+- User: `AH4CGRSYSW5CWLRGQYRZKNJBUPAA`
+- Item: `B095SC4J8T` - Rhinestones for Acrylic Nails, Nail Gems Jewels Crystals 7660Pcs Red Flatback Nail Rhinestones Mutil Shapes Sizes for Nail Art Design, Non-Hotfix Rhinestones Kit with Tweezers Storage Box
+- Category: All_Beauty
+- Predicted rating: 3 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Rhinestones for Acrylic Nails, Nail Gems Jewels Crystals 7660Pcs Red Flatback Nail Rhinestones Mutil Shapes Sizes for Nail Art Design, Non-Hotfix Rhinestones Kit with Tweezers Storage Box 3 out of 5. Rhinestones, nail, gems, acrylic, crystals, and kit supports that rating, and it has useful strengths but also a few tradeoffs. I would still watch out for sizing, all, and off.
+
+User history:
+
+> WillingTee 12 Pack Boho Headbands for Women Vintage Flower Printed Criss Cross Elastic Head Wrap Twisted Cute Hair Accessories (5.0/5): Super cute and great value! | Clear Stiletto Nails 1000pcs Long Half Cover False Fake Nails Art Tips for Nail Salons and DIY Nail Art at Home, 10 Sizes (1.0/5): sizing is all off
+
+Reference review:
+
+> These diamond are absolutely beautiful and shine so well. Not cheesy like some of the colored diamonds can, does not look like cheap plastic at all.<br />I would definitely buy again.<br />Follow me on Instagram @theenailgame
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-015
+
+- User: `AHATA6X6MYTC3VNBFJ3WIYVK257A`
+- Item: `B09CQ4PXLN` - Sonic Facial Cleansing Brush, Electric Silicone Face Brush and Massager, Waterproof Silicone Face Scrubber for Deep Cleansing, Exfoliating, Blackhead Removing, Rechargeable,for Girls Gifts
+- Category: All_Beauty
+- Predicted rating: 3 out of 5
+- Reference rating: 2.0
+
+Generated review:
+
+> I would rate Sonic Facial Cleansing Brush, Electric Silicone Face Brush and Massager, Waterproof Silicone Face Scrubber for Deep Cleansing, Exfoliating, Blackhead Removing, Rechargeable,for Girls Gifts 3 out of 5. Brush, skin, silicone, great, facial, and face supports that rating, and it has useful strengths but also a few tradeoffs.
+
+User history:
+
+> Pore Strips, Blackhead Remover Charcoal Nose Strips Deep Cleansing 24 Strips (4.0/5): 4 stars because it pulled my skin off on the sensitive crease on side of my nose. Just be careful if you have a tough spot upon removing. You must rewet it if it is sticking too strongly. I started on that spot and didn't realize it was tearing my skin. If you follow the instructions, you should have no problem. | Schick Bare By Schick Dermaplaning Tool With 2 Dermaplaning Razors and 1 Cleaning Brush, 2 Count (4.0/5): I do like the angle of this dermaplaning blade, other than that, it's basically a razor. It preforms just like any other razor blade other than the way you hold it. I can't say it's something special due to this. The cleaning brush is great and needs to be used since the hair stays in the blades. | Magic Hair Curlers Spiral Curls Styling Kit, 20 PCS No Heat Wave Hair Curlers with 2 Styling Hook for Long Hair Most Kinds of Hairstyles (50cm) (4.0/5): my hair is long. It took a long time to get these put in. The curls were great. These rollers would be great for someone who wants to sleep in them. I didn't find it worth it to use during the day.<br /><br />Good curlers with no heat. I prefer my hot rollers. | 3D Mask Bracket - Internal Support Holder Frame Nose Breathing Smoothly - Protect Lipstick Lips - DIY Face Mask Accessories - 5Pcs (L-Adult) (4.0/5): This mask support works great. It does what it's supposed to do. It keeps your mask off of your mouth and nose, allowing more airflow. You mouth and nose are still covered, but the fabric isn't right up against your face.
+
+Reference review:
+
+> This is rough on the skin.  I don't like it.  Not sure what it's supposed to do.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-016
+
+- User: `AFA26DYXVLJYTYZ3KET77GE27N2A`
+- Item: `B08CXFDDV8` - Sailor Moon x Colourpop Collection - From The Moon - Pressed Powder Blush (From The Moon)
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Sailor Moon x Colourpop Collection - From The Moon - Pressed Powder Blush (From The Moon) 5 out of 5. Moon, feet, completely, use, spray, and natural supports that rating, and it fits what I usually look for.
+
+User history:
+
+> ONOX Foot Solution Spray, 4 oz (4.0/5): Had originally planned on using this for my feet but given I have some cracks it mentioned not to use on cracked or hurt feet because it could sting and other similar side effects. I am not sure whether to use this product or not because it also mentioned that it is possible that it will sting whether or not you have cracks on your feet or anything similar. I am a little worried if I should use this at all. I am gifting this away because I do not want to hurt my feet. I hope it helps someone else. | Herbivore - Natural Sea Mist Texturizing Salt Spray (Coconut, Travel Size 2 oz) (5.0/5): This spray smells amazing, it does claim to be completely natural so I am wondering if it really is since the smell is very well... processed in my opinion, that being said, it does look completely natural it's completely transparent and once you apply it it doesn't feel as sticky as other products I've used before it really gives the hair a very natural look and for having just applied it a few minutes ago my hair feels extremely soft to the touch which gives me a pretty good idea that this is a good hair spray. The presentation is really pretty and looks cute and clean as well. I love it! I just hope it works well in the long run! The only problem I had (completely unrelated to the spray itself) is that they left it at my neighbors door instead.
+
+Reference review:
+
+> I really love this blush it's super cute ultra kawaii and I personally am a fan of the changing pictures that it comes with so it's awesome I guess I just wished it was eyeshadow instead the sailor moon one is also cute but too expensive in my opinion and the blush is not a big deal but this item is more like collection stuff but it's really worth it if you want a cute gift or just something really cute to stare at :) /play with for a bit.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-017
+
+- User: `AHV6QCNBJNSGLATP56JAWJ3C4G2A`
+- Item: `B0B8DZ7H5F` - Frankies Bikinis Lip Butter Gloss, Sleeping Vegan Lip Mask Overnight, Moisturizing Lip Plumper, Vitamin E Lip Balm Moisturizer, Hydrating Lip Oil with Cocoa Butter, Made in USA, Guava 0.7 Ounces
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 4.0
+
+Generated review:
+
+> I would rate Frankies Bikinis Lip Butter Gloss, Sleeping Vegan Lip Mask Overnight, Moisturizing Lip Plumper, Vitamin E Lip Balm Moisturizer, Hydrating Lip Oil with Cocoa Butter, Made in USA, Guava 0.7 Ounces 4 out of 5. Skin, one, they, them, like, and use supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Dose of Colors Cold Pressed Booster Multi-Use Oil 1oz (5.0/5): I really like this face oil by Dose of Colors. It is fragrance free, but it has a light, pleasant smell to it. It does feel a bit oily, but that goes away after several minutes. I'm only using this at nighttime, because it's too heavy for daytime use in my opinion. It doesn't annoy my sensitive skin. It leaves my skin feeling super soft! | APIVITA Queen Bee Holistic Age Defense Night Cream 1.69 fl.oz. |Intensive Night Treatment That Speeds Skin Regeneration, Smooths Wrinkle & Increases Skin Elasticity with Royal Jelly & Hyaluronic Acid (4.0/5): This night cream has a good, thick consistency. It's definitely a cream and not like a balm. It has a strong scent to it. It smells like a flowery perfume. It smells nice, but it is strong. If you are sensitive to smells, this may not be for you. I don't have any problems with it, though I do prefer citrus scents over flowers, but that's just a personal preference. It doesn't leave my skin feeling sticky or greasy. It absorbs pretty well. | Simply Dana Rivitastore Neck Firming Cream — Skin Firming Cream for Tightening Neck, Jawline, and Chest, Collagen Peptides, and Squalane Cream for Wrinkles, Sagging, and Dryness (4.0/5): I'm in my mid-fifties and I have been using creams targeted to the neck and chest area for a few years now. I have definitely seem some improvement in the texture of that skin. This bottle is very small. It's a lotion consistency and it has a light pleasant scent. It doesn't leave my hands feeling sticky, but the bottle is sticky. I have washed it at least once and it remains sticky. It absorbs quickly. I can't tell if it's doing it's job as I haven't seen any noticeable changes, but it isn't hurting anything either. | Elli K Essential Sincerity From AZ Time Reverse Double Ampoule – Made in USA - Double Layering Serum – Repairing & Deep Hydrating – Oil and Cream Formula for Healthy and Smooth Skin, (2.02 fl.oz.) (4.0/5): This is a good way to use a face oil. Normally I skip facial oils because I don't like the way they feel on my face. This one is mixed with a cream, so it doesn't leave your face feeling greasy or oily after applying it. It has a pleasant scent. It isn't sticky though it does leave behind a little tackiness, but that disappears quickly. I'm not really sure what it's supposed to do. I like it. It's definitely hydrating. I do think the descriptions are pretty vague. It doesn't bother my sensitive skin, which is always a plus. | ELLI K ESSENTIAL SINCERITY FROM AZ TIME REVERSE CREAM - Made in USA - Anti-Aging Face Moisturizer for Dry & Rough Skin – Repairing Treatment Cream – Highly Concentrated Formula, 1.76 oz. (5.0/5): I am enjoying this face cream. I find it to be luxurious. It's nice and creamy. The glass jar is very nice. It smells wonderful. It doesn't irritate my sensitive skin. I've been using it at nighttime because it is a heavier cream. I haven't noticed any miraculous results, but I am a regular user of anti-aging products, so I like to think that this is just continuing what's already going on.
+
+Reference review:
+
+> This lip butter is pretty much a lip gloss. I haven't noticed any lip plumping action, but it is hydrating. It smells wonderful! There's a slight pinkish tinge to it, but it's sheer and not very prominent. It doesn't last very long and does transfer.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-018
+
+- User: `AG7WKTZINOFIXMZJYIPKIB7PV7NQ`
+- Item: `B088838886` - 4pcs Button Headbands Set for Mask- Non Slip Elastic Headbands with Button in 4 Colors Ear Protection Nurse Headbands Sports Head Wrap for Women Men Yoga Sports Outdoor Activities Doctor Nurse Gift
+- Category: All_Beauty
+- Predicted rating: 3 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate 4pcs Button Headbands Set for Mask- Non Slip Elastic Headbands with Button in 4 Colors Ear Protection Nurse Headbands Sports Head Wrap for Women Men Yoga Sports Outdoor Activities Doctor Nurse Gift 3 out of 5. Button, headbands, slip, nurse, sports, and head supports that rating, and it has useful strengths but also a few tradeoffs. I would still watch out for paint, off, worn, and days.
+
+User history:
+
+> Skque New Wavy Metal Sports Men's Women's Hair Hoop Band Headband-color in Black (2.0/5): I've worn this for 3 days, I'm a little disappointed the black paint had already started to chip off. | Joyci 1Pcs Creative Hoop Round Ponytail Holder Women's Geometric Metal Hair Pin (Rose Gold) (1.0/5): cheap stuff... bumpy surface, paint is chipping off after one use. It's not worth printing a return label, or a drive to ups.
+
+Reference review:
+
+> The button locations are way off … but the quality of the headbands are great.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-019
+
+- User: `AGPOZ62Q3ULTH7RLBK4BIJ75T2KQ`
+- Item: `B00EIL38WO` - Schar Deli-Style Bread Gluten Free -- 8.5 oz Each / Pack of 2
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Schar Deli-Style Bread Gluten Free -- 8.5 oz Each / Pack of 2 5 out of 5. Nail, amazon, bread, product, gluten-free, and good supports that rating, and it fits what I usually look for.
+
+User history:
+
+> drtulz Free Nail Polish Remover - 4 oz (5.0/5): I have been using Nutra Nail odor-free nail polish remover for well over a year. It is an amazing product, as it has an oil base that is non-drying to the nails. My local Publix is no longer carrying it and I was so thankful to have found it on Amazon. The "cons" are that the Amazon display shows two bottles of the product, which is what I expected to receive in my order. E-mail confirmation of my Amazon order is for 4 oz of product, a big disappointment! I hope that Amazon will correct the display so that customers are not expecting two bottles of Nutra Nail Odor-Free Nail Polish Remover!
+
+Reference review:
+
+> At last, gluten-free deli bread! There are a few good gluten-free breads made without wheat, but they just don't have the flavor of this deli-style bread with sour dough in the ingredient list. This is the first on the market that I know of and it is delicious.There are 5 large deli size slices in a package. I find that a half slice for an open-face sandwich is just the right amount for me. For those of us in the gluten-free community, a deli-style bread is the bread most missed. This Schar bread is expensive but worth every penny! P.S. To follow up on this earlier review, Schar has reduced the size of the deli-style slices to about 2/3 of the original size, AND increased the price! I will still buy this bread, but with a heavy heart!
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-020
+
+- User: `AGTHQ6ANUEV7VOOVAEFWVMFIILUA`
+- Item: `B01N070HWY` - Color Club Nail Lacquer Halo Hues Collection - Cloud Nine
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Color Club Nail Lacquer Halo Hues Collection - Cloud Nine 5 out of 5. Nail, colors, color, club, polish, and lacquer supports that rating, and it fits what I usually look for.
+
+User history:
+
+> karma organic Natural nail polish remover Soybean Lavender Oil Based Formula non toxic vegan cruelty free moisturize and Nourish Nails 4 fl. oz. (5.0/5): This is really really good. Best I’ve ever used by far.
+
+Reference review:
+
+> This is super holographic. Love it. Also it dries fast. Obsessed with this color.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-021
+
+- User: `AFJBKPK5W56XWSNPQU2WW66ISWYQ`
+- Item: `B0BP2Y6QY4` - LUMOSMAX Hair Growth Serum with built-in Scalp Massager - Promotes Hair Care and improves Scalp Health while Nourishing Scalp | Serum Applicator for Women
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate LUMOSMAX Hair Growth Serum with built-in Scalp Massager - Promotes Hair Care and improves Scalp Health while Nourishing Scalp | Serum Applicator for Women 5 out of 5. Hair, great, like, works, well, and use supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Heyedrate Activated Charcoal Soap Bar and Face Wash | Organic, Vegan, Natural Soap made with Dead Sea Mud and Our Essential Oil Blend (1 Pack (5 Ounces)) (5.0/5): Great quality soap! So many good ingredients that are good for skin and hydrating not drying. Smells great and skin feels clean and soft after. Highly recommend. | Calendula Soap With Coconut Oil Soap - Natural Body Soap | Best Body Bar For Dry & Sensitive Skin | Use As A Bath Soap & Face Pure Extracts (2.64 Ounce) (5.0/5): Great soap with mild natural scent. Works great on my sensitive skin. Leaves it soft and clean and doesn’t dry it out. | Got2b Glued Spray Wax with 2-in-1 Dual Nozzle, 8 oz (5.0/5): This is much faster and less messy than using the cream. Quick any easy. Not the longest hold but good for a few hours. Not much of any smell to it which is probably better. Some of these wax's are way too fragrant. | John Frieda Detox and Repair Shampoo and Conditioner Set with Nourishing Avocado Oil and Green Tea, 8.45 Fl Oz (Pack of 2) (5.0/5): Great shampoo and conditioner set. Smells great and leaves hair feeling clean and soft. I like this brand and have used it in the past. Seems to be great quality. | INIKA - Organic Lip Glaze | Vegan, Non-Toxic Beauty (Blossom) (5.0/5): This is a great lip gloss that feels very light on but also has a good amount of pigment to it. The shade I got is nice and neutral. It makes lips soft. It doesn’t last too long but expected with a more natural product.
+
+Reference review:
+
+> Seems good but have been too nervous to test it out. Will update once I do.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-022
+
+- User: `AGQKBA5POXDOUO4U43YF2LNEZPLA`
+- Item: `B07DSQ3NWM` - (PACK of 2) 0lay Regenerist Micro-Sculpting Serum Advanced Anti-Aging Moisturize - 1.7 Fl Oz (50ml) EACH
+- Category: All_Beauty
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate (PACK of 2) 0lay Regenerist Micro-Sculpting Serum Advanced Anti-Aging Moisturize - 1.7 Fl Oz (50ml) EACH 5 out of 5. Love, look, mascara, lashes, pack, and lay supports that rating, and it fits what I usually look for.
+
+User history:
+
+> VEGAMOUR Vegalash Volumizing Mascara (Black/Noir) - Vegan Cruelty-free Mascara with Eyelash Enhancement Serum, Natural Plant Based Formula Conditions and Nourishes Lashes for Healthy Growth (5.0/5): I have been using this mascara for about 2 months now and I am in awe at the difference in my lashes. And I’ve used it all! I’ve tried so many types of mascara even went thru falsies, extensions. And I love this product. It lengthens, plumps, and makes my lashes LOOK healthier. I highly recommend!
+
+Reference review:
+
+> Not greasy or filmy!<br />Love the look and feel of this lightweight moisturizer! Don’t use too much!<br />Skin feels amazing every morning when I wake up!
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-023
+
+- User: `AFDMZ4TRX3HXQQUGWAHJQTIF65BQ`
+- Item: `B00BXLW5QC` - SUBWAY Gift Card
+- Category: Restaurants
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate SUBWAY Gift Card 5 out of 5. Good, product, subway, gift, give, and card supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Invisibobble Hair Tie Crystal Clear Original 3 packs of 3 hair ties per pack (9 hair ties in total) (5.0/5): Good Product | Amazon.com Gift Card for any amount in various designs (5.0/5): Good Product | Amazon.com Gift Card in a Black Gift Box (Congratulations Icons Design) (5.0/5): Good Product | Amazon.com Gift Card in a Birthday Gift Box (Various Designs) (5.0/5): Good Product | Amazon.com Gift Card in a Reveal (Various Designs) (5.0/5): Good Product
+
+Reference review:
+
+> Good gift card
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-024
+
+- User: `AEINWALDRYT4NTF3M5NC2WZ5YQNA`
+- Item: `B00IX1I3G6` - Amazon Reload
+- Category: For Him
+- Predicted rating: 5 out of 5
+- Reference rating: 5.0
+
+Generated review:
+
+> I would rate Amazon Reload 5 out of 5. Your, balance, gift, card, amazon, and reload supports that rating, and it fits what I usually look for.
+
+User history:
+
+> Natural Makeup Remover Facial Cleansing Wipes from 1790 Are the Best Gentle Towelettes For Your Face - Remove Eye Makeup - Kind to Your Skin - Blemish Free Finish (25 Count, Pack of 6) (5.0/5): Doesn't burn the eyes
+
+Reference review:
+
+> Easy to do
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
+
+## A-025
+
+- User: `AFPHKIJFGIU4G4POXRFCEF5RJJHA`
+- Item: `B01M1OFZOG` - Bed Head Curve Check Curling Wand for Tousled Waves and Texture, Jumbo Barrel
+- Category: All_Beauty
+- Predicted rating: 4 out of 5
+- Reference rating: 3.0
+
+Generated review:
+
+> I would rate Bed Head Curve Check Curling Wand for Tousled Waves and Texture, Jumbo Barrel 4 out of 5. Tousled, texture, waves, bed, head, and curve supports that rating, and it fits what I usually look for. The only thing I would keep in mind is magazine, excited, didn, and find.
+
+User history:
+
+> O, The Oprah Magazine    Print Magazine (5.0/5): I've renewed this magazine for my mom and she LOVES it! | Us Weekly    Print Magazine (2.0/5): I was so excited about this magazine but didn't find it that good - a lot of the information was repeated in other magazines. Instead, I've gone with People magazine. | Amazon.com Gift Card for any amount in a Reveal (5.0/5): Always great to order from my home. Amazon rocks!
+
+Reference review:
+
+> I purchased this for my shoulder length hair. It's very difficult to use, would be best used on longer hair. It's a bit hard to wind the hair around this iron when it's my length.
+
+Scores: rating_fit ___ / voice_fit ___ / groundedness ___ / specificity ___
+
+Notes:
