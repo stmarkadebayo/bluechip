@@ -3,62 +3,164 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bluechip Agent Demo</title>
+    <title>Bluechip Demo Console</title>
     <style>
       :root {
         color-scheme: light;
-        --bg: #f7f8fa;
-        --panel: #ffffff;
-        --text: #17202a;
-        --muted: #657080;
-        --line: #d9dee7;
-        --accent: #0f766e;
-        --accent-dark: #115e59;
-        --danger: #9f1239;
+        --bg: #eef2f7;
+        --surface: #ffffff;
+        --surface-soft: #f8fafc;
+        --ink: #111827;
+        --muted: #64748b;
+        --line: #d7dee8;
+        --line-strong: #b8c2d0;
+        --teal: #0f766e;
+        --teal-dark: #115e59;
+        --blue: #1d4ed8;
+        --amber: #b7791f;
+        --rose: #be123c;
+        --green: #166534;
+        --shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
       }
 
       * {
         box-sizing: border-box;
       }
 
+      [hidden] {
+        display: none !important;
+      }
+
       body {
         margin: 0;
-        background: var(--bg);
-        color: var(--text);
+        background:
+          linear-gradient(180deg, #f8fafc 0, var(--bg) 330px),
+          var(--bg);
+        color: var(--ink);
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-size: 14px;
       }
 
-      header {
-        border-bottom: 1px solid var(--line);
-        background: var(--panel);
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 700;
+        letter-spacing: 0;
+        padding: 0 12px;
+      }
+
+      button:hover {
+        border-color: var(--line-strong);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.62;
+      }
+
+      button.primary {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #ffffff;
+      }
+
+      button.primary:hover {
+        background: var(--teal-dark);
+        border-color: var(--teal-dark);
+      }
+
+      button.active {
+        background: #e6f3f1;
+        border-color: #8dc6bf;
+        color: var(--teal-dark);
       }
 
       .wrap {
-        width: min(1180px, calc(100vw - 32px));
+        width: min(1440px, calc(100vw - 32px));
         margin: 0 auto;
       }
 
       .topbar {
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(10px);
+      }
+
+      .topbar-inner {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        min-height: 64px;
+        gap: 18px;
+        min-height: 74px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .brand-mark {
+        display: grid;
+        flex: 0 0 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 8px;
+        background: #111827;
+        color: #ffffff;
+        font-weight: 900;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
       }
 
       h1 {
-        margin: 0;
-        font-size: 20px;
+        font-size: clamp(18px, 2vw, 24px);
+        line-height: 1.1;
         letter-spacing: 0;
       }
 
-      .status {
-        display: flex;
-        gap: 10px;
-        align-items: center;
+      .subhead {
+        margin-top: 4px;
         color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .header-actions,
+      .status,
+      .button-row,
+      .scenario-row,
+      .mode-row,
+      .chip-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .status {
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        color: var(--muted);
+        font-weight: 700;
         white-space: nowrap;
       }
 
@@ -66,71 +168,124 @@
         width: 10px;
         height: 10px;
         border-radius: 999px;
-        background: var(--accent);
+        background: var(--amber);
+      }
+
+      .dot.ok {
+        background: var(--green);
+      }
+
+      .dot.bad {
+        background: var(--rose);
       }
 
       main {
-        padding: 24px 0;
+        padding: 18px 0 28px;
       }
 
-      .tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-
-      button {
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        background: var(--panel);
-        color: var(--text);
-        min-height: 36px;
-        padding: 0 12px;
-        cursor: pointer;
-        font-weight: 600;
-      }
-
-      button.primary,
-      button.active {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #fff;
-      }
-
-      button.primary:hover,
-      button.active:hover {
-        background: var(--accent-dark);
-      }
-
-      .grid {
+      .task-strip {
         display: grid;
-        grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
-        gap: 16px;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
       }
 
-      section,
-      .panel {
-        background: var(--panel);
+      .task-cell {
+        min-height: 74px;
         border: 1px solid var(--line);
         border-radius: 8px;
+        background: var(--surface);
+        padding: 12px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
       }
 
-      section {
-        padding: 16px;
+      .task-cell strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
       }
 
-      h2 {
-        margin: 0 0 12px;
+      .task-cell span {
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(360px, 0.9fr) minmax(520px, 1.35fr);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .surface {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .surface-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .surface-header h2 {
         font-size: 16px;
+        letter-spacing: 0;
+      }
+
+      .surface-header p {
+        margin-top: 4px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .input-body,
+      .output-body {
+        padding: 14px 16px 16px;
+      }
+
+      .mode-row {
+        margin-bottom: 12px;
+      }
+
+      .mode-row button {
+        flex: 1 1 140px;
+      }
+
+      .scenario-row {
+        align-items: stretch;
+        margin-bottom: 12px;
+      }
+
+      .scenario-row button {
+        flex: 1 1 140px;
+        text-align: left;
+      }
+
+      .field {
+        margin-top: 12px;
       }
 
       label {
-        display: block;
-        margin: 12px 0 6px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
         color: var(--muted);
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
+      }
+
+      label span {
+        color: #94a3b8;
+        font-weight: 700;
+        text-transform: none;
       }
 
       textarea,
@@ -138,273 +293,1269 @@
         width: 100%;
         border: 1px solid var(--line);
         border-radius: 6px;
-        padding: 10px;
-        font: inherit;
-        background: #fff;
+        background: #ffffff;
+        color: var(--ink);
+        padding: 10px 11px;
+        line-height: 1.45;
+      }
+
+      textarea:focus,
+      input:focus,
+      button:focus-visible {
+        outline: 3px solid rgba(15, 118, 110, 0.18);
+        outline-offset: 1px;
       }
 
       textarea {
-        min-height: 132px;
+        min-height: 120px;
         resize: vertical;
       }
 
-      .actions {
-        display: flex;
-        gap: 8px;
+      .json-editor {
+        min-height: 230px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+      }
+
+      .compact-editor {
+        min-height: 128px;
+      }
+
+      .button-row {
+        margin-top: 14px;
+      }
+
+      .button-row button.primary {
+        flex: 1 1 180px;
+      }
+
+      .endpoint-pill,
+      .trace-pill,
+      .pill {
+        display: inline-flex;
         align-items: center;
-        margin-top: 12px;
-      }
-
-      .muted {
+        min-height: 28px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--surface-soft);
         color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 4px 9px;
+        white-space: nowrap;
       }
 
-      .result {
+      .endpoint-pill {
+        color: var(--blue);
+      }
+
+      .trace-pill {
+        max-width: 270px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .kpi-grid {
         display: grid;
+        grid-template-columns: repeat(4, minmax(110px, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .kpi {
+        min-height: 76px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 10px;
+      }
+
+      .kpi span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .kpi strong {
+        display: block;
+        margin-top: 7px;
+        font-size: 18px;
+        line-height: 1.2;
+        word-break: break-word;
+      }
+
+      .output-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
         gap: 12px;
       }
 
-      .summary {
-        padding: 14px;
+      .output-section {
+        min-width: 0;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 12px 0 8px;
+      }
+
+      .section-title h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+
+      .empty {
+        border: 1px dashed var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        color: var(--muted);
+        line-height: 1.45;
+        padding: 16px;
+      }
+
+      .reco-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .reco-card,
+      .review-card,
+      .metric-card {
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #fbfcfd;
-        min-height: 84px;
+        background: #ffffff;
+        padding: 12px;
+      }
+
+      .reco-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .rank-name {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      .rank {
+        display: grid;
+        flex: 0 0 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 7px;
+        background: #e7efff;
+        color: var(--blue);
+        font-weight: 900;
+      }
+
+      .reco-card h3,
+      .review-card h3 {
+        font-size: 15px;
+        line-height: 1.25;
+        word-break: break-word;
+      }
+
+      .score {
+        color: var(--teal-dark);
+        font-size: 18px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .reason {
+        margin-top: 10px;
+        line-height: 1.48;
+      }
+
+      .tradeoff {
+        margin-top: 8px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .chip-row {
+        margin-top: 10px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-soft);
+        color: #334155;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 3px 8px;
+        word-break: break-word;
+      }
+
+      .chip.source {
+        background: #fff7ed;
+        border-color: #fed7aa;
+        color: #9a3412;
+      }
+
+      .chip.signal {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #166534;
+      }
+
+      .component-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 11px;
+      }
+
+      .component {
+        display: grid;
+        grid-template-columns: minmax(108px, 0.8fr) minmax(90px, 1fr) 46px;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .bar {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e2e8f0;
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: var(--teal);
+      }
+
+      .evidence-panel {
+        display: grid;
+        gap: 10px;
+      }
+
+      .evidence-box {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 11px;
+      }
+
+      .evidence-box h4 {
+        margin: 0 0 8px;
+        font-size: 13px;
+      }
+
+      .evidence-box p {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .trace-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .trace-step {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 9px;
+      }
+
+      .trace-step strong {
+        color: var(--teal-dark);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .trace-step span {
+        display: block;
+        color: var(--muted);
+        line-height: 1.4;
+        word-break: break-word;
+      }
+
+      .review-body {
+        margin-top: 10px;
+        border-left: 4px solid var(--teal);
+        padding-left: 12px;
+        line-height: 1.55;
+      }
+
+      .raw-block {
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #0f172a;
+        overflow: hidden;
+      }
+
+      .raw-block summary {
+        cursor: pointer;
+        padding: 10px 12px;
+        color: #dbeafe;
+        font-weight: 800;
       }
 
       pre {
         margin: 0;
+        max-height: 440px;
         overflow: auto;
-        max-height: 560px;
-        padding: 14px;
-        border-radius: 8px;
-        background: #111827;
+        padding: 12px;
         color: #e5e7eb;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
         font-size: 12px;
-        line-height: 1.45;
+        line-height: 1.5;
       }
 
       .error {
-        color: var(--danger);
-        font-weight: 700;
+        border-color: #fecdd3;
+        background: #fff1f2;
+        color: var(--rose);
+        font-weight: 800;
       }
 
-      @media (max-width: 840px) {
-        .topbar {
-          align-items: flex-start;
-          flex-direction: column;
-          padding: 14px 0;
-        }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+        gap: 10px;
+      }
 
-        .grid {
+      @media (max-width: 1100px) {
+        .workspace,
+        .output-grid {
           grid-template-columns: 1fr;
         }
 
-        .tabs {
-          overflow-x: auto;
+        .task-strip,
+        .kpi-grid {
+          grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+      }
+
+      @media (max-width: 680px) {
+        .wrap {
+          width: min(100vw - 20px, 1440px);
+        }
+
+        .topbar-inner {
+          align-items: stretch;
+          flex-direction: column;
+          padding: 12px 0;
+        }
+
+        .header-actions {
+          align-items: stretch;
+        }
+
+        .header-actions button,
+        .status {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .task-strip,
+        .kpi-grid,
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .surface-header,
+        .reco-head {
+          flex-direction: column;
+        }
+
+        .component {
+          grid-template-columns: minmax(0, 1fr) 46px;
+        }
+
+        .component .bar {
+          grid-column: 1 / -1;
+        }
+
+        .trace-step {
+          grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
-    <header>
-      <div class="wrap topbar">
-        <h1>Bluechip User Intelligence Agent</h1>
-        <div class="status"><span class="dot"></span><span id="health">checking API</span></div>
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">BC</div>
+          <div>
+            <h1>Bluechip Demo Console</h1>
+            <p class="subhead">Evidence-first user intelligence for Task A review simulation and Task B recommendations.</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="status">
+            <span id="health-dot" class="dot"></span>
+            <span id="health">Checking API</span>
+          </div>
+          <button id="header-refresh" type="button">Refresh Runtime</button>
+        </div>
       </div>
     </header>
 
     <main class="wrap">
-      <div class="tabs" role="tablist">
-        <button id="tab-review" class="active" type="button">Simulate Review</button>
-        <button id="tab-recommend" type="button">Recommend</button>
-        <button id="tab-metrics" type="button">Metrics</button>
+      <div class="task-strip" aria-label="Task visibility">
+        <div class="task-cell">
+          <strong>Task B: Candidate Ranking</strong>
+          <span id="task-b-state">Active demo flow</span>
+        </div>
+        <div class="task-cell">
+          <strong>Task A: Rating + Review</strong>
+          <span id="task-a-state">Ready from same profile inputs</span>
+        </div>
+        <div class="task-cell">
+          <strong>Evidence Sources</strong>
+          <span id="source-state">Candidate sources and score components shown after run</span>
+        </div>
+        <div class="task-cell">
+          <strong>Traceability</strong>
+          <span id="trace-state">Runtime traces, validation, latency, and model versions</span>
+        </div>
       </div>
 
-      <div class="grid">
-        <section>
-          <h2 id="form-title">Review Simulation</h2>
-          <div id="review-form">
-            <label for="review-persona">User Persona</label>
-            <textarea id="review-persona">A Lagos-based student who likes affordable, quiet restaurants and rates slow service harshly.</textarea>
-            <label for="review-history">User History JSON</label>
-            <textarea id="review-history">[
-  {
-    "item_id": "rest_001",
-    "item_name": "Campus Bistro",
-    "rating": 5,
-    "review": "Affordable food, calm space, and the staff did not waste time.",
-    "category": "restaurant"
-  }
-]</textarea>
-            <label for="target-item">Target Item JSON</label>
-            <textarea id="target-item">{
-  "item_id": "rest_010",
-  "name": "Mainland Grill",
-  "category": "restaurant",
-  "metadata": {
-    "price": "medium",
-    "ambience": "quiet",
-    "service": "fast",
-    "review_count": 180
-  },
-  "summary": "Known for grilled food, calm seating, and reliable service.",
-  "average_rating": 4.4
-}</textarea>
-            <div class="actions">
-              <button class="primary" type="button" onclick="simulateReview()">Run</button>
-              <span class="muted">POST /api/simulate-review</span>
+      <div class="workspace">
+        <section class="surface" aria-label="Demo inputs">
+          <div class="surface-header">
+            <div>
+              <h2 id="input-title">Task B Recommendation</h2>
+              <p id="input-subtitle">Cold-start and cross-domain examples use the same ranking endpoint.</p>
             </div>
+            <span id="endpoint-pill" class="endpoint-pill">POST /api/recommend</span>
           </div>
 
-          <div id="recommend-form" hidden>
-            <label for="recommend-persona">User Persona</label>
-            <textarea id="recommend-persona">A Lagos-based student who likes affordable, quiet restaurants and spicy food.</textarea>
-            <label for="recommend-context">Context</label>
-            <input id="recommend-context" value="Dinner with two friends, not too expensive, somewhere conversation-friendly." />
-            <label for="recommend-history">User History JSON</label>
-            <textarea id="recommend-history">[]</textarea>
-            <label for="candidate-items">Candidate Items JSON</label>
-            <textarea id="candidate-items">[
-  {
-    "item_id": "rest_010",
-    "name": "Mainland Grill",
-    "category": "restaurant",
-    "metadata": {"price": "medium", "ambience": "quiet", "review_count": 180},
-    "summary": "Grilled food, calm seating, and reliable service.",
-    "average_rating": 4.4
-  },
-  {
-    "item_id": "rest_011",
-    "name": "Party Yard",
-    "category": "restaurant",
-    "metadata": {"price": "premium", "ambience": "loud", "review_count": 310},
-    "summary": "A loud late-night spot with premium cocktails.",
-    "average_rating": 4.5
-  }
-]</textarea>
-            <div class="actions">
-              <button class="primary" type="button" onclick="recommend()">Run</button>
-              <span class="muted">POST /api/recommend</span>
+          <div class="input-body">
+            <div class="mode-row" role="tablist" aria-label="Demo mode">
+              <button id="mode-recommend" class="active" type="button" data-mode="recommend">Task B Recommend</button>
+              <button id="mode-review" type="button" data-mode="review">Task A Review</button>
+              <button id="mode-runtime" type="button" data-mode="runtime">Runtime Trace</button>
             </div>
-          </div>
 
-          <div id="metrics-form" hidden>
-            <p class="muted">Runtime traces and aggregate metrics are persisted locally to runs/traces/requests.jsonl.</p>
-            <div class="actions">
-              <button class="primary" type="button" onclick="loadMetrics()">Refresh</button>
-              <span class="muted">GET /api/metrics and /api/traces</span>
+            <div class="scenario-row" aria-label="Scenario presets">
+              <button id="scenario-cold" class="active" type="button" data-scenario="cold">Cold-start Dinner</button>
+              <button id="scenario-cross" type="button" data-scenario="cross">Cross-domain Gift</button>
+              <button id="scenario-review" type="button" data-scenario="review">Strict Reviewer</button>
+            </div>
+
+            <div id="request-fields">
+              <div class="field">
+                <label for="persona">User persona <span>plain text</span></label>
+                <textarea id="persona"></textarea>
+              </div>
+
+              <div id="context-field" class="field">
+                <label for="context">Current context <span>Task B</span></label>
+                <input id="context" />
+              </div>
+
+              <div class="field">
+                <label for="history">User history JSON <span>reviews and ratings</span></label>
+                <textarea id="history" class="json-editor compact-editor"></textarea>
+              </div>
+
+              <div id="candidate-field" class="field">
+                <label for="candidate-items">Candidate items JSON <span>Task B product pool</span></label>
+                <textarea id="candidate-items" class="json-editor"></textarea>
+              </div>
+
+              <div id="target-field" class="field" hidden>
+                <label for="target-item">Target item JSON <span>Task A product</span></label>
+                <textarea id="target-item" class="json-editor"></textarea>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="run-button" class="primary" type="button">Run Task B</button>
+              <button id="profile-button" type="button">Profile User</button>
+              <button id="trace-button" type="button">Refresh Traces</button>
             </div>
           </div>
         </section>
 
-        <section class="result">
-          <h2>Result</h2>
-          <div id="summary" class="summary muted">Run a task to inspect the response, trace, and score components.</div>
-          <pre id="output">{}</pre>
+        <section class="surface" aria-label="Demo outputs">
+          <div class="surface-header">
+            <div>
+              <h2 id="result-title">Recommendation Output</h2>
+              <p id="result-subtitle">Ranked products, explanations, source signals, and trace steps.</p>
+            </div>
+            <span id="trace-pill" class="trace-pill">No trace yet</span>
+          </div>
+
+          <div class="output-body">
+            <div id="kpi-grid" class="kpi-grid"></div>
+
+            <div class="output-grid">
+              <div class="output-section">
+                <div class="section-title">
+                  <h3 id="primary-title">Products</h3>
+                  <span id="result-count" class="pill">0 results</span>
+                </div>
+                <div id="primary-output" class="empty">Select a scenario and run the active task.</div>
+              </div>
+
+              <div class="output-section">
+                <div class="section-title">
+                  <h3>Evidence</h3>
+                  <span id="evidence-status" class="pill">Waiting</span>
+                </div>
+                <div id="evidence-output" class="evidence-panel"></div>
+
+                <div class="section-title">
+                  <h3>Trace</h3>
+                  <span id="trace-count" class="pill">0 steps</span>
+                </div>
+                <ol id="trace-output" class="trace-list"></ol>
+              </div>
+            </div>
+
+            <details class="raw-block">
+              <summary>Raw response JSON</summary>
+              <pre id="raw-output">{}</pre>
+            </details>
+          </div>
         </section>
       </div>
     </main>
 
     <script>
-      const output = document.getElementById("output");
-      const summary = document.getElementById("summary");
+      const $ = (id) => document.getElementById(id);
 
-      function setTab(tab) {
-        for (const name of ["review", "recommend", "metrics"]) {
-          document.getElementById(`tab-${name}`).classList.toggle("active", name === tab);
-          document.getElementById(`${name}-form`).hidden = name !== tab;
+      const examples = {
+        cold: {
+          mode: "recommend",
+          persona:
+            "A Lagos-based student on a tight budget who wants calm places, fast service, spicy food, and no surprise fees.",
+          context:
+            "Dinner with two friends after class. Keep it conversation-friendly, affordable, and close to a busy commute.",
+          history: [],
+          candidateItems: [
+            {
+              item_id: "rest_010",
+              name: "Mainland Grill",
+              category: "restaurant",
+              metadata: { price: "medium", ambience: "quiet", service: "fast", review_count: 180 },
+              summary: "Grilled chicken, jollof bowls, calm seating, and reliable service near the mainland bus corridor.",
+              average_rating: 4.4
+            },
+            {
+              item_id: "rest_011",
+              name: "Party Yard",
+              category: "restaurant",
+              metadata: { price: "premium", ambience: "loud", service: "slow", review_count: 310 },
+              summary: "Late-night music, premium cocktails, loud outdoor seating, and a longer wait at peak time.",
+              average_rating: 4.5
+            },
+            {
+              item_id: "rest_012",
+              name: "Campus Pepper Bowl",
+              category: "restaurant",
+              metadata: { price: "low", ambience: "busy", service: "fast", review_count: 95 },
+              summary: "Affordable spicy rice bowls, quick counter service, and a busy student crowd.",
+              average_rating: 4.1
+            },
+            {
+              item_id: "rest_013",
+              name: "Quiet Spoon",
+              category: "restaurant",
+              metadata: { price: "low", ambience: "quiet", service: "steady", review_count: 64 },
+              summary: "Simple Nigerian meals, low prices, quiet side-room seating, and modest portions.",
+              average_rating: 4.0
+            }
+          ]
+        },
+        cross: {
+          mode: "recommend",
+          persona:
+            "An Abuja professional who buys gentle skin care, practical books, and calm acoustic music for focused evenings.",
+          context:
+            "Pick one birthday gift for a music-loving friend with sensitive skin and a small apartment.",
+          history: [
+            {
+              item_id: "beauty_201",
+              item_name: "Fragrance-Free Daily Gel",
+              rating: 5,
+              review: "Gentle on sensitive skin, fragrance free, and easy to use every morning.",
+              category: "beauty"
+            },
+            {
+              item_id: "book_118",
+              item_name: "Focused Evenings",
+              rating: 4,
+              review: "Useful and practical for building calmer habits after work.",
+              category: "books"
+            },
+            {
+              item_id: "music_077",
+              item_name: "Acoustic Lagos Sessions",
+              rating: 5,
+              review: "Relaxing guitar, warm vocals, and good background music for reading.",
+              category: "music"
+            }
+          ],
+          candidateItems: [
+            {
+              item_id: "gift_301",
+              name: "SoftTone Mini Speaker",
+              category: "music",
+              metadata: { price: "medium", noise_profile: "warm", apartment_friendly: true, review_count: 520 },
+              summary:
+                "Compact music gift tuned for warm vocals, acoustic playlists, gentle bass, and small-room listening.",
+              average_rating: 4.8
+            },
+            {
+              item_id: "beauty_225",
+              name: "Fragrance-Free Hand Cream",
+              category: "beauty",
+              metadata: { fragrance: "none", skin_type: "sensitive", review_count: 46 },
+              summary: "Unscented hand cream for sensitive skin with a simple travel-size tube.",
+              average_rating: 4.0
+            },
+            {
+              item_id: "music_144",
+              name: "Rainy Evening Vinyl",
+              category: "music",
+              metadata: { mood: "calm", format: "vinyl", review_count: 88 },
+              summary: "A calm acoustic record with soft guitar arrangements and minimal percussion.",
+              average_rating: 4.7
+            },
+            {
+              item_id: "home_044",
+              name: "Quiet Reading Lamp",
+              category: "home",
+              metadata: { price: "low", apartment_friendly: true, review_count: 77 },
+              summary: "Small desk lamp with warm light, low heat, and a stable base for reading corners.",
+              average_rating: 4.2
+            }
+          ]
+        },
+        review: {
+          mode: "review",
+          persona:
+            "A strict but fair buyer who rewards durable products, quiet operation, and clear value. They punish hype, flimsy materials, and weak after-sales support.",
+          history: [
+            {
+              item_id: "fan_001",
+              item_name: "Dorm Quiet Fan",
+              rating: 5,
+              review: "Quiet enough for night study, sturdy for the price, and simple to clean.",
+              category: "appliance"
+            },
+            {
+              item_id: "speaker_002",
+              item_name: "Boom Mini Speaker",
+              rating: 2,
+              review: "Too loud in a harsh way, battery faded quickly, and support was unhelpful.",
+              category: "electronics"
+            }
+          ],
+          targetItem: {
+            item_id: "fan_220",
+            name: "BreezeLite Desk Fan",
+            category: "appliance",
+            metadata: {
+              price: "medium",
+              noise_level: "quiet",
+              warranty: "12 months",
+              build: "metal stand",
+              review_count: 146
+            },
+            summary:
+              "Compact desk fan with quiet night mode, metal stand, washable grille, and a 12-month warranty.",
+            average_rating: 4.3
+          }
         }
-        document.getElementById("form-title").textContent =
-          tab === "review" ? "Review Simulation" : tab === "recommend" ? "Recommendation" : "Runtime Metrics";
+      };
+
+      const state = {
+        mode: "recommend",
+        scenario: "cold",
+        lastRaw: null
+      };
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
       }
 
-      document.getElementById("tab-review").onclick = () => setTab("review");
-      document.getElementById("tab-recommend").onclick = () => setTab("recommend");
-      document.getElementById("tab-metrics").onclick = () => setTab("metrics");
+      function pretty(value) {
+        return JSON.stringify(value, null, 2);
+      }
+
+      function parseJsonField(id, fallback) {
+        const value = $(id).value.trim();
+        if (!value && fallback !== undefined) {
+          return fallback;
+        }
+        try {
+          return JSON.parse(value);
+        } catch (error) {
+          throw new Error(`${id} is not valid JSON: ${error.message}`);
+        }
+      }
 
       async function api(path, payload) {
         const options = payload
-          ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
+          ? {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            }
           : {};
         const response = await fetch(path, options);
         const data = await response.json();
-        if (!response.ok) throw new Error(JSON.stringify(data));
+        if (!response.ok) {
+          throw new Error(data.detail ? pretty(data.detail) : pretty(data));
+        }
         return data;
       }
 
-      function parseJson(id) {
-        return JSON.parse(document.getElementById(id).value);
-      }
-
-      function render(data, text) {
-        summary.className = "summary";
-        summary.textContent = text;
-        output.textContent = JSON.stringify(data, null, 2);
-      }
-
-      function renderError(error) {
-        summary.className = "summary error";
-        summary.textContent = error.message;
-      }
-
-      async function simulateReview() {
-        try {
-          const data = await api("/api/simulate-review", {
-            user_persona: document.getElementById("review-persona").value,
-            user_history: parseJson("review-history"),
-            target_item: parseJson("target-item"),
-            locale: "Nigeria",
-          });
-          render(data, `${data.predicted_rating}/5 - ${data.review}`);
-        } catch (error) {
-          renderError(error);
+      function setMode(mode) {
+        state.mode = mode;
+        for (const button of document.querySelectorAll("[data-mode]")) {
+          button.classList.toggle("active", button.dataset.mode === mode);
+          button.setAttribute("aria-selected", String(button.dataset.mode === mode));
         }
+
+        const isRecommend = mode === "recommend";
+        const isReview = mode === "review";
+        $("request-fields").hidden = mode === "runtime";
+        $("context-field").hidden = !isRecommend;
+        $("candidate-field").hidden = !isRecommend;
+        $("target-field").hidden = !isReview;
+        $("profile-button").disabled = mode === "runtime";
+
+        $("input-title").textContent =
+          mode === "recommend" ? "Task B Recommendation" : mode === "review" ? "Task A Review Simulation" : "Runtime Trace";
+        $("input-subtitle").textContent =
+          mode === "recommend"
+            ? "Cold-start and cross-domain examples use the same ranking endpoint."
+            : mode === "review"
+              ? "Rating prediction and review generation share the user profile evidence."
+              : "Trace and metric records from the local FastAPI process.";
+        $("endpoint-pill").textContent =
+          mode === "recommend" ? "POST /api/recommend" : mode === "review" ? "POST /api/simulate-review" : "GET /api/metrics";
+        $("run-button").textContent =
+          mode === "recommend" ? "Run Task B" : mode === "review" ? "Run Task A" : "Refresh Runtime";
+        $("result-title").textContent =
+          mode === "recommend" ? "Recommendation Output" : mode === "review" ? "Review Simulation Output" : "Runtime Output";
+        $("result-subtitle").textContent =
+          mode === "recommend"
+            ? "Ranked products, explanations, source signals, and trace steps."
+            : mode === "review"
+              ? "Predicted rating, generated review, validation, and trace steps."
+              : "Aggregate metrics and recent request traces.";
+        $("primary-title").textContent =
+          mode === "recommend" ? "Products" : mode === "review" ? "Generated Review" : "Recent Requests";
       }
 
-      async function recommend() {
-        try {
-          const data = await api("/api/recommend", {
-            user_persona: document.getElementById("recommend-persona").value,
-            user_history: parseJson("recommend-history"),
-            context: document.getElementById("recommend-context").value,
-            candidate_items: parseJson("candidate-items"),
-            locale: "Nigeria",
-            limit: 5,
-          });
-          const top = data.recommendations[0];
-          const sources = data.candidate_diagnostics
-            ? Object.entries(data.candidate_diagnostics.source_counts)
-                .map(([name, count]) => `${name}: ${count}`)
-                .join(", ")
-            : "";
-          render(
-            data,
-            top
-              ? `#1 ${top.name} (${top.score}) - ${top.reason}${sources ? ` Sources: ${sources}` : ""}`
-              : "No recommendations returned.",
-          );
-        } catch (error) {
-          renderError(error);
+      function loadScenario(name) {
+        const example = examples[name];
+        state.scenario = name;
+        setMode(example.mode);
+
+        for (const button of document.querySelectorAll("[data-scenario]")) {
+          button.classList.toggle("active", button.dataset.scenario === name);
         }
+
+        $("persona").value = example.persona || "";
+        $("context").value = example.context || "";
+        $("history").value = pretty(example.history || []);
+        $("candidate-items").value = pretty(example.candidateItems || []);
+        $("target-item").value = pretty(example.targetItem || {});
+        renderIdle(example.mode, name);
+      }
+
+      function setLoading(label) {
+        $("run-button").disabled = true;
+        $("profile-button").disabled = true;
+        $("trace-button").disabled = true;
+        $("primary-output").className = "empty";
+        $("primary-output").textContent = label;
+        $("evidence-output").innerHTML = "";
+        $("trace-output").innerHTML = "";
+      }
+
+      function clearLoading() {
+        $("run-button").disabled = false;
+        $("profile-button").disabled = state.mode === "runtime";
+        $("trace-button").disabled = false;
+      }
+
+      function setRaw(payload) {
+        state.lastRaw = payload;
+        $("raw-output").textContent = pretty(payload || {});
+      }
+
+      function renderIdle(mode, scenario) {
+        const scenarioLabel = {
+          cold: "Cold-start Dinner",
+          cross: "Cross-domain Gift",
+          review: "Strict Reviewer"
+        }[scenario];
+        $("kpi-grid").innerHTML = renderKpis([
+          ["Mode", mode === "recommend" ? "Task B" : "Task A"],
+          ["Scenario", scenarioLabel],
+          ["Endpoint", mode === "recommend" ? "/api/recommend" : "/api/simulate-review"],
+          ["Status", "Ready"]
+        ]);
+        $("result-count").textContent = "0 results";
+        $("evidence-status").textContent = "Waiting";
+        $("trace-count").textContent = "0 steps";
+        $("trace-pill").textContent = "No trace yet";
+        $("primary-output").className = "empty";
+        $("primary-output").textContent = "Run the active task to populate this panel.";
+        $("evidence-output").innerHTML = "";
+        $("trace-output").innerHTML = "";
+        setRaw({});
+      }
+
+      function renderKpis(items) {
+        return items
+          .map(
+            ([label, value]) => `
+              <div class="kpi">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function chip(value, type = "") {
+        return `<span class="chip ${type}">${escapeHtml(value)}</span>`;
+      }
+
+      function chipList(values, type = "", empty = "None recorded") {
+        const list = Array.isArray(values) ? values.filter(Boolean) : [];
+        if (!list.length) {
+          return `<p>${escapeHtml(empty)}</p>`;
+        }
+        return `<div class="chip-row">${list.map((value) => chip(value, type)).join("")}</div>`;
+      }
+
+      function sourceCounts(counts) {
+        const entries = Object.entries(counts || {});
+        if (!entries.length) {
+          return "<p>No retrieval source counts returned.</p>";
+        }
+        return `<div class="chip-row">${entries.map(([name, count]) => chip(`${name}: ${count}`, "source")).join("")}</div>`;
+      }
+
+      function componentRows(components) {
+        const entries = Object.entries(components || {})
+          .filter(([, value]) => Number.isFinite(Number(value)))
+          .sort((a, b) => Number(b[1]) - Number(a[1]));
+        if (!entries.length) {
+          return "";
+        }
+        return `
+          <div class="component-list">
+            ${entries
+              .map(([name, value]) => {
+                const numeric = Math.max(0, Math.min(1, Number(value)));
+                return `
+                  <div class="component">
+                    <span>${escapeHtml(name)}</span>
+                    <div class="bar"><span style="width: ${numeric * 100}%"></span></div>
+                    <strong>${numeric.toFixed(2)}</strong>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        `;
+      }
+
+      function renderTrace(steps) {
+        const traceSteps = Array.isArray(steps) ? steps : [];
+        $("trace-count").textContent = `${traceSteps.length} steps`;
+        if (!traceSteps.length) {
+          $("trace-output").innerHTML = '<li class="empty">No trace steps returned.</li>';
+          return;
+        }
+        $("trace-output").innerHTML = traceSteps
+          .map(
+            (step) => `
+              <li class="trace-step">
+                <strong>${escapeHtml(step.status || "status")}</strong>
+                <span><b>${escapeHtml(step.step || "step")}</b><br />${escapeHtml(step.detail || "")}</span>
+              </li>
+            `
+          )
+          .join("");
+      }
+
+      function renderProfile(profile) {
+        if (!profile) {
+          return `
+            <div class="evidence-box">
+              <h4>User Profile</h4>
+              <p>No profile preview returned.</p>
+            </div>
+          `;
+        }
+        const affinities = Object.entries(profile.category_affinity || {})
+          .sort((a, b) => Number(b[1]) - Number(a[1]))
+          .slice(0, 5)
+          .map(([name, value]) => `${name}: ${Number(value).toFixed(2)}`);
+        return `
+          <div class="evidence-box">
+            <h4>User Profile</h4>
+            <p>Confidence ${Number(profile.confidence || 0).toFixed(2)} from ${profile.evidence_count || 0} evidence items.</p>
+            ${chipList(profile.signals || [], "signal", "No profile signals returned.")}
+          </div>
+          <div class="evidence-box">
+            <h4>Preference Terms</h4>
+            ${chipList([...(profile.preferred_terms || []), ...(profile.positive_aspects || [])].slice(0, 10))}
+          </div>
+          <div class="evidence-box">
+            <h4>Category Affinity</h4>
+            ${chipList(affinities)}
+          </div>
+        `;
+      }
+
+      function recommendationPayload() {
+        return {
+          user_persona: $("persona").value,
+          user_history: parseJsonField("history", []),
+          context: $("context").value,
+          candidate_items: parseJsonField("candidate-items", []),
+          locale: "Nigeria",
+          limit: 5
+        };
+      }
+
+      function reviewPayload() {
+        return {
+          user_persona: $("persona").value,
+          user_history: parseJsonField("history", []),
+          target_item: parseJsonField("target-item", {}),
+          locale: "Nigeria"
+        };
+      }
+
+      function profilePayload(history) {
+        return {
+          user_persona: $("persona").value,
+          user_history: history,
+          locale: "Nigeria"
+        };
+      }
+
+      async function runRecommendation() {
+        const payload = recommendationPayload();
+        setLoading("Ranking candidates and generating explanations...");
+        const [profileResult, data] = await Promise.all([
+          api("/api/profile-user", profilePayload(payload.user_history)),
+          api("/api/recommend", payload)
+        ]);
+        renderRecommendation(data, profileResult.profile);
+      }
+
+      async function runReview() {
+        const payload = reviewPayload();
+        setLoading("Predicting rating, generating review, and validating consistency...");
+        const [profileResult, data] = await Promise.all([
+          api("/api/profile-user", profilePayload(payload.user_history)),
+          api("/api/simulate-review", payload)
+        ]);
+        renderReview(data, profileResult.profile);
+      }
+
+      function renderRecommendation(data, profile) {
+        const recommendations = data.recommendations || [];
+        const top = recommendations[0];
+        const diagnostics = data.candidate_diagnostics || {};
+        $("trace-pill").textContent = data.trace_id ? `trace ${data.trace_id}` : "No trace id";
+        $("result-count").textContent = `${recommendations.length} products`;
+        $("evidence-status").textContent = diagnostics.strategy || "returned";
+        $("kpi-grid").innerHTML = renderKpis([
+          ["Top score", top ? Number(top.score || 0).toFixed(2) : "n/a"],
+          ["Strategy", diagnostics.strategy || "n/a"],
+          ["Candidates", `${diagnostics.candidate_count || 0}/${diagnostics.input_count || 0}`],
+          ["Sources", Object.keys(diagnostics.source_counts || {}).length || "n/a"]
+        ]);
+
+        $("primary-output").className = "reco-list";
+        $("primary-output").innerHTML = recommendations.length
+          ? recommendations
+              .map(
+                (item) => `
+                  <article class="reco-card">
+                    <div class="reco-head">
+                      <div class="rank-name">
+                        <div class="rank">#${escapeHtml(item.rank)}</div>
+                        <div>
+                          <h3>${escapeHtml(item.name)}</h3>
+                          <div class="chip-row">
+                            ${(item.candidate_sources || []).map((source) => chip(source, "source")).join("")}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="score">${Number(item.score || 0).toFixed(2)}</div>
+                    </div>
+                    <p class="reason">${escapeHtml(item.reason)}</p>
+                    <p class="tradeoff"><b>Tradeoff:</b> ${escapeHtml(item.tradeoffs || "No major tradeoff returned.")}</p>
+                    ${chipList([...(item.matched_signals || []), ...(item.signals || [])].slice(0, 8), "signal")}
+                    ${componentRows(item.score_components)}
+                  </article>
+                `
+              )
+              .join("")
+          : '<div class="empty">No recommendations returned.</div>';
+
+        $("evidence-output").innerHTML = `
+          ${renderProfile(profile)}
+          <div class="evidence-box">
+            <h4>Candidate Sources</h4>
+            ${sourceCounts(diagnostics.source_counts)}
+          </div>
+          <div class="evidence-box">
+            <h4>Retrieval Scores</h4>
+            ${top ? sourceCounts(top.retrieval_scores) : "<p>No top candidate yet.</p>"}
+          </div>
+        `;
+        renderTrace(data.agent_trace || []);
+        setRaw(data);
+      }
+
+      function renderReview(data, profile) {
+        $("trace-pill").textContent = data.trace_id ? `trace ${data.trace_id}` : "No trace id";
+        $("result-count").textContent = "1 review";
+        $("evidence-status").textContent = data.validation && data.validation.is_consistent ? "validated" : "warning";
+        $("kpi-grid").innerHTML = renderKpis([
+          ["Predicted rating", `${data.predicted_rating}/5`],
+          ["Score", data.predicted_score ? Number(data.predicted_score).toFixed(2) : "n/a"],
+          ["Confidence", Number(data.confidence || 0).toFixed(2)],
+          ["Model", data.model_name || "default"]
+        ]);
+
+        $("primary-output").className = "review-card";
+        $("primary-output").innerHTML = `
+          <h3>Generated customer review</h3>
+          <p class="review-body">${escapeHtml(data.review || "")}</p>
+          <div class="chip-row">
+            ${chip(`validation: ${data.validation && data.validation.is_consistent ? "ok" : "warning"}`, data.validation && data.validation.is_consistent ? "signal" : "")}
+            ${chip(`trace: ${data.trace_id || "none"}`)}
+          </div>
+        `;
+
+        const issues = data.validation && data.validation.issues ? data.validation.issues : [];
+        $("evidence-output").innerHTML = `
+          ${renderProfile(profile)}
+          <div class="evidence-box">
+            <h4>User Signals</h4>
+            ${chipList(data.user_signals || [], "signal")}
+          </div>
+          <div class="evidence-box">
+            <h4>Item Signals</h4>
+            ${chipList(data.item_signals || [])}
+          </div>
+          <div class="evidence-box ${issues.length ? "error" : ""}">
+            <h4>Validation</h4>
+            ${issues.length ? chipList(issues) : "<p>No consistency issues returned.</p>"}
+          </div>
+        `;
+        renderTrace(data.agent_trace || []);
+        setRaw(data);
+      }
+
+      function renderMetrics(metrics, traces) {
+        $("trace-pill").textContent = `${traces.length} recent traces`;
+        $("result-count").textContent = `${traces.length} traces`;
+        $("evidence-status").textContent = "runtime";
+        $("kpi-grid").innerHTML = renderKpis([
+          ["Requests", metrics.requests || 0],
+          ["Avg latency", `${Number(metrics.average_latency_ms || 0).toFixed(1)} ms`],
+          ["Fallback rate", Number(metrics.fallback_rate || 0).toFixed(2)],
+          ["Validation failures", metrics.validation_failures || 0]
+        ]);
+
+        $("primary-output").className = "reco-list";
+        $("primary-output").innerHTML = traces.length
+          ? traces
+              .map(
+                (trace) => `
+                  <article class="metric-card">
+                    <div class="reco-head">
+                      <div>
+                        <h3>${escapeHtml(trace.endpoint)}</h3>
+                        <p class="tradeoff">${escapeHtml(trace.created_at)} - ${Number(trace.latency_ms || 0).toFixed(1)} ms</p>
+                      </div>
+                      <span class="pill">${escapeHtml(trace.validation_status || "unknown")}</span>
+                    </div>
+                    <div class="chip-row">
+                      ${chip(`provider: ${trace.generation_provider || "unknown"}`)}
+                      ${chip(`tokens: ${trace.estimated_generation_tokens || 0}`)}
+                      ${chip(`trace: ${trace.trace_id || "none"}`)}
+                    </div>
+                  </article>
+                `
+              )
+              .join("")
+          : '<div class="empty">No request traces recorded yet.</div>';
+
+        $("evidence-output").innerHTML = `
+          <div class="evidence-box">
+            <h4>Endpoint Mix</h4>
+            ${sourceCounts(metrics.by_endpoint)}
+          </div>
+          <div class="evidence-box">
+            <h4>Retrieval Source Counts</h4>
+            ${sourceCounts(metrics.retrieval_source_counts)}
+          </div>
+          <div class="evidence-box">
+            <h4>Model Versions</h4>
+            ${sourceCounts(metrics.model_version_counts)}
+          </div>
+        `;
+        renderTrace(traces[0] ? traces[0].steps : []);
+        setRaw({ metrics, traces });
       }
 
       async function loadMetrics() {
+        setMode("runtime");
+        setLoading("Loading runtime metrics and recent traces...");
+        const [metrics, traces] = await Promise.all([api("/api/metrics"), api("/api/traces?limit=8")]);
+        renderMetrics(metrics, traces);
+      }
+
+      async function previewProfile() {
+        const history = parseJsonField("history", []);
+        setLoading("Profiling user evidence...");
+        const data = await api("/api/profile-user", profilePayload(history));
+        $("trace-pill").textContent = "profile preview";
+        $("result-count").textContent = "1 profile";
+        $("evidence-status").textContent = "profiled";
+        $("kpi-grid").innerHTML = renderKpis([
+          ["Evidence items", data.profile.evidence_count || 0],
+          ["Confidence", Number(data.profile.confidence || 0).toFixed(2)],
+          ["Strictness", data.profile.rating_strictness || "n/a"],
+          ["Avg rating", Number(data.profile.average_rating || 0).toFixed(2)]
+        ]);
+        $("primary-output").className = "review-card";
+        $("primary-output").innerHTML = `
+          <h3>User intelligence profile</h3>
+          ${chipList(data.profile.signals || [], "signal")}
+        `;
+        $("evidence-output").innerHTML = renderProfile(data.profile);
+        renderTrace([{ step: "profile_user", status: "ok", detail: "Profile preview generated from current persona and history." }]);
+        setRaw(data);
+      }
+
+      async function runActive() {
         try {
-          const [metrics, traces] = await Promise.all([api("/api/metrics"), api("/api/traces?limit=5")]);
-          render({ metrics, traces }, `${metrics.requests} traced requests, ${metrics.average_latency_ms} ms average latency`);
+          if (state.mode === "recommend") {
+            await runRecommendation();
+          } else if (state.mode === "review") {
+            await runReview();
+          } else {
+            await loadMetrics();
+          }
         } catch (error) {
           renderError(error);
+        } finally {
+          clearLoading();
         }
       }
 
-      api("/api/health")
-        .then(() => {
-          document.getElementById("health").textContent = "API healthy";
-        })
-        .catch(() => {
-          document.getElementById("health").textContent = "API unavailable";
+      function renderError(error) {
+        $("primary-output").className = "empty error";
+        $("primary-output").textContent = error.message || String(error);
+        $("evidence-output").innerHTML = "";
+        $("trace-output").innerHTML = "";
+        $("trace-count").textContent = "0 steps";
+        setRaw({ error: error.message || String(error) });
+      }
+
+      async function checkHealth() {
+        try {
+          await api("/api/health");
+          $("health").textContent = "API healthy";
+          $("health-dot").className = "dot ok";
+        } catch (error) {
+          $("health").textContent = "API unavailable";
+          $("health-dot").className = "dot bad";
+        }
+      }
+
+      for (const button of document.querySelectorAll("[data-mode]")) {
+        button.addEventListener("click", () => {
+          const nextMode = button.dataset.mode;
+          if (nextMode === "review" && state.mode !== "review") {
+            loadScenario("review");
+            return;
+          }
+          if (nextMode === "recommend" && state.mode !== "recommend" && state.scenario === "review") {
+            loadScenario("cold");
+            return;
+          }
+          setMode(nextMode);
+          if (nextMode === "runtime") {
+            loadMetrics().catch((error) => {
+              renderError(error);
+              clearLoading();
+            });
+          }
         });
+      }
+
+      for (const button of document.querySelectorAll("[data-scenario]")) {
+        button.addEventListener("click", () => loadScenario(button.dataset.scenario));
+      }
+
+      $("run-button").addEventListener("click", runActive);
+      $("profile-button").addEventListener("click", () => {
+        previewProfile()
+          .catch(renderError)
+          .finally(clearLoading);
+      });
+      $("trace-button").addEventListener("click", () => {
+        loadMetrics()
+          .catch(renderError)
+          .finally(clearLoading);
+      });
+      $("header-refresh").addEventListener("click", () => {
+        loadMetrics()
+          .catch(renderError)
+          .finally(clearLoading);
+      });
+
+      loadScenario("cold");
+      checkHealth();
     </script>
   </body>
 </html>
