@@ -12,7 +12,7 @@ from threading import RLock
 from typing import Any, Callable
 
 from app.models.schemas import RecommendationItem, UserProfile
-from app.stores.trace_store import runtime_db_path
+from app.stores.trace_store import runtime_database_url, runtime_db_path
 
 
 @dataclass
@@ -185,18 +185,26 @@ class ConversationState:
 
 
 class ConversationManager:
-    """SQLite-backed multi-turn conversation state store."""
+    """Persistent multi-turn conversation state store."""
 
     _instance: ConversationManager | None = None
     _max_conversations: int = 1000
 
     def __new__(cls) -> "ConversationManager":
-        db_path = _conversation_db_path()
-        if cls._instance is None or getattr(cls._instance, "_db_path", None) != db_path:
+        config = _conversation_store_config()
+        if cls._instance is None or getattr(cls._instance, "_store_config", None) != config:
             cls._instance = super().__new__(cls)
-            cls._instance._db_path = db_path
+            cls._instance._store_config = config
+            cls._instance._backend = config[0]
+            cls._instance._db_path = Path(config[1]) if config[0] == "sqlite" else None
+            cls._instance._database_url = config[1] if config[0] == "postgres" else ""
+            cls._instance._placeholder = "%s" if config[0] == "postgres" else "?"
+            cls._instance._psycopg = None
+            cls._instance._row_factory = None
             cls._instance._conversations = OrderedDict()
             cls._instance._lock = RLock()
+            if config[0] == "postgres":
+                cls._instance._psycopg, cls._instance._row_factory = _load_psycopg()
             cls._instance._init_db()
             cls._instance._load_conversations()
         return cls._instance
@@ -240,7 +248,7 @@ class ConversationManager:
             if deleted:
                 with self._connect() as conn:
                     conn.execute(
-                        "DELETE FROM conversations WHERE conversation_id = ?",
+                        f"DELETE FROM conversations WHERE conversation_id = {self._placeholder}",
                         (conversation_id,),
                     )
             return deleted
@@ -259,15 +267,17 @@ class ConversationManager:
             conversation_id, _ = self._conversations.popitem(last=False)
             with self._connect() as conn:
                 conn.execute(
-                    "DELETE FROM conversations WHERE conversation_id = ?",
+                    f"DELETE FROM conversations WHERE conversation_id = {self._placeholder}",
                     (conversation_id,),
                 )
 
     def _init_db(self) -> None:
-        self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        if self._backend == "sqlite" and self._db_path is not None:
+            self._db_path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
+            if self._backend == "sqlite":
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS conversations (
@@ -287,12 +297,13 @@ class ConversationManager:
 
     def _load_conversations(self) -> None:
         with self._connect() as conn:
-            rows = conn.execute(
-                """
+            query = f"""
                 SELECT payload FROM conversations
                 ORDER BY last_updated ASC
-                LIMIT ?
-                """,
+                LIMIT {self._placeholder}
+                """
+            rows = conn.execute(
+                query,
                 (self._max_conversations,),
             ).fetchall()
         for row in rows:
@@ -309,9 +320,14 @@ class ConversationManager:
         payload = json.dumps(state.to_payload(), ensure_ascii=True)
         with self._lock, self._connect() as conn:
             conn.execute(
-                """
+                f"""
                 INSERT INTO conversations(conversation_id, created_at, last_updated, payload)
-                VALUES (?, ?, ?, ?)
+                VALUES (
+                    {self._placeholder},
+                    {self._placeholder},
+                    {self._placeholder},
+                    {self._placeholder}
+                )
                 ON CONFLICT(conversation_id) DO UPDATE SET
                     last_updated = excluded.last_updated,
                     payload = excluded.payload
@@ -319,7 +335,9 @@ class ConversationManager:
                 (state.conversation_id, state.created_at, state.last_updated, payload),
             )
 
-    def _connect(self) -> sqlite3.Connection:
+    def _connect(self) -> Any:
+        if self._backend == "postgres":
+            return self._psycopg.connect(self._database_url, row_factory=self._row_factory)
         conn = sqlite3.connect(self._db_path, timeout=10)
         conn.row_factory = sqlite3.Row
         return conn
@@ -327,6 +345,25 @@ class ConversationManager:
 
 def _conversation_db_path() -> Path:
     return Path(os.getenv("BLUECHIP_CONVERSATION_SQLITE_PATH") or runtime_db_path())
+
+
+def _conversation_store_config() -> tuple[str, str]:
+    database_url = runtime_database_url()
+    if database_url.lower().startswith(("postgres://", "postgresql://")):
+        return ("postgres", database_url)
+    return ("sqlite", str(_conversation_db_path()))
+
+
+def _load_psycopg() -> tuple[Any, Any]:
+    try:
+        import psycopg
+        from psycopg.rows import dict_row
+    except ImportError as exc:
+        raise RuntimeError(
+            "DATABASE_URL is set to Postgres, but psycopg is not installed. "
+            "Install the project dependencies or unset DATABASE_URL to use SQLite."
+        ) from exc
+    return psycopg, dict_row
 
 
 def get_conversation_manager() -> ConversationManager:

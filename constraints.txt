@@ -4,6 +4,8 @@ pydantic==2.13.4
 sentence-transformers==5.5.1
 faiss-cpu==1.13.2
 numpy==2.4.6
+psycopg==3.2.13
+psycopg-binary==3.2.13
 httpx==0.28.1
 pytest==9.0.3
 ruff==0.15.14

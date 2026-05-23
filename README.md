@@ -169,11 +169,11 @@ OPENROUTER_MODEL=deepseek/deepseek-v4-flash:free
 OPENROUTER_API_KEY=...
 BLUECHIP_PROFILE_ENHANCER=true
 BLUECHIP_ALLOW_MODEL_DOWNLOAD=false
-BLUECHIP_RUNTIME_DB_PATH=/var/data/bluechip_runtime.sqlite
+DATABASE_URL=postgresql://...
 BLUECHIP_RATE_LIMIT_ENABLED=true
 ```
 
-The Render Blueprint uses a paid `starter` web service with a 1GB persistent disk at `/var/data`. That disk is where SQLite-backed traces and conversations live. The Dockerfile binds to `${PORT:-8000}`, so it works locally and on hosts that inject `PORT`.
+The Render Blueprint uses the free web plan and expects an external Postgres URL for durable traces and conversations. Neon works well for this path: create a Neon database, copy its connection string, and set it as `DATABASE_URL` in Render. If `DATABASE_URL` is not set, the app falls back to local SQLite, which is fine locally but ephemeral on free hosting. The Dockerfile binds to `${PORT:-8000}`, so it works locally and on hosts that inject `PORT`.
 
 Build or refresh the lean artifact bundle before committing a deploy:
 
@@ -189,7 +189,7 @@ Before sharing a free-tier deployment, warm the service once:
 python tests/api_smoke.py --base-url https://your-host.example
 ```
 
-Free-tier instances can sleep and do not give the same persistent-disk posture. For live judging, keep the Blueprint on the paid `starter` plan, then prewarm with the smoke test.
+Free-tier instances can sleep. For live judging, prewarm with the smoke test and keep `DATABASE_URL` configured so conversation state and traces survive container restarts.
 
 ## Environment
 

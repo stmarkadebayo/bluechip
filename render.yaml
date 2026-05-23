@@ -2,13 +2,9 @@ services:
   - type: web
     name: bluechip-user-intelligence-agent
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
-    disk:
-      name: bluechip-runtime
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: APP_ENV
         value: production
@@ -24,8 +20,8 @@ services:
         value: "true"
       - key: BLUECHIP_ALLOW_MODEL_DOWNLOAD
         value: "false"
-      - key: BLUECHIP_RUNTIME_DB_PATH
-        value: /var/data/bluechip_runtime.sqlite
+      - key: DATABASE_URL
+        sync: false
       - key: BLUECHIP_RATE_LIMIT_ENABLED
         value: "true"
       - key: BLUECHIP_RATE_LIMIT_REQUESTS
