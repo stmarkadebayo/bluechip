@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: bluechip-user-intelligence-agent
+    name: bluechip-marvid
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
