@@ -77,6 +77,16 @@ Required diagnostics:
 - sparse, medium, warm user slices
 - cross-domain slice
 - candidate recall by slice
+- target mode: `all_interactions` versus `positive_recommendation`
+
+Latest diagnostic fast proof, 24 May 2026:
+
+| Target mode | Rows | Recall@50 | Recall@100 | Recall@1000 | Sparse Recall@1000 | Cross-domain Recall@1000 | Use |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `all_interactions` | `93538` | `0.1302` | `0.1589` | `0.362` | `0.3603` | `0.5752` | Mixed result; improves broad recall and cross-domain but regresses Recall@100. |
+| `positive_recommendation` | `73699` | `0.151` | `0.1823` | `0.3986` | `0.3973` | `0.6081` | Passes candidate-recall gates; ranker metrics still required. |
+
+Reporting rule: Task B target mode must be named whenever reporting retrieval or ranking metrics. Candidate-recall-only reports cannot be used as final ranking promotions because they do not measure `hybrid_ranker_hit_rate@10` or `hybrid_ranker_ndcg@10`.
 
 ## Evidence Intelligence Layer
 

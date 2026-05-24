@@ -56,6 +56,7 @@ Acceptance bar:
 - The current bounded all-category ranking snapshot is HitRate@10 `0.10` and NDCG@10 `0.0766`; use same-slice comparisons before promoting.
 - Candidate recall should be reported at @50, @100, and @1000. Current snapshot: `0.13`, `0.18`, and `0.34`.
 - Sparse and cross-domain candidate recall must be reported. Current snapshot: sparse@1000 `0.3611`, cross-domain@1000 `0.5484`.
+- Task B reports must name the target mode. The 24 May positive-recommendation candidate-only proof passed retrieval gates at Recall@50 `0.151`, Recall@100 `0.1823`, Recall@1000 `0.3986`, sparse@1000 `0.3973`, and cross-domain@1000 `0.6081`, but it is not a ranking promotion until same-target HitRate@10 and NDCG@10 are rerun.
 
 Guardrails:
 - Seen-item filtering must remain enabled unless an eval explicitly requires repeat-item prediction.
