@@ -11,6 +11,7 @@ from app.services.ranking.rating_features import (
     build_rating_stats,
     predict_adaptive_star_rating,
     predict_calibrated_rating,
+    rating_features,
     shrinkage_mean,
 )
 from app.services.ranking.task_a_model import TaskARatingModel, fit_linear_rating_model, load_task_a_model
@@ -56,6 +57,44 @@ def test_calibrated_rating_uses_user_item_and_category_priors() -> None:
     predicted = predict_calibrated_rating(user_profile, item_profile, stats=stats, user_id="u1")
 
     assert predicted > stats.global_mean
+
+
+def test_rating_features_include_shrunk_bias_baseline() -> None:
+    train = [
+        {"user_id": "u1", "item_id": "liked", "category": "books", "rating": 5},
+        {"user_id": "u1", "item_id": "liked", "category": "books", "rating": 5},
+        {"user_id": "u2", "item_id": "liked", "category": "books", "rating": 4},
+        {"user_id": "u3", "item_id": "other", "category": "tools", "rating": 1},
+    ]
+    stats = build_rating_stats(train)
+    user_profile = build_user_profile(
+        persona="A reader who likes useful books.",
+        history=[
+            UserHistoryItem(
+                item_id="old",
+                item_name="Old Book",
+                rating=5,
+                review="Useful and clear.",
+                category="books",
+            )
+        ],
+    )
+    item_profile = build_item_profile(
+        Item(
+            item_id="liked",
+            name="Known Book",
+            category="books",
+            summary="Useful book.",
+            average_rating=4.0,
+            metadata={"review_count": 3},
+        )
+    )
+
+    features = rating_features(user_profile, item_profile, stats=stats, user_id="u1")
+
+    assert features["bias_baseline_prior"] > stats.global_mean
+    assert 0.0 < features["user_reliability"] < 1.0
+    assert 0.0 < features["item_reliability"] < 1.0
 
 
 def test_dislike_match_lowers_calibrated_rating() -> None:
@@ -172,6 +211,27 @@ def test_rmse_ensemble_promotes_best_validation_component(tmp_path) -> None:
 
     assert loaded is not None
     assert loaded.metadata["name"] == "flat_rmse_ensemble"
+
+
+def test_rmse_ensemble_can_promote_bias_baseline_component() -> None:
+    model = fit_linear_rating_model(
+        [
+            ({"x": 0.0}, 3.0),
+            ({"x": 1.0}, 3.0),
+        ],
+        feature_names=["x"],
+        epochs=1,
+        name="flat",
+    )
+    validation_rows = [
+        ({"x": 0.0, "bias_baseline_prior": 1.0}, 1.0),
+        ({"x": 1.0, "bias_baseline_prior": 5.0}, 5.0),
+    ]
+
+    ensemble = fit_rmse_ensemble(model, validation_rows, weight_step=0.5)
+
+    assert ensemble.weights["bias_baseline"] == 1.0
+    assert evaluate_model_rows(ensemble, validation_rows)["rmse"] == 0.0
 
 
 def test_predict_rating_can_use_runtime_model_artifact(tmp_path, monkeypatch) -> None:

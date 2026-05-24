@@ -281,6 +281,18 @@ def rating_features(
     if item_profile.category in user_profile.preferred_categories:
         category_affinity = max(category_affinity, 0.25)
 
+    user_reliability = _reliability(user_count, prior_weight=4.0)
+    item_reliability = _reliability(item_count, prior_weight=8.0)
+    category_reliability = _reliability(category_count, prior_weight=100.0)
+    user_category_reliability = _reliability(user_category_count, prior_weight=4.0)
+    bias_baseline_prior = clamp_rating(
+        global_mean
+        + (user_reliability * (user_mean - global_mean))
+        + (item_reliability * (item_mean - global_mean))
+        + (category_reliability * (category_mean - global_mean))
+        + (user_category_reliability * (user_category_mean - category_mean))
+    )
+
     return {
         "global_mean": global_mean,
         "user_prior": shrinkage_mean(user_mean, user_count, global_mean, prior_weight=4.0),
@@ -317,6 +329,11 @@ def rating_features(
         "category_global_delta": category_mean - global_mean,
         "user_category_delta": user_category_mean - category_mean,
         "item_category_delta": item_mean - category_mean,
+        "user_reliability": user_reliability,
+        "item_reliability": item_reliability,
+        "category_reliability": category_reliability,
+        "user_category_reliability": user_category_reliability,
+        "bias_baseline_prior": bias_baseline_prior,
         "quality_score": item_profile.quality_score,
         "review_length_mean": user_profile.review_length_mean,
         "rating_trend": user_profile.rating_trend,
@@ -331,6 +348,12 @@ def shrinkage_mean(mean: float, count: int, prior: float, prior_weight: float) -
 
 def clamp_rating(value: float) -> float:
     return min(max(value, 1.0), 5.0)
+
+
+def _reliability(count: int | float, prior_weight: float) -> float:
+    if count <= 0:
+        return 0.0
+    return float(count) / (float(count) + prior_weight)
 
 
 def _means(values_by_key: dict[str, list[float]]) -> dict[str, float]:

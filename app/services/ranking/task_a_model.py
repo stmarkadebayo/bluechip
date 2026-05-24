@@ -48,9 +48,16 @@ FULL_FEATURES = [
     "category_global_delta",
     "user_category_delta",
     "item_category_delta",
+    "user_reliability",
+    "item_reliability",
+    "category_reliability",
+    "user_category_reliability",
+    "bias_baseline_prior",
     "quality_score",
     "review_length_log",
     "rating_trend",
+    "bias_x_item_reliability",
+    "user_category_x_reliability",
     "preference_x_affinity",
     "dislike_x_negative_item",
     "vector_x_affinity",
@@ -160,6 +167,12 @@ class TaskARatingEnsembleModel:
             stats=stats,
             user_id=user_id,
         )
+        features = rating_features(
+            user_profile=user_profile,
+            item_profile=item_profile,
+            stats=stats,
+            user_id=user_id,
+        )
         components = {
             "trained_raw": raw,
             "trained_selected": self.model.predict(
@@ -169,6 +182,7 @@ class TaskARatingEnsembleModel:
                 user_id=user_id,
             ),
             "trained_rounded": float(round(raw)),
+            "bias_baseline": features["bias_baseline_prior"],
             "calibrated_profile": predict_calibrated_rating(
                 user_profile=user_profile,
                 item_profile=item_profile,
@@ -254,6 +268,8 @@ def model_feature_vector(
     vector_x_affinity = features["vector_match"] * features["category_affinity"]
     reliability_gap = math.log1p(features["item_count"]) - math.log1p(features["user_count"])
     user_item_prior_gap = abs(features["user_prior"] - features["item_prior"])
+    bias_x_item_reliability = features["bias_baseline_prior"] * features["item_reliability"]
+    user_category_x_reliability = features["user_category_delta"] * features["user_category_reliability"]
 
     return {
         "user_prior": features["user_prior"],
@@ -283,9 +299,16 @@ def model_feature_vector(
         "category_global_delta": features["category_global_delta"],
         "user_category_delta": features["user_category_delta"],
         "item_category_delta": features["item_category_delta"],
+        "user_reliability": features["user_reliability"],
+        "item_reliability": features["item_reliability"],
+        "category_reliability": features["category_reliability"],
+        "user_category_reliability": features["user_category_reliability"],
+        "bias_baseline_prior": features["bias_baseline_prior"],
         "quality_score": features["quality_score"],
         "review_length_log": math.log1p(features["review_length_mean"]),
         "rating_trend": features["rating_trend"],
+        "bias_x_item_reliability": bias_x_item_reliability,
+        "user_category_x_reliability": user_category_x_reliability,
         "preference_x_affinity": preference_x_affinity,
         "dislike_x_negative_item": dislike_x_negative_item,
         "vector_x_affinity": vector_x_affinity,
@@ -499,6 +522,8 @@ def ensemble_components_from_features(
         "trained_selected": _predict_from_feature_row(model, features),
         "trained_rounded": float(round(raw)),
     }
+    if "bias_baseline_prior" in features:
+        components["bias_baseline"] = clamp_rating(features["bias_baseline_prior"])
     if _has_calibrated_profile_features(features):
         components["calibrated_profile"] = calibrated_profile_from_features(features)
     if "_baseline_adaptive_star" in features:
@@ -553,7 +578,19 @@ def _available_ensemble_components(
     if not validation_rows:
         return ["trained_raw"]
     sample_components = ensemble_components_from_features(model, validation_rows[0][0])
-    return [name for name in sample_components if name in {"trained_raw", "trained_selected", "trained_rounded", "calibrated_profile", "adaptive_star"}]
+    return [
+        name
+        for name in sample_components
+        if name
+        in {
+            "trained_raw",
+            "trained_selected",
+            "trained_rounded",
+            "bias_baseline",
+            "calibrated_profile",
+            "adaptive_star",
+        }
+    ]
 
 
 def _simplex_allocations(parts: int, units: int) -> list[tuple[int, ...]]:
