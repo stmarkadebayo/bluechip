@@ -434,6 +434,13 @@
         font-weight: 520;
       }
 
+      .field-help {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+
       select,
       textarea {
         width: 100%;
@@ -473,6 +480,40 @@
 
       .button-row .primary {
         min-width: 142px;
+      }
+
+      .llm-status {
+        border: 1px solid #cde6dc;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        padding: 11px 12px;
+      }
+
+      .llm-status span,
+      .llm-status strong {
+        display: block;
+      }
+
+      .llm-status span {
+        color: var(--accent);
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .llm-status strong {
+        margin-top: 4px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 680;
+      }
+
+      .llm-status p {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.4;
       }
 
       details.drawer,
@@ -1010,6 +1051,7 @@
                 <div class="field">
                   <label for="preset">Preset <span id="preset-hint">Task A</span></label>
                   <select id="preset"></select>
+                  <p id="preset-description" class="field-help"></p>
                 </div>
 
                 <div class="field">
@@ -1041,11 +1083,12 @@
                     </div>
 
                     <div class="field">
-                      <div class="field-label">LLM profile enhancement <span>off by default</span></div>
-                      <button id="enhance-toggle" class="quiet" type="button" aria-pressed="false">
-                        Rule-based profile
-                      </button>
-                      <input id="enhance-llm" type="checkbox" hidden />
+                      <div class="llm-status">
+                        <span>LLM profile</span>
+                        <strong>Enabled for every run</strong>
+                        <p>Profile enrichment is requested for Task A and Task B; runtime fallback is recorded if no provider is configured.</p>
+                      </div>
+                      <input id="enhance-llm" type="checkbox" checked hidden />
                     </div>
                   </div>
                 </details>
@@ -1128,7 +1171,9 @@
 
       const examples = {
         review: {
-          label: "Strict reviewer",
+          label: "Strict appliance reviewer",
+          description:
+            "Task A sample: a critical buyer reviews one desk fan using past appliance and electronics behavior.",
           mode: "review",
           persona:
             "A strict but fair buyer who rewards durable products, quiet operation, and clear value. They punish hype, flimsy materials, and weak after-sales support.",
@@ -1164,8 +1209,74 @@
             average_rating: 4.3
           }
         },
+        review_food: {
+          label: "Budget dinner review",
+          description:
+            "Task A sample: a Lagos student predicts a review for one restaurant after budget and service-sensitive history.",
+          mode: "review",
+          persona:
+            "A Lagos student who likes spicy, affordable meals, quick service, and quiet corners for conversation. They dislike surprise charges and overhyped places.",
+          history: [
+            {
+              item_id: "rest_002",
+              item_name: "Pepper Rice Express",
+              rating: 5,
+              review: "Fast service, spicy rice, and no extra fee at checkout. It worked well after class.",
+              category: "restaurant"
+            },
+            {
+              item_id: "rest_009",
+              item_name: "Premium Lounge Yard",
+              rating: 2,
+              review: "Too loud, service dragged, and the final bill had extra charges I did not expect.",
+              category: "restaurant"
+            }
+          ],
+          targetItem: {
+            item_id: "rest_013",
+            name: "Quiet Spoon",
+            category: "restaurant",
+            metadata: { price: "low", ambience: "quiet", service: "steady", review_count: 64 },
+            summary: "Simple Nigerian meals, low prices, quiet side-room seating, and modest portions.",
+            average_rating: 4.0
+          }
+        },
+        review_gift: {
+          label: "Gift buyer review",
+          description:
+            "Task A sample: a cross-domain buyer reviews one compact speaker using music, book, and skin-care preference evidence.",
+          mode: "review",
+          persona:
+            "An Abuja professional who buys calm music, practical books, and gentle personal-care products. They value useful gifts, small-apartment fit, and low-friction setup.",
+          history: [
+            {
+              item_id: "music_077",
+              item_name: "Acoustic Lagos Sessions",
+              rating: 5,
+              review: "Warm vocals and gentle guitar made it easy to play while reading.",
+              category: "music"
+            },
+            {
+              item_id: "home_021",
+              item_name: "Bulky Sound Bar",
+              rating: 2,
+              review: "Good volume but too large for my shelf and annoying to set up.",
+              category: "electronics"
+            }
+          ],
+          targetItem: {
+            item_id: "gift_301",
+            name: "SoftTone Mini Speaker",
+            category: "music",
+            metadata: { price: "medium", noise_profile: "warm", apartment_friendly: true, review_count: 520 },
+            summary: "Compact music gift tuned for warm vocals, acoustic playlists, gentle bass, and small-room listening.",
+            average_rating: 4.8
+          }
+        },
         cold: {
           label: "Cold-start dinner",
+          description:
+            "Task B sample: no purchase history, so ranking depends on persona, context, item metadata, and profile enrichment.",
           mode: "recommend",
           persona:
             "A Lagos-based student on a tight budget who wants calm places, fast service, spicy food, and no surprise fees.",
@@ -1209,6 +1320,8 @@
         },
         cross: {
           label: "Cross-domain gift",
+          description:
+            "Task B sample: history comes from beauty, books, and music, then transfers those preferences into gift candidates.",
           mode: "recommend",
           persona:
             "An Abuja professional who buys gentle skin care, practical books, and calm acoustic music for focused evenings.",
@@ -1272,6 +1385,66 @@
               average_rating: 4.2
             }
           ]
+        },
+        shop: {
+          label: "Budget electronics",
+          description:
+            "Task B sample: a price-sensitive shopper ranks electronics accessories with durability and warranty tradeoffs.",
+          mode: "recommend",
+          persona:
+            "A price-sensitive buyer who wants durable electronics accessories, clear warranty terms, and practical value. They dislike flimsy builds and vague support.",
+          context:
+            "Recommend one desk accessory for a remote-work setup under a tight budget, but do not sacrifice durability.",
+          history: [
+            {
+              item_id: "stand_020",
+              item_name: "Metal Laptop Stand",
+              rating: 5,
+              review: "Stable, affordable, and the hinge still feels firm after daily use.",
+              category: "electronics"
+            },
+            {
+              item_id: "hub_018",
+              item_name: "No-name USB Hub",
+              rating: 2,
+              review: "Cheap but it heated up and one port stopped working quickly.",
+              category: "electronics"
+            }
+          ],
+          candidateItems: [
+            {
+              item_id: "desk_410",
+              name: "FlexArm Phone Stand",
+              category: "electronics",
+              metadata: { price: "low", build: "aluminum", warranty: "6 months", review_count: 141 },
+              summary: "Adjustable aluminum phone stand with rubber feet and simple hinge tension.",
+              average_rating: 4.4
+            },
+            {
+              item_id: "desk_411",
+              name: "GlowPad Desk Mat",
+              category: "home",
+              metadata: { price: "medium", build: "fabric", warranty: "none", review_count: 88 },
+              summary: "Large soft desk mat with stitched edges and a decorative light strip.",
+              average_rating: 4.2
+            },
+            {
+              item_id: "desk_412",
+              name: "PowerCube Mini Hub",
+              category: "electronics",
+              metadata: { price: "medium", build: "plastic", warranty: "12 months", review_count: 203 },
+              summary: "Compact USB hub with four ports, surge protection, and one-year warranty.",
+              average_rating: 4.5
+            },
+            {
+              item_id: "desk_413",
+              name: "Budget Clip Lamp",
+              category: "home",
+              metadata: { price: "low", build: "thin plastic", warranty: "none", review_count: 52 },
+              summary: "Low-cost clip lamp with three brightness levels and a lightweight plastic arm.",
+              average_rating: 3.8
+            }
+          ]
         }
       };
 
@@ -1324,8 +1497,8 @@
       };
 
       const presetsByMode = {
-        review: ["review"],
-        recommend: ["cold", "cross"],
+        review: ["review", "review_food", "review_gift"],
+        recommend: ["cold", "cross", "shop"],
         runtime: []
       };
 
@@ -1419,6 +1592,17 @@
         if (!options.keepOutput) renderIdle();
       }
 
+      function setPresetDescription() {
+        if (state.mode === "runtime") {
+          $("preset-description").textContent = "Runtime has no preset; it reads the latest metrics and traces.";
+          return;
+        }
+        const example = examples[state.preset];
+        $("preset-description").textContent = example
+          ? example.description
+          : "Presets are prefilled sample requests for the selected task.";
+      }
+
       function fillPresetOptions() {
         const presetIds = presetsByMode[state.mode] || [];
         $("preset").innerHTML = presetIds
@@ -1428,13 +1612,16 @@
           state.preset = presetIds[0];
         }
         if (presetIds.length) $("preset").value = state.preset;
+        setPresetDescription();
       }
 
       function loadPreset(id) {
         const example = examples[id];
         state.preset = id;
         setMode(example.mode, { keepOutput: false });
+        $("enhance-llm").checked = true;
         $("preset").value = id;
+        setPresetDescription();
         $("persona").value = example.persona || "";
         $("context").value = example.context || "";
         $("history").value = pretty(example.history || []);
@@ -1447,9 +1634,9 @@
         $("trace-pill").textContent = "No trace yet";
         setStatusItems([
           ["Workspace", copy.breadcrumb],
-          ["Preset", state.preset && examples[state.preset] ? examples[state.preset].label : "Runtime"],
+          ["Preset", state.mode === "runtime" ? "Runtime" : examples[state.preset].label],
           ["State", "Ready"],
-          ["LLM profile", $("enhance-llm").checked ? "Enabled" : "Off"]
+          ["LLM profile", "Enabled"]
         ]);
         $("primary-output").className = "empty";
         $("primary-output").textContent = copy.empty;
@@ -1472,9 +1659,9 @@
         $("primary-output").textContent = label;
         setStatusItems([
           ["Workspace", modeCopy[state.mode].breadcrumb],
-          ["Preset", state.preset && examples[state.preset] ? examples[state.preset].label : "Runtime"],
+          ["Preset", state.mode === "runtime" ? "Runtime" : examples[state.preset].label],
           ["State", "Running"],
-          ["LLM profile", $("enhance-llm").checked ? "Enabled" : "Off"]
+          ["LLM profile", "Enabled"]
         ]);
       }
 
@@ -1599,7 +1786,7 @@
           candidate_items: parseJsonField("candidate-items", []),
           locale: "Nigeria",
           limit: 5,
-          enhance_with_llm: $("enhance-llm").checked
+          enhance_with_llm: true
         };
       }
 
@@ -1609,7 +1796,7 @@
           user_history: parseJsonField("history", []),
           target_item: parseJsonField("target-item", {}),
           locale: "Nigeria",
-          enhance_with_llm: $("enhance-llm").checked
+          enhance_with_llm: true
         };
       }
 
@@ -1618,7 +1805,7 @@
           user_persona: $("persona").value,
           user_history: history,
           locale: "Nigeria",
-          enhance_with_llm: $("enhance-llm").checked
+          enhance_with_llm: true
         };
       }
 
@@ -1866,7 +2053,9 @@
             });
             return;
           }
-          const nextPreset = nextMode === "review" ? "review" : state.preset === "cross" ? "cross" : "cold";
+          const nextPreset = presetsByMode[nextMode].includes(state.preset)
+            ? state.preset
+            : presetsByMode[nextMode][0];
           loadPreset(nextPreset);
         });
       }
@@ -1887,12 +2076,6 @@
         loadMetrics()
           .catch(renderError)
           .finally(clearLoading);
-      });
-      $("enhance-toggle").addEventListener("click", () => {
-        $("enhance-llm").checked = !$("enhance-llm").checked;
-        $("enhance-toggle").setAttribute("aria-pressed", String($("enhance-llm").checked));
-        $("enhance-toggle").textContent = $("enhance-llm").checked ? "LLM profile enabled" : "Rule-based profile";
-        renderIdle();
       });
 
       loadPreset("review");
