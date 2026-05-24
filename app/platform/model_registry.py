@@ -121,6 +121,7 @@ ARTIFACT_NAMES = (
     "task_b_review_term_index",
     "task_b_evidence_graph_index",
     "task_b_neural_index",
+    "task_b_ranker_artifact",
 )
 
 
@@ -210,6 +211,15 @@ def _artifact_candidates(name: str) -> tuple[str | Path | None, ...]:
             feature_root / "neural_index.faiss",
             "data/processed/all_categories/neural_index.faiss",
             "data/processed/neural_index.faiss",
+        )
+    if name == "task_b_ranker_artifact":
+        return (
+            os.getenv("TASK_B_RANKER_ARTIFACT"),
+            os.getenv("TASK_B_RANKER_WEIGHTS"),
+            feature_root / "task_b_linear_ranker.json",
+            "runs/models/task_b_linear_ranker.json",
+            "data/processed/all_categories/task_b_linear_ranker.json",
+            "data/processed/task_b_linear_ranker.json",
         )
     return ()
 
