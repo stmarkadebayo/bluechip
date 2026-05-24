@@ -32,15 +32,17 @@ Judge-facing docs:
 - [Dataset EDA](docs/evaluation/DATASET_EDA.md)
 - [Implicit baseline results](docs/evaluation/IMPLICIT_BASELINE_RESULTS.md)
 - [Quality review and source pruning](docs/evaluation/QUALITY_REVIEW_PRUNING.md)
+- [Task B fast proof run](docs/evaluation/TASK_B_FAST_PROOF_20260524.md)
 - [Task B contextual human eval results](docs/evaluation/HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md)
 - [System architecture](docs/architecture/SYSTEM_ARCHITECTURE.md)
+- [Literature and implementation map](research/literature_review.md)
 - [Demo script](docs/product/DEMO_SCRIPT.md)
 - [Implementation log](docs/IMPLEMENTATION_LOG.md)
 
 Frozen submission scope:
 
 - Keep the runtime claim evidence-first and hybrid.
-- Add only `implicit` ALS/BPR/item-item baselines as new model work before submission.
+- Keep large new model families out of this deadline's runtime; the 24 May Task B fast proof is a diagnostic retrieval/objective-alignment run, not a final ranking promotion.
 - Do not start LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, or a trained Wide & Deep model for this deadline.
 - Task B contextual human eval is complete and summarized; Task A behavioural human eval can still be added if time allows.
 - Run final validation and paper polish after any last human-eval-driven ranking tweaks.
@@ -68,6 +70,7 @@ Interpretation:
 - Task A is rating-first: predict the star rating, then generate and validate the review.
 - Task B is retrieval-before-ranking: candidate recall is measured separately from top-10 ranking.
 - Cross-domain candidate retrieval is currently the strongest Task B slice.
+- A 24 May candidate-recall-only fast proof passed the retrieval gates under the `positive_recommendation` target: Recall@50 `0.151`, Recall@100 `0.1823`, Recall@1000 `0.3986`, sparse Recall@1000 `0.3973`, and cross-domain Recall@1000 `0.6081`. Final ranking still needs same-target HitRate@10 and NDCG@10.
 - Vector retrieval is a diagnostic/extensibility hook today, not a promoted quality claim.
 - Retrieval source metadata, default disabling, family labels, and score calibration are centralized in `app/services/retrieval/source_registry.py`.
 
@@ -98,7 +101,6 @@ data/
 eval/                   task and evidence evaluation scripts
 docs/                   judge-facing documentation
 paper/                  solution paper
-prompts/                generation prompt contracts
 scripts/                ingestion, split, index, and registry builders
 ui/                     browser demo mounted at /ui/
 ```
@@ -243,6 +245,7 @@ TASK_A_STATS_PATH=data/processed/all_categories/task_a_rating_stats.json
 TASK_A_SERVING_POLICY=data/processed/all_categories/task_a_serving_policy.json
 TASK_B_RETRIEVAL_INDEX=data/processed/all_categories/collaborative_retrieval.json
 TASK_B_EVIDENCE_GRAPH_INDEX=data/processed/all_categories/evidence_graph_retrieval.json
+TASK_B_RANKER_ARTIFACT=
 TASK_B_RANKER_WEIGHTS=
 ```
 

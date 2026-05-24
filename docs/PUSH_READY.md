@@ -7,10 +7,10 @@ This repo is ready to share with a teammate as source code, tests, docs, and rep
 ## Frozen Scope
 
 - Keep the evidence-first hybrid architecture.
-- Finish human eval from the CSV packs.
-- Add only `implicit` ALS/BPR/item-item baselines before final submission if they run cleanly.
+- Keep the completed Task B contextual human-eval summary and Task A review pack.
+- Keep the completed `implicit` ALS/BPR/item-item baseline report.
 - Do not start LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, or trained Wide & Deep now.
-- Run the final validation suite only after human eval and the optional `implicit` report are done.
+- Run the final validation suite after paper PDF generation and repo hygiene checks.
 
 ## What Changed Recently
 
@@ -18,11 +18,12 @@ This repo is ready to share with a teammate as source code, tests, docs, and rep
 - Added DeepSeek/OpenRouter/OpenAI generation provider support with external-data guards.
 - Added Task B candidate recall reporting, miss analysis, and slice metrics.
 - Added collaborative, review-term, lexical item-neighbor, Beauty/sparse, vector, BM25, category, and popularity retrieval sources.
-- Removed unpromoted learned-ranker tooling; the runtime uses the measured hybrid ranker.
+- Added learned-ranker tooling behind explicit eval/promotion gates; the runtime uses the measured hybrid ranker unless an artifact is configured.
 - Added context-category guards for explicit Beauty, music, and gift recommendation contexts.
 - Added contextual Task B human-eval pack: `docs/human_eval_task_b_contextual.md`.
 - Added Google Sheets-ready CSV exports for human eval.
 - Added API contract, generation, retrieval, downloader, Task A rating, and recommendation regression tests.
+- Added the 24 May Task B fast proof showing positive-target candidate-recall lift.
 
 ## Current Validation
 

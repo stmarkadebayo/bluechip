@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-This is the frozen path from the current Bluechip repo state to final submission. Scope is intentionally narrow: protect the working app, finish human evidence, add only the fastest conventional Task B baseline if it runs cleanly, then do final validation.
+This is the frozen path from the current Bluechip repo state to final submission. Scope is intentionally narrow: protect the working app, report only validated evidence, package the repo cleanly, and keep long-running model work out of the final hours.
 
 ## Frozen Scope
 
@@ -14,8 +14,9 @@ In scope before submission:
 - bounded LLM profile enhancement, review generation, recommendation reasoning, and validation with deterministic fallback;
 - DeepSeek/OpenRouter/OpenAI provider support, with DeepSeek already smoke-tested locally;
 - SQLite local feature-store backend;
-- all-category `implicit` baselines only: ALS, BPR, and item-item;
-- human-eval scoring from the generated CSV packs;
+- completed all-category `implicit` ALS/BPR/item-item baseline report;
+- completed Task B contextual human-eval scoring and Task A human-eval review pack;
+- 24 May Task B positive-recommendation candidate-recall proof;
 - final paper, README, evaluation summary, and push hygiene.
 
 Out of scope before submission:
@@ -32,15 +33,15 @@ The paper claim stays conservative: Bluechip is an evidence-first hybrid user-in
 
 1. Freeze scope.
 
-Only `implicit` baselines are allowed as new model work. All other neural/modeling ideas move to future work unless they are already implemented and evaluated.
+Only already-validated work is allowed into the final submission. Long-running ranker training and new model families move to future work.
 
 2. Human eval.
 
-Import the CSV packs into Google Sheets, score Task A behavioral fidelity and Task B contextual relevance, average scores by dimension, and add the results to the paper.
+Task B contextual relevance has a scored CSV summary. The Task A behavioural review pack is included as judge-facing evidence support, while the official human score remains judge-run.
 
 3. Optional `implicit` baseline.
 
-Train/evaluate ALS, BPR, and item-item on `data/processed/all_categories`. Report Recall@50/100/1000, HitRate@10, and NDCG@10. Use results in the paper only if the run is clean and reproducible.
+The ALS/BPR/item-item baseline report is complete. Do not rerun it during packaging.
 
 4. Final evaluation run.
 
@@ -64,8 +65,4 @@ Prepare the GitHub repo link, solution paper PDF, architecture diagram, eval sum
 
 ## Current Readiness Call
 
-- Without human eval: not final-submission ready because two rubric rows are human-scored.
-- With human eval and final validation: about 85% ready.
-- With a clean `implicit` baseline report added: about 90% ready.
-
-The remaining critical blockers are human-eval labels, final validation, paper polish, repo hygiene, and packaging the final submission assets.
+The repo is submission-ready after final validation, paper PDF generation, secret/artifact hygiene, and live smoke testing. The only major Task B caveat is explicitly documented: the positive-recommendation run proves candidate-recall lift, while same-target learned-ranker HitRate@10/NDCG@10 remains next work.

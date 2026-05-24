@@ -7,8 +7,8 @@ The submission scope is now frozen. Use [SUBMISSION_FREEZE.md](SUBMISSION_FREEZE
 Current final-submission sequence:
 
 1. Freeze scope around the current evidence-first hybrid agent.
-2. Complete human eval from the CSV packs.
-3. Run the optional `implicit` ALS/BPR/item-item baseline on all categories.
+2. Keep the completed Task B contextual human-eval summary and Task A review pack.
+3. Keep the completed `implicit` ALS/BPR/item-item baseline report.
 4. Run final validation.
 5. Finalize the 4-8 page solution paper.
 6. Package the repo safely.
@@ -419,13 +419,14 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
 
 - Full all-category Task B evaluation is expensive and currently represented by a bounded slice.
 - Task B candidate recall is still the main bottleneck: latest bounded all-category hybrid candidate Recall@1000 is `0.34`, while Recall@50 is only `0.13`.
+- The 24 May positive-recommendation candidate-recall proof improved the retrieval diagnostic to Recall@50 `0.151`, Recall@100 `0.1823`, Recall@1000 `0.3986`, sparse Recall@1000 `0.3973`, and cross-domain Recall@1000 `0.6081`. It is not a final ranker promotion.
 - Miss analysis should be rerun after each retrieval change; earlier reports showed Beauty-heavy misses, sparse-history misses, and items with no neighbor path.
 - Evidence graph retrieval is enabled as a local candidate source, but source-level attribution should be reported carefully. Vector source recall is currently `0.0`.
 - Current embeddings are deterministic hashing embeddings, not neural model embeddings.
 - Current generation is optional and only used at the final text step.
 - Test coverage is improved but still intentionally focused on core contracts.
 - No external tracing/cost dashboard is wired; local JSONL metrics are implemented.
-- Contextual human-eval scores still need actual human labels; the judge-ready table is generated but intentionally unscored.
+- Task B contextual human-eval scores are summarized in `docs/evaluation/HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md`; the Task A review pack remains available for judge-facing behavioural review.
 
 ## Recommended Next Steps
 
@@ -434,7 +435,7 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
    - continue Beauty-specific retrieval work to improve the dominant miss category
    - add sparse-user fallbacks beyond global popularity
    - rerun Task B with candidate Recall@200/500/1000 and miss reports
-   - fill human scores in `docs/human_eval_task_b_contextual.md`
+  - rerun same-target ranker training only after submission or if a short cached run is available
    - add diversity controls after relevance improves
 3. Improve Task A:
    - reconcile validation-selected calibrated thresholds with slice-level rounded-star behavior
@@ -451,7 +452,7 @@ Avoid pure prompting for the rating, random train/test splits, and lexical-only 
 ## Possible Improvements
 
 - Promote neural embeddings only after same-slice all-category evals show lift over the current hybrid gate.
-- Add matrix factorization or implicit-feedback ALS as a baseline.
+- Extend matrix factorization baselines only if they beat the completed `implicit` ALS/BPR/item-item report.
 - Add sequence-aware recommendation for users with enough history.
 - Cache profile and item features to avoid recomputation on every request.
 - Persist traces to external observability storage for experiment comparison.

@@ -55,6 +55,8 @@ Use the current metric snapshot:
 | --- | ---: |
 | Sparse candidate recall@1000 | `0.3611` |
 | Cross-domain candidate recall@1000 | `0.5484` |
+| Positive-target sparse candidate recall@1000 | `0.3973` |
+| Positive-target cross-domain candidate recall@1000 | `0.6081` |
 
 What to say:
 
@@ -108,8 +110,13 @@ Every demo output is traceable. The submission is designed so judges can inspect
 | Sparse candidate recall@1000 | `0.3611` |
 | Cross-domain candidate recall@1000 | `0.5484` |
 | Vector source recall | `0.0` |
+| Positive-target candidate recall@1000 | `0.3986` |
+| Positive-target sparse recall@1000 | `0.3973` |
+| Positive-target cross-domain recall@1000 | `0.6081` |
 
 Do not claim vector retrieval improved recall. It is present as a deterministic swappable hook for future embeddings.
+
+Do not claim the positive-target proof is a final ranker promotion. It is candidate-recall-only evidence showing that objective alignment improves the retrieval bottleneck.
 
 ## Close
 
@@ -118,5 +125,5 @@ The honest submission position is:
 - Task A is measurable rating-first generation.
 - Task B is a traceable retrieval/ranking agent with source diagnostics.
 - Cross-domain and sparse-user behavior are measured explicitly.
-- Ranking quality remains the next gate.
+- Same-target ranker training remains the next gate.
 - Nigerian context is included when the user or scenario gives evidence for it.
