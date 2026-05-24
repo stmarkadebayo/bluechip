@@ -8,7 +8,7 @@ Bluechip is an evidence-first user intelligence agent for the DSN x BCT LLM Agen
 
 The central design decision is that the LLM is not the ranking oracle. Deterministic and evaluated components handle rating prediction, candidate retrieval, ranking, and validation. LLM-backed generation is optional and late in the pipeline: it writes the final review or explanation after the system has already made the measurable decision. This keeps the submission reproducible without provider keys, while still allowing richer language when OpenRouter, DeepSeek, or OpenAI credentials are supplied.
 
-Current bounded evidence shows Task A serving is rating-first with a documented 5,000-example all-category RMSE gate of `1.2654`. A final 25-example all-category generation smoke had `1.0` validation consistency, rating mention, item mention, and sentiment alignment under deterministic fallback. Task B's measured all-category candidate recall remains the main bottleneck: the stronger logged 100-example/1000-candidate gate has candidate Recall@1000 `0.34`, HitRate@10 `0.10`, and NDCG@10 `0.0766`; the final 50-example/100-candidate smoke had HitRate@10 `0.06` and NDCG@10 `0.0471`. Cross-domain candidate Recall@1000 is the strongest measured Task B slice at `0.5484`. Neural FAISS retrieval is now wired with durable item-id mapping and passes a bounded smoke, but it is not presented as a ranking-quality win until larger same-slice evals prove lift.
+Current bounded evidence shows Task A serving is rating-first with a documented 5,000-example all-category RMSE gate of `1.2654`. A final 25-example all-category generation smoke had `1.0` validation consistency, rating mention, item mention, and sentiment alignment under deterministic fallback. Task B's measured all-category candidate recall remains the main bottleneck: the stronger logged 100-example/1000-candidate gate has candidate Recall@1000 `0.34`, HitRate@10 `0.10`, and NDCG@10 `0.0766`; the final 50-example/100-candidate smoke had HitRate@10 `0.06` and NDCG@10 `0.0471`. Cross-domain candidate Recall@1000 is the strongest measured Task B slice at `0.5484`. A later candidate-recall-only fast proof showed that objective alignment matters: under a positive-recommendation target, Recall@1000 rose to `0.3986`, sparse Recall@1000 to `0.3973`, and cross-domain Recall@1000 to `0.6081`, but final HitRate@10 and NDCG@10 still require a same-target ranker run. Neural FAISS retrieval is now wired with durable item-id mapping and passes a bounded smoke, but it is not presented as a ranking-quality win until larger same-slice evals prove lift.
 
 ## 1. Problem Framing
 
@@ -22,6 +22,8 @@ Task B: user and context evidence -> candidate retrieval -> ranking -> explanati
 ```
 
 This separation lets us evaluate the measurable parts before asking a language model to produce prose. It also makes failures visible: if Task B misses the held-out product, we can tell whether candidate generation failed, ranking failed, or generation merely explained a bad recommendation.
+
+The implementation is informed by established recommender-system patterns. The two-stage retrieval/ranking shape follows the same practical separation used by large-scale systems such as YouTube-style candidate generation and ranking. Item-to-item and co-engagement retrieval are included because Amazon-style item similarity remains a strong sparse-data baseline. The review-aware profile layer is inspired by DeepCoNN/NARRE-style use of review text, but implemented as transparent aspect and evidence extraction rather than a neural review encoder. The generation layer follows RAG and explainable recommendation practice: retrieve bounded user/item evidence, decide with deterministic scoring, then ask an LLM or fallback template to express the result. We considered BPR/ALS, Wide & Deep, LightGCN, SASRec, HSTU, PETER, and PEPLER; under the deadline, we implemented the pieces that directly improved measurable retrieval, rating, explanation, and reproducibility, and left heavier neural models as future work.
 
 ## 2. System Architecture
 
@@ -116,6 +118,8 @@ Current bounded Task B metrics:
 | Cross-domain candidate recall@1000 | `0.5484` | Strongest measured Task B slice. |
 | Vector source recall | `0.0` | Diagnostic only; not claimed as a quality improvement. |
 
+A 24 May 2026 candidate-recall fast proof rebuilt retrieval artifacts with rating-weighted all-interaction evidence in an isolated directory. On the full all-interactions target, the result was mixed: Recall@1000 improved to `0.362` and cross-domain Recall@1000 to `0.5752`, but Recall@100 fell to `0.1589`. On the positive-recommendation target, which excludes held-out ratings below `4`, retrieval passed the diagnostic gates: Recall@50 `0.151`, Recall@100 `0.1823`, Recall@1000 `0.3986`, sparse Recall@1000 `0.3973`, and cross-domain Recall@1000 `0.6081`. This is not counted as a final ranking promotion because it did not rerun the top-10 ranker metrics.
+
 Final validation also ran a fresh 50-example all-category smoke at candidate-limit `100`: hybrid HitRate@10 `0.06`, NDCG@10 `0.0471`, candidate Recall@50 `0.08`, candidate Recall@100 `0.12`, and cross-domain candidate Recall@100 `0.2857`. A separate 5-example all-category neural FAISS smoke confirmed the prebuilt `188,236`-vector index loads with the companion item-id map and contributes `neural_vector` candidates; that tiny slice had zero held-out hits and is used only as runtime validation, not as a quality claim.
 
 These numbers are intentionally conservative. The submission does not claim that semantic vectors solved recommendation. Instead, it shows the exact bottleneck: candidate generation must improve before more sophisticated ranking models can matter.
@@ -149,6 +153,8 @@ The evaluation suite is designed around fixed, replayable scripts:
 | `eval/promote_task_a.py` | Promote Task A serving policy after a fixed gate |
 | `eval/eval_task_a_generation.py` | Review generation quality and provider/fallback diagnostics |
 | `eval/eval_task_b.py` | Candidate recall, HitRate@K, NDCG@K, sparse and cross-domain slices |
+| `eval/aggregate_task_b_reports.py` | Aggregate deterministic Task B eval shards |
+| `eval/report_task_b_from_row_cache.py` | Derive alternate Task B target-mode reports from cached eval rows |
 | `eval/create_task_b_contextual_eval.py` | Human-eval packet for contextual relevance |
 | `eval/eval_evidence_intelligence.py` | Aspect and evidence-layer checks |
 
@@ -159,6 +165,7 @@ Ablations already supported or documented include:
 - Task B popularity and category baselines versus hybrid retrieval/ranking.
 - Candidate Recall@50/100/1000 separated from top-rank HitRate@10 and NDCG@10.
 - Sparse-user and cross-domain slices separated from aggregate metrics.
+- All-interactions versus positive-recommendation target modes separated for Task B retrieval diagnostics.
 - Source-level diagnostics for retrieval heads, including neural FAISS and vector retrieval as diagnostic paths.
 - Contextual human-eval examples with source traces.
 
@@ -217,16 +224,16 @@ Known limitations:
 
 - Candidate generation is still the main Task B bottleneck, especially at Recall@50 and Recall@100.
 - HitRate@10 and NDCG@10 are modest and should be treated as baseline gates, not final product performance.
-- Human evaluation packs exist, but scored human labels still need to be collected.
+- Task B contextual human evaluation is scored on 20 examples; Task A has a judge-facing review pack, while the official behavioural score remains judge-run.
 - Neural/vector retrieval is wired and reproducible, but it is not a promoted quality signal until larger same-slice evals show lift.
 - Local feature/model registries are production-shaped abstractions, not managed cloud services.
 - LLM output improves readability but should remain downstream of deterministic scoring and validation.
 
 Highest-value next steps:
 
-1. Improve candidate Recall@50/100 while preserving cross-domain Recall@1000.
-2. Train a true learned multi-head retriever only after fixed retrieval ablations show a target signal.
-3. Promote a stronger ranker only when same-slice HitRate@10 and NDCG@10 beat the hybrid ranker.
+1. Run the same-target positive-recommendation ranker pass and compare HitRate@10 and NDCG@10 against the current `0.10` / `0.0766` gate.
+2. Improve candidate Recall@50/100 while preserving cross-domain Recall@1000.
+3. Train a true learned multi-head retriever only after fixed retrieval ablations show a target signal.
 4. Collect human labels for behavioral fidelity and contextual relevance.
 5. Move local registry, trace, feature, and retrieval artifacts into managed production services.
 

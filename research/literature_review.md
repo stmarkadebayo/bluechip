@@ -6,27 +6,23 @@ This review maps the DSN x BCT hackathon brief, the current Bluechip codebase, a
 
 ## Executive Answer
 
-Yes, we still need an internal human evaluation pass, but with one nuance: the brief says the judges conduct the official human evaluation during judging. Our labels do not replace that official score. They help us tune the submission, catch weak examples before judges see them, and report a bounded human study in the solution paper.
+The brief says the judges conduct the official human evaluation during judging. Our internal labels do not replace that official score, but they help us tune the submission, catch weak examples before judges see them, and report a bounded human study in the solution paper.
 
 The brief assigns human scoring to both tasks:
 
 - Task A: Behavioural Fidelity, 20 points.
 - Task B: Contextual Relevance, 20 points.
 
-The repo has generated human-eval packs, but their scoring columns are still blank:
+The repo has generated human-eval packs and a scored Task B contextual summary:
 
 - `docs/human_eval_task_a.md`
 - `docs/human_eval_task_b.md`
 - `docs/human_eval_task_b_contextual.md`
+- `docs/evaluation/HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md`
 
 Minimum defensible path:
 
-1. Use 2 or 3 human reviewers.
-2. Score all 25 Task A examples and all 20 contextual Task B examples.
-3. Average scores by dimension and report the mean, standard deviation, and reviewer count in the solution paper.
-4. If there is only time for one reviewer, label it as a bounded human review rather than a full inter-rater study.
-
-Do this before adding more model complexity. It prepares us for 40 combined rubric points across both tasks and gives the solution paper stronger evidence than automated metrics alone.
+Task B contextual relevance is scored on 20 examples and summarized in the evaluation docs. Task A has a judge-facing review pack, but we should not overclaim a scored Task A human study unless the labels are filled.
 
 ## What We Have Actually Implemented
 
@@ -44,7 +40,7 @@ The current system is not a clone of one paper. It is a pragmatic hybrid recomme
 | Bounded LLM profile enrichment | Implemented | `app/services/profiling/profile_enhancer.py` | LLM-inferred fields merge into deterministic profiles with caps, confidence, and fallback. |
 | SQLite feature store | Implemented as Phase 1 | `app/platform/feature_store.py`, `scripts/build_sqlite_feature_store.py` | SQLite improves local serving and point lookups; it is not yet a 10/10 production feature store. |
 | Evaluation spine | Implemented | `eval/`, `docs/evaluation/` | We measure RMSE, ROUGE-L, optional BERTScore, candidate Recall@K, HitRate@K, NDCG@K, sparse and cross-domain slices. |
-| Human eval | Pack generated, labels missing | `docs/human_eval_*.md` | Needs human scoring before final submission claims. |
+| Human eval | Task B contextual scored; Task A review pack generated | `docs/human_eval_*.md`, `docs/evaluation/HUMAN_EVAL_TASK_B_CONTEXTUAL_RESULTS.md` | Report Task B human eval as bounded evidence; do not claim scored Task A behavioural labels unless added. |
 
 ## Papers And Systems We Can Honestly Say Influenced The Implementation
 
@@ -216,7 +212,7 @@ Bluechip currently has graph techniques, but not a GNN:
 
 Would a GNN be better?
 
-Not immediately. A LightGCN or PinSage-style model can help once the data split and candidate recall evaluation are stable, but the current system should first improve retrieval recall and add a cheap BPR/ALS baseline. A GNN is only worth adding if it beats same-slice Recall@50/100/1000 and does not hurt HitRate@10/NDCG@10.
+Not immediately. A LightGCN or PinSage-style model can help once the data split and candidate recall evaluation are stable, but the current system should first build on the measured retrieval/objective-alignment gains. A GNN is only worth adding if it beats same-slice Recall@50/100/1000 and does not hurt HitRate@10/NDCG@10.
 
 ## Evaluation Literature And Metrics
 
@@ -299,7 +295,7 @@ Disagreements were averaged; no reviewer saw model internals beyond the provided
 
 ## Frozen Next Work Before Submission
 
-The active submission freeze is in `docs/SUBMISSION_FREEZE.md`. Before the final submission, the only new model work in scope is the `implicit` baseline pass: ALS, BPR, and item-item on `data/processed/all_categories`.
+The active submission freeze is in `docs/SUBMISSION_FREEZE.md`. The final submission keeps the system evidence-first and reports only completed model work: the implicit ALS/BPR/item-item baseline, the Task B fast proof, and the fixed Task A/Task B evaluation snapshots.
 
 LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, and trained Wide & Deep remain future work for this deadline. They are useful research references, but starting them now would add too much integration and validation risk.
 
