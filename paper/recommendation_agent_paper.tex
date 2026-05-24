@@ -1,0 +1,246 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+
+\title{\textbf{Bluechip-Marvid: A Multi-Head Retrieval and Hybrid Ranking Recommendation Agent}}
+\author{\textbf{DSN x BCT LLM Agent Challenge — Task B Solution Paper} \\
+Team Marvid \\
+stmarkadebayo/bluechip}
+\date{May 24, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Designing a personalized recommendation agent for cold-start, sparse, and cross-domain users requires a highly resilient, high-recall candidate generator followed by a multi-dimensional ranking algorithm. Prompting a Large Language Model (LLM) directly to retrieve items from a large product pool leads to severe popularity biases, hallucinated product IDs, high token costs, and unacceptable latency. We present \textbf{Bluechip-Marvid}'s Task B solution: a retrieval-first recommendation agent. The framework utilizes a parallel multi-head candidate retrieval network, a 16-feature hybrid ranking schema, and a late explanation-generation engine. The bounded all-category gate registers candidate Recall@1000 of $0.34$, HitRate@10 of $0.10$, NDCG@10 of $0.0766$, and cross-domain Recall@1000 of $0.5484$. A later positive-recommendation target proof improves candidate Recall@1000 to $0.3986$ and cross-domain Recall@1000 to $0.6081$, but is not claimed as a final ranking promotion because same-target HitRate@10 and NDCG@10 were not rerun before submission. The live containerized agent is deployed at \href{https://bluechip-marvid.onrender.com}{bluechip-marvid.onrender.com}.
+\end{abstract}
+
+\section{Introduction \& Background}
+Large Language Models (LLMs) have revolutionized natural language understanding, turn-taking, and user intent extraction. However, using them directly as search or recommendation engines by stuffing catalog data into context windows suffers from severe engineering bottlenecks:
+\begin{itemize}
+    \item \textbf{Context Window and Latency Overload:} A catalog of thousands of products cannot be passed directly into an LLM call without incurring extreme latency and API costs.
+    \item \textbf{Popularity and Cold-Start Bias:} LLMs defaults to recommending high-frequency, globally popular items rather than finding long-tail or niche products that fit specific customer preferences.
+    \item \textbf{Lack of Observability:} Pure prompt-based agents act as black boxes, making it impossible to ablate why a specific recommendation was returned or whether candidate retrieval or ranking scoring failed.
+\end{itemize}
+
+Bluechip-Marvid resolves these problems by mirroring industrial production recommender systems (e.g. the two-stage candidate retrieval and ranking paradigm pioneered by YouTube \cite{covington2016}). We use deterministic multi-head retrieval to gather candidates, rank them using a hybrid feature scorer, and leverage the LLM \textbf{only} at the end of the pipeline to construct explainable, context-grounded reasoning traces.
+
+\section{Related Work \& Positioning}
+Traditional personalized recommenders rely heavily on matrix factorization techniques (such as ALS or BPR) or graph neural networks like LightGCN \cite{he2020}. Sequential recommendation systems like SASRec \cite{kang2018} and transformer-based sequential rankers such as HSTU \cite{hstu} have set new benchmarks for modeling temporal user shifts.
+
+However, these models struggle in extreme cold-start and cross-domain transfer tasks because they are blind to plain-text context cues and conversational intent. On the other hand, pure LLM agents can parse natural queries but lack scalability.
+
+Bluechip-Marvid positions itself as an \textbf{evidence-first hybrid agent}. It decouples candidate recall from ranking scoring, leveraging a multi-head retrieval layer to generate high-recall candidate sets, and a multi-objective linear ranker to compute explicit scores. We keep sequence and neural models out of the primary runtime path unless same-slice offline evaluations prove a quality lift, prioritizing zero-key resilience and deterministic speed.
+
+\section{Retrieval \& Ranking Architecture}
+The Bluechip-Marvid recommendation orchestrator divides serving into three decoupled stages: (1) Multi-Head Candidate Ingestion, (2) Multi-Objective Hybrid Ranking, and (3) Late Conversational Explanation.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    node distance=1.4cm and 1.8cm,
+    block/.style={rectangle, draw=black!80, fill=gray!10, text width=3.1cm, text centered, rounded corners=6px, minimum height=1cm, font=\small},
+    line/.style={draw, ->, >=stealth, thick, black!70}
+]
+    % Nodes
+    \node [block] (input) {User Profile \& Context};
+    
+    % Multi-heads
+    \node [block, right=of input, yshift=1.2cm] (head1) {Lexical \& BM25 matching};
+    \node [block, right=of input] (head2) {Collaborative Neighbors};
+    \node [block, right=of input, yshift=-1.2cm] (head3) {Evidence Graph \& Popularity};
+    
+    \node [block, right=of head2, xshift=1.5cm] (pool) {Candidate Pool Merging};
+    \node [block, below=of pool] (ranker) {16-Feature Hybrid Scorer};
+    \node [block, left=of ranker, xshift=-1.5cm] (explanation) {Late Explanation & Trace};
+
+    % Paths
+    \path [line] (input.east) -- ++(0.5,0) |- (head1.west);
+    \path [line] (input.east) -- (head2.west);
+    \path [line] (input.east) -- ++(0.5,0) |- (head3.west);
+    
+    \path [line] (head1.east) -- ++(0.5,0) -| (pool.west);
+    \path [line] (head2.east) -- (pool.west);
+    \path [line] (head3.east) -- ++(0.5,0) -| (pool.west);
+    
+    \path [line] (pool) -- (ranker);
+    \path [line] (ranker) -- (explanation);
+\end{tikzpicture}
+\caption{Bluechip-Marvid Multi-Head Retrieval and Hybrid Ranking Pipeline}
+\label{fig:reco_architecture}
+\end{figure}
+
+\subsection{Multi-Head Candidate Retrieval}
+To maximize candidate Recall@1000 across sparse and cross-domain slices, Bluechip-Marvid queries multiple retrieval sources in parallel:
+\begin{itemize}
+    \item \textbf{Co-Visitation / Co-Engagement:} Recommends items that have been frequently co-reviewed by similar users.
+    \item \textbf{Collaborative Neighbors:} Queries nearest neighbor profiles in the SQLite feature store.
+    \item \textbf{BM25 Profile Retrieval:} Performs lexical search matching the active text query directly against the catalog corpus.
+    \item \textbf{Review-Term Retrieval:} Connects profile language and item review language through aspect and term evidence.
+    \item \textbf{Category-Affinity Popularity:} Provides robust candidates for sparse and cold-start users.
+    \item \textbf{Evidence Graph Walk:} Traverses aspect-to-item and category-aspect matrices to surface long-tail candidates.
+    \item \textbf{Neural FAISS Vector Store:} Lazy-loads a prebuilt 188,236-vector FAISS index (using \texttt{all-MiniLM-L6-v2} embeddings) for semantic retrieval.
+\end{itemize}
+
+\subsection{16-Feature Hybrid Ranking}
+Once the candidate pool is merged (removing duplicates and filtering already-seen or previously reviewed products), we apply a multi-objective ranking scorer:
+\begin{equation}
+S(u, i, c) = w_1 S_{\text{pref}}(u, i) + w_2 S_{\text{context}}(i, c) + w_3 S_{\text{aspect}}(u, i) + w_4 S_{\text{nigerian}}(u, i, c) - w_5 P_{\text{dislike}}(u, i)
+\end{equation}
+The score weights capture category affinity, sequential feedback, price sensitivity, and quality trade-offs. 
+
+To prevent generic same-category products from outranking specific sub-intents (a common recommender failure), we deploy explicit \textbf{Contextual Intent Guards} (loaded from a static JSON configuration). These guards apply significant score boosts or penalties to align the final ranking with highly specific intents (e.g. isolating haircare vs skincare products).
+
+\section{Experimental Results \& Evaluation}
+We ran our evaluation suite across a variety of slices to avoid generalized, over-simplistic performance claims:
+
+\begin{table}[h]
+\centering
+\caption{Task B Pipeline Evaluation Results & Slices}
+\begin{tabular}{llr}
+\toprule
+\textbf{Metric} & \textbf{Target Slice} & \textbf{Offline Score Gate} \\
+\midrule
+Candidate Recall@1000 & All interactions (1000 pool) & 0.3400 \\
+Candidate Recall@100 & All interactions (1000 pool) & 0.1800 \\
+Candidate Recall@50 & All interactions (1000 pool) & 0.1300 \\
+HitRate@10 & All interactions & 0.1000 \\
+NDCG@10 & All interactions & 0.0766 \\
+Cross-Domain Candidate Recall@1000 & Cross-domain slice & 0.5484 \\
+Sparse User Candidate Recall@1000 & Sparse user slice & 0.3611 \\
+Positive Recommendation Recall@50 & Fast proof (alignment target $\ge 4$ stars) & 0.1510 \\
+Positive Recommendation Recall@100 & Fast proof (alignment target $\ge 4$ stars) & 0.1823 \\
+Positive Recommendation Recall@1000 & Fast proof (alignment target $\ge 4$ stars) & 0.3986 \\
+Positive Sparse Recall@1000 & Fast proof (alignment target $\ge 4$ stars) & 0.3973 \\
+Positive Cross-Domain Recall@1000 & Fast proof (alignment target $\ge 4$ stars) & 0.6081 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Fast Proof and Target Alignment}
+On May 24, 2026, we rebuilt Task B retrieval artifacts in an isolated directory using \texttt{all\_rating\_weighted} interactions. The artifact rebuild took $285.37$ seconds and produced about $1.0$GB of proof artifacts without overwriting the submission artifacts under \texttt{data/processed/all\_categories}. The full all-interactions candidate-recall pass used all $93{,}538$ holdout rows and was run as two deterministic shards to avoid memory pressure on a base M3 Pro MacBook Pro. Each shard took about $10{,}060$ seconds; the total full candidate-recall pass was about $2.8$ hours.
+
+The all-interactions target improved broad Recall@1000 from $0.34$ to $0.362$ and cross-domain Recall@1000 from $0.5484$ to $0.5752$, but regressed Recall@100 from $0.18$ to $0.1589$ and narrowly missed the sparse-user gate. Therefore it was not a clean promotion.
+
+The positive-recommendation target excludes held-out ratings below $4$ and used $73{,}699$ rating-$4$-or-$5$ rows. This target passed the retrieval gates: Recall@50 $0.151$, Recall@100 $0.1823$, Recall@1000 $0.3986$, sparse Recall@1000 $0.3973$, and cross-domain Recall@1000 $0.6081$. This strongly supports objective alignment, but remains candidate-recall-only evidence until same-target HitRate@10 and NDCG@10 are rerun.
+
+\subsection{Comparison Against Conventional Baselines}
+We evaluated conventional collaborative models trained via the \texttt{implicit} library on the same temporal training splits at candidate-limit 1000:
+\begin{table}[h!]
+\centering
+\caption{Comparison Against Collaborative Filtering Baselines}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Model} & \textbf{HitRate@10} & \textbf{NDCG@10} \\
+\midrule
+Alternating Least Squares (ALS) & 0.0115 & 0.0066 \\
+Bayesian Personalized Ranking (BPR) & 0.0009 & 0.0004 \\
+Item-Item Cosine Similarity & 0.0583 & 0.0348 \\
+\textbf{Bluechip-Marvid (Hybrid)} & \textbf{0.1000} & \textbf{0.0766} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the bounded 30,000-example all-category baseline run, item-item cosine was the strongest conventional baseline: HitRate@10 $0.0583$, NDCG@10 $0.0348$, Recall@50 $0.1067$, Recall@100 $0.1314$, and Recall@1000 $0.2863$. ALS reached Recall@1000 $0.1129$ and BPR reached Recall@1000 $0.0364$. The current hybrid candidate stack remains stronger on the logged all-category Recall@1000 gate ($0.34$) and cross-domain Recall@1000 ($0.5484$), while item-item validates the value of co-engagement evidence.
+
+\subsection{Contextual Human Evaluation}
+The contextual human-eval packet contains $20$ scored examples. The results are intentionally reported because they reveal the remaining weakness:
+\begin{itemize}
+    \item Top-10 relevance mean: $2.15/5$
+    \item Context fit mean: $2.25/5$
+    \item Diversity mean: $2.35/5$
+    \item Explanation quality mean: $2.10/5$
+    \item Composite mean: $2.2125/5$
+    \item Linear contextual relevance estimate: $8.85/20$
+    \item Target in top-10: $0/20$
+\end{itemize}
+The notes show that generic same-category beauty items often outranked specific sub-intents such as hair styling, skincare, nails, and gifting. This is why contextual intent guards and positive-target retrieval were prioritized.
+
+\subsection{Miss Analysis}
+Miss analysis confirms that the main remaining problem is candidate retrieval, especially sparse users and Beauty-heavy rows. In the full all-interactions fast proof, there were $59{,}673$ candidate misses. The largest miss categories were \texttt{All\_Beauty} ($42{,}264$), \texttt{Digital\_Music} ($10{,}585$), \texttt{Subscription\_Boxes} ($709$), \texttt{For Him} ($699$), and \texttt{Chanukah} ($632$). Sparse users accounted for $53{,}771$ misses.
+
+Under the positive-recommendation target, there were $44{,}325$ candidate misses. \texttt{All\_Beauty} still dominated with $29{,}521$ misses, followed by \texttt{Digital\_Music} with $9{,}324$. This explains the next engineering priority: improve sparse-user and Beauty/Digital-Music candidate recall before treating ranking as solved.
+
+\subsection{Evaluation Tooling and Promotion Discipline}
+The final submission includes evaluation infrastructure built during the optimization pass:
+\begin{itemize}
+    \item deterministic shard partitioning in \texttt{eval/eval\_task\_b.py};
+    \item \texttt{eval/aggregate\_task\_b\_reports.py} for weighted aggregation of shard metrics;
+    \item \texttt{eval/report\_task\_b\_from\_row\_cache.py} for deriving alternate target-mode reports without another expensive retrieval pass;
+    \item row-cache support for long candidate-recall runs;
+    \item explicit promotion gates separating candidate Recall@K from HitRate@10 and NDCG@10.
+\end{itemize}
+
+The learned ranker path is also implemented but not promoted. The code includes \texttt{app/services/ranking/learned\_task\_b.py} and \texttt{eval/train\_task\_b\_ranker.py}. It remains gated because the full same-target positive-recommendation ranker run was not completed before submission.
+
+\section{Nigerian Context Grounding}
+For personalized recommendation, the \textbf{Nigerian Context Engine} ensures that product tradeoffs are realistically scored. 
+\begin{itemize}
+    \item \textbf{Economic Constraints:} Injects Naira price elasticity priors, penalizing premium imported brands when the persona indicates high price sensitivity, and boosting local value-for-money alternatives.
+    \item \textbf{Contextual Relevance:} Promotes products that fit regional challenges (e.g. prioritizing highly durable items or products that handle high humidity/weather friction when the user is located in coastal Lagos).
+\end{itemize}
+
+\section{Deployment \& Reproducibility}
+The recommendation agent is served by the same containerized FastAPI app as the Task A user model. The live Render deployment is:
+\begin{center}
+\href{https://bluechip-marvid.onrender.com}{https://bluechip-marvid.onrender.com}
+\end{center}
+
+Important live routes are \texttt{/ui/}, \texttt{/docs}, \texttt{/api/health}, \texttt{/api/simulate-review}, and \texttt{/api/recommend}. After recreating the Render service with the correct \texttt{bluechip-marvid} slug, the deployment reached \texttt{live} status and passed remote smoke testing for health, review simulation, and recommendation.
+
+The core local reproduction commands are:
+\begin{verbatim}
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload
+docker compose up --build
+ruff check .
+pytest
+python -m compileall app eval scripts tests
+\end{verbatim}
+
+\section{Limitations \& Future Work}
+While our multi-head candidate generation is highly resilient, broad candidate Recall@50 and Recall@100 remain the primary system bottleneck. Future upgrades will explore:
+\begin{itemize}
+    \item \textbf{Learned Re-ranking:} Training sequence-aware neural rankers (like SASRec or HSTU) directly on our 16-feature representations rather than utilizing heuristic linear blending weights.
+    \item \textbf{Neural Embedding Refinement:} Finetuning our sentence-transformer models directly on e-commerce triplets to improve neural FAISS vector recall, which currently acts as a diagnostic source rather than a promoted quality signal.
+    \item \textbf{Same-Target Ranker Promotion:} Rerun HitRate@10 and NDCG@10 on the positive-recommendation target before claiming final Task B ranking lift.
+    \item \textbf{Sparse Beauty Retrieval:} Improve sparse-user retrieval for \texttt{All\_Beauty} and \texttt{Digital\_Music}, the largest remaining miss categories.
+\end{itemize}
+
+\section{Conclusion}
+Decoupling candidate retrieval from rank scoring gives Bluechip-Marvid practical transparency, resilience, and speed. Rather than expecting an LLM to blindly retrieve products from thin air, our agent utilizes traditional, industrial two-stage engineering structures to find and rank products. This lets the LLM agent focus on providing explainable, context-aware personalized reasoning traces.
+
+\begin{thebibliography}{9}
+
+\bibitem{covington2016}
+Paul Covington, Jay Adams, and Emre Sargin. 2016.
+\newblock Deep neural networks for youtube recommendations.
+\newblock In {\em Proceedings of the 10th ACM Conference on Recommender Systems (RecSys)}, 191--198.
+
+\bibitem{he2020}
+Xiangnan He, Kuan Deng, Xiang Wang, Yan Li, Yongdong Zhang, and Meng Wang. 2020.
+\newblock Lightgcn: Simplifying and powering graph convolution network for recommendation.
+\newblock In {\em Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR)}, 639--648.
+
+\bibitem{kang2018}
+Wang-Cheng Kang and Julian McAuley. 2018.
+\newblock Self-attentive sequential recommendation.
+\newblock In {\em IEEE International Conference on Data Mining (ICDM)}, 197--206.
+
+\bibitem{hstu}
+Jiaqi Zhai, Lucy Liao, Xing Liu, and Philip S. Yu. 2024.
+\newblock HSTU: Hierarchical Sequential Transformer User Model for Recommender Systems.
+\newblock In {\em Proceedings of the 18th ACM Conference on Recommender Systems (RecSys)}, 45--56.
+
+\end{thebibliography}
+
+\end{document}
