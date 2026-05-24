@@ -7,8 +7,8 @@ The active scope freeze and eight-step submission path are documented in [../SUB
 ## Current Submission Sequence
 
 1. Freeze scope around the current evidence-first hybrid agent.
-2. Complete human eval from the CSV packs.
-3. Run the optional `implicit` ALS/BPR/item-item baseline on all categories.
+2. Keep the completed Task B contextual human-eval summary and Task A review pack.
+3. Keep the completed `implicit` ALS/BPR/item-item baseline report.
 4. Run final validation.
 5. Finalize the 4-8 page solution paper.
 6. Package the repo safely.
@@ -82,6 +82,14 @@ Lean-pruning review, 22 May 2026:
 - The lean 100x1000 gate preserved HitRate@10 `0.10`, NDCG@10 `0.0766`, Recall@50 `0.13`, Recall@100 `0.18`, and Recall@1000 `0.34`.
 - A larger 250-example candidate-only diagnostic produced Recall@50 `0.104`, Recall@100 `0.136`, Recall@1000 `0.28`, and cross-domain Recall@1000 `0.4615`.
 - Details and engineering decisions are recorded in [QUALITY_REVIEW_PRUNING.md](QUALITY_REVIEW_PRUNING.md).
+
+Task B fast proof, 24 May 2026:
+
+- A full candidate-recall proof rebuilt retrieval artifacts in an isolated directory with `--interaction-mode all_rating_weighted`; the baseline artifacts under `data/processed/all_categories` were not overwritten.
+- The full all-interactions target used all `93,538` held-out rows. It improved broad candidate Recall@1000 from `0.34` to `0.362` and cross-domain Recall@1000 from `0.5484` to `0.5752`, but regressed Recall@100 from `0.18` to `0.1589` and narrowly missed sparse Recall@1000 at `0.3603` versus `0.3611`.
+- The positive-recommendation target excludes held-out ratings below `4` and used `73,699` rows. It passed the retrieval gates: Recall@50 `0.151`, Recall@100 `0.1823`, Recall@1000 `0.3986`, sparse Recall@1000 `0.3973`, and cross-domain Recall@1000 `0.6081`.
+- This is a candidate-recall-only proof. It is not a final Task B ranking promotion because HitRate@10 and NDCG@10 were not rerun on the same target mode.
+- Details are recorded in [TASK_B_FAST_PROOF_20260524.md](TASK_B_FAST_PROOF_20260524.md).
 
 ## Human Evaluation
 

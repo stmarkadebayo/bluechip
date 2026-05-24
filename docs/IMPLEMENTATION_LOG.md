@@ -1,11 +1,11 @@
 # Implementation Log
 
 Date: 2026-05-19
-Last updated: 2026-05-22
+Last updated: 2026-05-24
 
 This log tracks the hardening pass requested after the project status review. It is intentionally operational: each entry states what changed, why it matters for the DSN x BCT submission, and how it was validated.
 
-The submission scope is now frozen in [SUBMISSION_FREEZE.md](SUBMISSION_FREEZE.md). From this point, the only new model work before final submission is the `implicit` ALS/BPR/item-item baseline pass; LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, and trained Wide & Deep stay out of this deadline's runtime.
+The submission scope is now frozen in [SUBMISSION_FREEZE.md](SUBMISSION_FREEZE.md). The original freeze kept large new model families out of scope; LightGCN, SASRec, HSTU, PETER, PEPLER, NARRE, and trained Wide & Deep stay out of this deadline's runtime. A later Task B fast proof is recorded below as a diagnostic retrieval/objective-alignment run, not as a final ranking promotion.
 
 ## Submission Metrics Kept In Scope
 
@@ -36,6 +36,44 @@ Submission interpretation:
 - Cross-domain retrieval is the strongest measured slice.
 - Ranking remains measured through fixed HitRate@10 and NDCG@10 reports.
 - Vector retrieval is a deterministic diagnostic hook only. With source recall at `0.0`, it should not be described as a quality win.
+
+## 2026-05-24 Task B Fast Proof
+
+Goal:
+
+- Test whether rating-weighted all-interaction retrieval artifacts and target alignment improve candidate recall enough to justify the next full ranker run.
+- Keep the proof isolated from the current submission artifacts by writing to `data/processed/task_b_fast_proof_20260524`.
+
+Engineering changes:
+
+- Added deterministic Task B eval sharding through `--shard-count` and `--shard-index`.
+- Added `eval/aggregate_task_b_reports.py` for weighted aggregation of shard reports.
+- Added `eval/report_task_b_from_row_cache.py` to derive alternate target-mode reports from cached eval rows without rerunning retrieval.
+- Added a sharding regression test in `tests/test_task_b_eval_gates.py`.
+
+Runtime:
+
+- Retrieval artifact rebuild completed in `285.37s`.
+- Full candidate-recall eval ran as two shards in about `2.8` hours wall-clock.
+- Positive-recommendation report was derived from row caches in `201.96s`.
+- The proof row caches occupy about `13G` under `runs/eval/task_b_fast_proof_20260524`; they are local run artifacts, not submission files.
+
+Results:
+
+| Target mode | Rows | Recall@50 | Recall@100 | Recall@1000 | Sparse Recall@1000 | Cross-domain Recall@1000 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `all_interactions` | `93538` | `0.1302` | `0.1589` | `0.362` | `0.3603` | `0.5752` |
+| `positive_recommendation` | `73699` | `0.151` | `0.1823` | `0.3986` | `0.3973` | `0.6081` |
+
+Interpretation:
+
+- The all-interactions target is mixed: broad recall and cross-domain improved, but Recall@100 regressed and sparse Recall@1000 narrowly missed the gate.
+- The positive-recommendation target passes every candidate-recall gate in this proof and aligns better with a recommendation benchmark because rows rated below `4` are excluded.
+- This is still not a final Task B promotion. A same-target ranker run must measure HitRate@10 and NDCG@10 against the existing `0.10` / `0.0766` gate.
+
+Detailed report:
+
+- [evaluation/TASK_B_FAST_PROOF_20260524.md](evaluation/TASK_B_FAST_PROOF_20260524.md)
 
 ## Steps Completed
 
