@@ -59,6 +59,8 @@ def test_task_b_source_family_diagnostics_group_counts_and_recall() -> None:
     assert diagnostics["other"]["count"] == 1
     assert diagnostics["other"]["candidate_recall@5"] == 0.5
     assert _source_family("implicit_item_item") == "collaborative_co_engagement"
+    assert _source_family("context_intent_profile") == "lexical_review_term"
+    assert _source_family("context_intent_category") == "aspect_evidence"
     assert _source_family("custom_retriever") == "other"
     assert retrieval_source_family("implicit_item_item") == "collaborative_co_engagement"
 

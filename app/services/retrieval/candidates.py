@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-import heapq
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
 from app.models.schemas import Item, UserHistoryItem, UserProfile
+from app.services.ranking.context_intents import (
+    ContextIntentRule,
+    context_intent_expansion,
+    context_intent_rule,
+    is_gift_category,
+    item_matches_intent,
+)
 from app.services.retrieval.embeddings import embedding_text, terms
 from app.services.retrieval.evidence_graph import candidate_ids_from_evidence_graph
 from app.services.retrieval.item_similarity import (
@@ -258,6 +264,7 @@ class CandidateCatalog:
     by_category_popular: dict[str, list[Item]]
     by_category_token_index: dict[str, dict[str, list[Item]]]
     item_terms: dict[str, set[str]]
+    by_id: dict[str, Item]
 
     @classmethod
     def from_items(cls, items: list[Item]) -> "CandidateCatalog":
@@ -265,7 +272,9 @@ class CandidateCatalog:
         by_category: dict[str, list[Item]] = {}
         token_index: dict[str, dict[str, list[Item]]] = defaultdict(lambda: defaultdict(list))
         item_terms: dict[str, set[str]] = {}
+        by_id: dict[str, Item] = {}
         for item in items:
+            by_id[item.item_id] = item
             by_category.setdefault(item.category, []).append(item)
             item_terms[item.item_id] = _item_terms(item)
             for token in item_terms[item.item_id]:
@@ -273,14 +282,18 @@ class CandidateCatalog:
         for category, category_items in by_category.items():
             by_category[category] = sorted(category_items, key=_popularity_quality_key, reverse=True)
         token_index_payload = {
-            category: dict(token_items)
-            for category, token_items in token_index.items()
+            category: {
+                token: sorted(token_items, key=_popularity_quality_key, reverse=True)
+                for token, token_items in category_tokens.items()
+            }
+            for category, category_tokens in token_index.items()
         }
         return cls(
             global_popular=global_popular,
             by_category_popular=by_category,
             by_category_token_index=token_index_payload,
             item_terms=item_terms,
+            by_id=by_id,
         )
 
 
@@ -331,7 +344,7 @@ def generate_candidate_pool(
 ) -> CandidatePool:
     catalog = catalog or CandidateCatalog.from_items(items)
     disabled_sources = disabled_sources or set()
-    by_id = {item.item_id: item for item in items}
+    by_id = catalog.by_id
     selected: list[Item] = []
     history_item_ids = {item.item_id for item in history}
     excluded_item_ids = excluded_item_ids or set()
@@ -358,6 +371,7 @@ def generate_candidate_pool(
         item_neighbors = collaborative_index.get("item_neighbors")
 
     query_terms = _query_terms(user_profile, history, context)
+    context_intent_terms = _context_terms(context)
     query = " ".join(query_terms)
     review_term_index = (
         collaborative_index.get("review_term_retrieval") if collaborative_index else None
@@ -368,6 +382,12 @@ def generate_candidate_pool(
     implicit_item_neighbors = (
         collaborative_index.get("implicit_item_neighbors") if collaborative_index else None
     )
+    collaborative_seed_rating = (
+        1.0
+        if collaborative_index
+        and collaborative_index.get("interaction_mode") == "all_rating_weighted"
+        else 4.0
+    )
 
     if item_neighbors and "co_visitation" not in disabled_sources:
         neighbor_budget = max(1, int(limit * 0.35))
@@ -375,6 +395,7 @@ def generate_candidate_pool(
             history,
             item_neighbors,
             limit=neighbor_budget,
+            min_seed_rating=collaborative_seed_rating,
         ):
             item = by_id.get(item_id)
             if item:
@@ -498,6 +519,23 @@ def generate_candidate_pool(
             if neural_added >= neural_target:
                 break
 
+    intent_budget = max(1, int(limit * (0.30 if len(history) <= 2 else 0.22)))
+    intent_added = 0
+    if not {"context_intent_profile", "context_intent_category"} <= disabled_sources:
+        for item, score, source in _context_intent_candidates(
+            catalog=catalog,
+            context_terms=context_intent_terms,
+            limit=limit,
+        ):
+            if source in disabled_sources:
+                continue
+            had_source = source in sources.get(item.item_id, [])
+            add_candidate(item, source, score)
+            if item.item_id not in history_item_ids and not had_source:
+                intent_added += 1
+            if intent_added >= intent_budget:
+                break
+
     use_beauty_exploration = _should_use_beauty_taxonomy(user_profile, query_terms, history)
     aspect_share = 0.26 if len(history) <= 2 else 0.16
     if use_beauty_exploration:
@@ -609,7 +647,15 @@ def generate_candidate_pool(
             rank_score = 1.0 - (index / max(fallback_budget, 1))
             add_candidate(item, "global_popular", max(rank_score, _quality_popularity_score(item)))
 
-    limited = _select_balanced_candidates(selected, sources, source_scores, limit)
+    limited = _select_balanced_candidates(
+        selected,
+        sources,
+        source_scores,
+        limit,
+        history_size=len(history),
+        preferred_categories=user_profile.preferred_categories,
+        beauty_profile=use_beauty_exploration or "All_Beauty" in user_profile.preferred_categories,
+    )
     limited_ids = {item.item_id for item in limited}
     return CandidatePool(
         items=limited,
@@ -717,6 +763,17 @@ def _query_terms(
     return output
 
 
+def _context_terms(context: str) -> list[str]:
+    output = []
+    for token in terms(context):
+        if token in ASPECT_STOPWORDS or token in output:
+            continue
+        output.append(token)
+        if len(output) >= 24:
+            break
+    return output
+
+
 def _aspect_profile_candidates(
     user_profile: UserProfile,
     catalog: CandidateCatalog,
@@ -731,18 +788,14 @@ def _aspect_profile_candidates(
 
     candidate_scores: Counter[str] = Counter()
     candidate_items: dict[str, Item] = {}
-    per_token_limit = max(250, min(limit, 1500))
+    per_token_limit = max(120, min(limit, 300))
     useful_terms = [token for token in query_terms if token not in ASPECT_STOPWORDS][:24]
     for category, category_weight in category_weights.items():
         token_index = catalog.by_category_token_index.get(category, {})
         if not token_index:
             continue
         for token in useful_terms:
-            postings = sorted(
-                token_index.get(token, []),
-                key=_popularity_quality_key,
-                reverse=True,
-            )[:per_token_limit]
+            postings = token_index.get(token, [])[:per_token_limit]
             token_boost = _beauty_token_boost(token) if category in BEAUTY_CATEGORIES else 1.0
             for rank, item in enumerate(postings):
                 candidate_items[item.item_id] = item
@@ -770,6 +823,110 @@ def _aspect_profile_candidates(
         scored.append((item, round(min(max(score, 0.0), 1.0), 4), source))
     scored.sort(key=lambda row: (row[1], _popularity_quality_key(row[0])), reverse=True)
     return scored
+
+
+def _context_intent_candidates(
+    catalog: CandidateCatalog,
+    context_terms: list[str],
+    limit: int,
+) -> list[tuple[Item, float, str]]:
+    expansion = context_intent_expansion(context_terms)
+    rule = context_intent_rule(context_terms)
+    if expansion is None or rule is None:
+        return []
+
+    retrieval_terms = [
+        term
+        for term in expansion.retrieval_terms
+        if term not in ASPECT_STOPWORDS and not term.isdigit()
+    ][:48]
+    if not retrieval_terms:
+        return []
+
+    categories = _intent_categories(expansion.category_hint, catalog)
+    if not categories:
+        categories = sorted(catalog.by_category_popular)
+
+    candidate_scores: Counter[str] = Counter()
+    candidate_items: dict[str, Item] = {}
+    candidate_sources: dict[str, str] = {}
+    per_token_limit = max(150, min(limit, 350))
+    context_term_set = set(context_terms)
+    retrieval_term_set = set(retrieval_terms)
+    required_term_set = set(expansion.required_terms)
+
+    for category in categories:
+        token_index = catalog.by_category_token_index.get(category, {})
+        if not token_index:
+            continue
+        for token in retrieval_terms:
+            postings = token_index.get(token, [])[:per_token_limit]
+            if not postings:
+                continue
+            token_weight = 1.45 if token in context_term_set or token in required_term_set else 0.75
+            for rank, item in enumerate(postings):
+                if not _item_matches_context_intent(item, rule):
+                    continue
+                candidate_items[item.item_id] = item
+                candidate_sources[item.item_id] = "context_intent_profile"
+                candidate_scores[item.item_id] += token_weight / math.sqrt(rank + 1)
+
+    category_limit = max(limit * 5, 500)
+    for category in categories:
+        for rank, item in enumerate(catalog.by_category_popular.get(category, [])[:category_limit]):
+            if not _item_matches_context_intent(item, rule):
+                continue
+            candidate_items.setdefault(item.item_id, item)
+            candidate_sources.setdefault(item.item_id, "context_intent_category")
+            candidate_scores[item.item_id] += 0.35 / math.sqrt(rank + 1)
+
+    if not candidate_scores:
+        return []
+
+    max_raw = max(candidate_scores.values(), default=1.0)
+    scored = []
+    for item_id, raw_score in candidate_scores.items():
+        item = candidate_items[item_id]
+        item_terms = catalog.item_terms.get(item_id, set())
+        overlap = len(item_terms & retrieval_term_set) / max(len(retrieval_term_set), 1)
+        required_overlap = len(item_terms & required_term_set) / max(len(required_term_set), 1)
+        quality = (item.average_rating or 3.5) / 5
+        popularity = int(item.metadata.get("rating_number") or item.metadata.get("review_count") or 0)
+        popularity_score = min(math.log1p(popularity) / math.log1p(1000), 1.0) if popularity else 0.0
+        score = (
+            0.50 * min(raw_score / max_raw, 1.0)
+            + 0.22 * min(overlap, 1.0)
+            + 0.14 * min(required_overlap, 1.0)
+            + 0.08 * quality
+            + 0.06 * popularity_score
+        )
+        scored.append(
+            (
+                item,
+                round(min(max(score, 0.0), 1.0), 4),
+                candidate_sources[item_id],
+            )
+        )
+    scored.sort(key=lambda row: (row[1], _popularity_quality_key(row[0])), reverse=True)
+    return scored
+
+
+def _intent_categories(category_hint: str, catalog: CandidateCatalog) -> list[str]:
+    if category_hint == "gift":
+        return [
+            category
+            for category in sorted(catalog.by_category_popular)
+            if is_gift_category(category)
+        ]
+    if category_hint in catalog.by_category_popular:
+        return [category_hint]
+    return []
+
+
+def _item_matches_context_intent(item: Item, rule: ContextIntentRule) -> bool:
+    if rule.name == "gift":
+        return is_gift_category(item.category)
+    return item_matches_intent(item, rule)
 
 
 def _sparse_category_tail_candidates(
@@ -836,15 +993,11 @@ def _beauty_taxonomy_candidates(
 
     candidate_scores: Counter[str] = Counter()
     candidate_items: dict[str, Item] = {}
-    per_token_limit = max(350, min(limit * 2, 1800))
+    per_token_limit = max(120, min(limit, 240))
     for group_name, group_weight in active_groups.items():
         group_terms = BEAUTY_ASPECT_GROUPS[group_name]
         for token in group_terms:
-            postings = sorted(
-                token_index.get(token, []),
-                key=_popularity_quality_key,
-                reverse=True,
-            )[:per_token_limit]
+            postings = token_index.get(token, [])[:per_token_limit]
             if not postings:
                 continue
             token_weight = 1.35 if token in evidence_terms else 0.55
@@ -1019,9 +1172,7 @@ def _beauty_taxonomy_windows(limit: int) -> tuple[tuple[int, int, float], ...]:
 
 
 def _top_popularity_items(items: list[Item], limit: int) -> list[Item]:
-    if len(items) <= limit:
-        return sorted(items, key=_popularity_quality_key, reverse=True)
-    return heapq.nlargest(limit, items, key=_popularity_quality_key)
+    return items[:limit]
 
 
 def _sample_window_items(items: list[Item], start: int, stop: int, limit: int) -> list[Item]:
@@ -1138,12 +1289,18 @@ def _select_balanced_candidates(
     sources: dict[str, list[str]],
     source_scores: dict[str, dict[str, float]],
     limit: int,
+    history_size: int = 0,
+    preferred_categories: list[str] | None = None,
+    beauty_profile: bool = False,
 ) -> list[Item]:
     return CandidateMixer(
         selected=selected,
         sources=sources,
         source_scores=source_scores,
         limit=limit,
+        history_size=history_size,
+        preferred_categories=preferred_categories or [],
+        beauty_profile=beauty_profile,
     ).mix()
 
 
@@ -1154,11 +1311,17 @@ class CandidateMixer:
         sources: dict[str, list[str]],
         source_scores: dict[str, dict[str, float]],
         limit: int,
+        history_size: int = 0,
+        preferred_categories: list[str] | None = None,
+        beauty_profile: bool = False,
     ) -> None:
         self.selected = selected
         self.sources = sources
         self.source_scores = source_scores
         self.limit = limit
+        self.history_size = history_size
+        self.preferred_categories = preferred_categories or []
+        self.beauty_profile = beauty_profile
         self.order = {item.item_id: index for index, item in enumerate(selected)}
 
     def mix(self) -> list[Item]:
@@ -1166,19 +1329,36 @@ class CandidateMixer:
         user_neighbor_floor = self._floor(ranked, "user_neighbor", 0.05)
         implicit_item_floor = self._floor(ranked, "implicit_item_item", 0.08)
         foundation = self._popularity_floor()
+        sparse_foundation = self._sparse_foundation(ranked)
+        lexical_foundation = self._lexical_foundation(ranked)
+        beauty_foundation = self._beauty_foundation(ranked)
         exploration_limit = self._exploration_limit(ranked)
         protected_limit = max(self.limit - exploration_limit, 0)
         protected, exploration = self._split_protected_and_exploration(ranked)
 
         limited: list[Item] = []
         limited_ids: set[str] = set()
-        self._append_unique(limited, limited_ids, user_neighbor_floor, self.limit)
-        self._append_unique(limited, limited_ids, implicit_item_floor, self.limit)
-        self._append_unique(limited, limited_ids, foundation, self.limit)
+        if self._sparse_profile:
+            self._append_unique(limited, limited_ids, foundation, self.limit)
+            self._append_unique(limited, limited_ids, sparse_foundation, self.limit)
+            self._append_unique(limited, limited_ids, lexical_foundation, self.limit)
+            self._append_unique(limited, limited_ids, beauty_foundation, self.limit)
+            self._append_unique(limited, limited_ids, implicit_item_floor, self.limit)
+            self._append_unique(limited, limited_ids, user_neighbor_floor, self.limit)
+        else:
+            self._append_unique(limited, limited_ids, user_neighbor_floor, self.limit)
+            self._append_unique(limited, limited_ids, implicit_item_floor, self.limit)
+            self._append_unique(limited, limited_ids, lexical_foundation, self.limit)
+            self._append_unique(limited, limited_ids, beauty_foundation, self.limit)
+            self._append_unique(limited, limited_ids, foundation, self.limit)
         self._append_unique(limited, limited_ids, protected, protected_limit)
         self._append_unique(limited, limited_ids, exploration, self.limit)
         self._append_unique(limited, limited_ids, ranked, self.limit)
         return limited
+
+    @property
+    def _sparse_profile(self) -> bool:
+        return self.history_size <= 2
 
     def _priority(self, item: Item) -> tuple[float, int, float, int]:
         scores = self.source_scores.get(item.item_id, {})
@@ -1211,9 +1391,60 @@ class CandidateMixer:
             limit=max(1, int(self.limit * share)),
         )
 
+    def _multi_source_floor(
+        self,
+        ranked: list[Item],
+        sources: tuple[str, ...],
+        share: float,
+    ) -> list[Item]:
+        if self.limit < 100:
+            return []
+        source_set = set(sources)
+        candidates = [
+            item
+            for item in ranked
+            if source_set & set(self.sources.get(item.item_id, []))
+        ]
+        candidates.sort(key=self._priority, reverse=True)
+        return candidates[: max(1, int(self.limit * share))]
+
+    def _sparse_foundation(self, ranked: list[Item]) -> list[Item]:
+        if not self._sparse_profile:
+            return []
+        return self._multi_source_floor(
+            ranked,
+            ("category_affinity_popular", "category_popular", "sparse_category_tail"),
+            0.12,
+        )
+
+    def _lexical_foundation(self, ranked: list[Item]) -> list[Item]:
+        share = 0.12 if self._sparse_profile else 0.07
+        return self._multi_source_floor(
+            ranked,
+            ("review_term_profile", "lexical_item_neighbor", "bm25_profile"),
+            share,
+        )
+
+    def _beauty_foundation(self, ranked: list[Item]) -> list[Item]:
+        if not self.beauty_profile:
+            return []
+        share = 0.14 if self._sparse_profile else 0.08
+        return self._multi_source_floor(
+            ranked,
+            (
+                "beauty_review_term_profile",
+                "beauty_lexical_item_neighbor",
+                "beauty_aspect_profile",
+                "beauty_taxonomy_aspect",
+            ),
+            share,
+        )
+
     def _popularity_floor(self) -> list[Item]:
         popularity_floor = (
-            max(20, int(self.limit * 0.06))
+            max(30, int(self.limit * 0.10))
+            if self._sparse_profile and self.limit >= 100
+            else max(20, int(self.limit * 0.06))
             if self.limit >= 100
             else max(1, int(self.limit * 0.10))
         )

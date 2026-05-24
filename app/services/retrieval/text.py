@@ -64,7 +64,7 @@ class BM25Retriever:
 
     def _candidate_indices(self, query_terms: list[str], limit: int) -> list[int]:
         candidates: set[int] = set()
-        max_candidates = min(max(limit * 50, 10_000), 20_000)
+        max_candidates = min(max(limit * 4, 2_000), 3_000)
         terms_by_rarity = sorted(
             set(query_terms),
             key=lambda term: len(self.postings.get(term, set())),

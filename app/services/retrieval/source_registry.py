@@ -45,6 +45,8 @@ class RetrievalSourceSpec:
 
 RETRIEVAL_SOURCE_SPECS: tuple[RetrievalSourceSpec, ...] = (
     RetrievalSourceSpec("neural_vector", "neural_semantic_vector", 0.90, default_disabled=True),
+    RetrievalSourceSpec("context_intent_profile", "lexical_review_term", 0.885),
+    RetrievalSourceSpec("context_intent_category", "aspect_evidence", 0.875),
     RetrievalSourceSpec("beauty_review_term_profile", "lexical_review_term", 0.87),
     RetrievalSourceSpec("implicit_item_item", "collaborative_co_engagement", 0.865),
     RetrievalSourceSpec("beauty_lexical_item_neighbor", "lexical_review_term", 0.86),
