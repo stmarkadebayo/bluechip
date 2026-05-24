@@ -1,0 +1,455 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Length 12039 >>
+stream
+0.05 0.08 0.10 rg
+BT /F2 16.50 Tf 1 0 0 1 42.00 750.00 Tm (Bluechip: Evidence-First Agents) Tj ET
+BT /F2 16.50 Tf 1 0 0 1 42.00 731.00 Tm (for Review Simulation and) Tj ET
+BT /F2 16.50 Tf 1 0 0 1 42.00 712.00 Tm (Recommendation) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 686.00 Tm (DSN x BCT LLM Agent Challenge - Task A and Task B Solution) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 675.20 Tm (Paper) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 42.00 654.40 Tm (Abstract) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 632.90 Tm (Bluechip is an evidence-first user intelligence agent for the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 622.10 Tm (DSN x BCT LLM Agent Challenge. The brief asks for two) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 611.30 Tm (capabilities: Task A, an agent that predicts a user's star) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 600.50 Tm (rating and simulates a review for an unseen product; and Task) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 589.70 Tm (B, an agent that recommends personalized items while handling) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 578.90 Tm (cold-start, cross-domain, and conversational scenarios. We) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 568.10 Tm (implement both tasks as serving heads over the same) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 557.30 Tm (user-profile, item-profile, retrieval, ranking, generation,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 546.50 Tm (validation, and tracing system.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 531.70 Tm (The central design decision is that the LLM is not the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 520.90 Tm (ranking oracle. Deterministic and evaluated components handle) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 510.10 Tm (rating prediction, candidate retrieval, ranking, and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 499.30 Tm (validation. LLM-backed generation is optional and late in the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 488.50 Tm (pipeline: it writes the final review or explanation after the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 477.70 Tm (system has already made the measurable decision. This keeps) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 466.90 Tm (the submission reproducible without provider keys, while) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 456.10 Tm (still allowing richer language when OpenRouter, DeepSeek, or) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 445.30 Tm (OpenAI credentials are supplied.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 430.50 Tm (Current bounded evidence shows Task A serving is rating-first) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 419.70 Tm (with a documented 5,000-example all-category RMSE gate of) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 408.90 Tm (1.2654. A final 25-example all-category generation smoke had) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 398.10 Tm (1.0 validation consistency, rating mention, item mention, and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 387.30 Tm (sentiment alignment under deterministic fallback. Task B's) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 376.50 Tm (measured all-category candidate recall remains the main) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 365.70 Tm (bottleneck: the stronger logged 100-example/1000-candidate) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 354.90 Tm (gate has candidate Recall@1000 0.34, HitRate@10 0.10, and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 344.10 Tm (NDCG@10 0.0766; the final 50-example/100-candidate smoke had) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 333.30 Tm (HitRate@10 0.06 and NDCG@10 0.0471. Cross-domain candidate) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 322.50 Tm (Recall@1000 is the strongest measured Task B slice at 0.5484.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 311.70 Tm (A later candidate-recall-only fast proof showed that) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 300.90 Tm (objective alignment matters: under a positive-recommendation) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 290.10 Tm (target, Recall@1000 rose to 0.3986, sparse Recall@1000 to) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 279.30 Tm (0.3973, and cross-domain Recall@1000 to 0.6081, but final) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 268.50 Tm (HitRate@10 and NDCG@10 still require a same-target ranker) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 257.70 Tm (run. Neural FAISS retrieval is now wired with durable item-id) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 246.90 Tm (mapping and passes a bounded smoke, but it is not presented) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 236.10 Tm (as a ranking-quality win until larger same-slice evals prove) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 225.30 Tm (lift.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 42.00 204.50 Tm (1. Problem Framing) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 183.00 Tm (The competition is not only a text-generation problem. Review) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 172.20 Tm (simulation and recommendation both require a model of how a) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 161.40 Tm (person behaves: what they value, what they dislike, how) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 150.60 Tm (strict their ratings are, how context changes their choices,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 139.80 Tm (and what evidence should be trusted. A prompt-only solution) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 129.00 Tm (can sound plausible but is difficult to evaluate. It cannot) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 118.20 Tm (reliably compute RMSE, candidate recall, NDCG@10, or) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 107.40 Tm (source-level ablations.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 92.60 Tm (Bluechip therefore treats the challenge as a user) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 81.80 Tm (intelligence system with two outputs:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 42.00 67.00 Tm (Task A: user and item evidence -> rating prediction -> review plan) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 42.00 59.20 Tm (-> review text -> validation) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 750.00 Tm (Task B: user and context evidence -> candidate retrieval -> ranking) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 742.20 Tm (-> explanation -> trace) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 730.40 Tm (This separation lets us evaluate the measurable parts before) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 719.60 Tm (asking a language model to produce prose. It also makes) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 708.80 Tm (failures visible: if Task B misses the held-out product, we) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 698.00 Tm (can tell whether candidate generation failed, ranking failed,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 687.20 Tm (or generation merely explained a bad recommendation.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 672.40 Tm (The implementation is informed by established) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 661.60 Tm (recommender-system patterns. The two-stage retrieval/ranking) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 650.80 Tm (shape follows the same practical separation used by) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 640.00 Tm (large-scale systems such as YouTube-style candidate) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 629.20 Tm (generation and ranking. Item-to-item and co-engagement) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 618.40 Tm (retrieval are included because Amazon-style item similarity) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 607.60 Tm (remains a strong sparse-data baseline. The review-aware) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 596.80 Tm (profile layer is inspired by DeepCoNN/NARRE-style use of) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 586.00 Tm (review text, but implemented as transparent aspect and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 575.20 Tm (evidence extraction rather than a neural review encoder. The) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 564.40 Tm (generation layer follows RAG and explainable recommendation) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 553.60 Tm (practice: retrieve bounded user/item evidence, decide with) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 542.80 Tm (deterministic scoring, then ask an LLM or fallback template) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 532.00 Tm (to express the result. We considered BPR/ALS, Wide & Deep,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 521.20 Tm (LightGCN, SASRec, HSTU, PETER, and PEPLER; under the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 510.40 Tm (deadline, we implemented the pieces that directly improved) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 499.60 Tm (measurable retrieval, rating, explanation, and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 488.80 Tm (reproducibility, and left heavier neural models as future) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 478.00 Tm (work.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 315.00 457.20 Tm (2. System Architecture) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 435.70 Tm (The local implementation is a FastAPI application with typed) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 424.90 Tm (Pydantic request and response schemas. The same internal) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 414.10 Tm (services support both tasks:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 399.30 Tm (Raw reviews and metadata) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 391.50 Tm (  -> ingestion and temporal splits) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 383.70 Tm (  -> user profile and item profile extraction) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 375.90 Tm (  -> aspect and Nigerian-context evidence extraction) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 368.10 Tm (  -> retrieval indexes and evidence graph) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 360.30 Tm (  -> Task A rating prediction / Task B ranking) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 352.50 Tm (  -> grounded generation) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 344.70 Tm (  -> validation and trace logging) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 336.90 Tm (  -> API and browser demo) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 325.10 Tm (Important modules:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 310.30 Tm (API - Local implementation: app/api/routes.py, app/main.py) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 301.10 Tm (Task orchestration - Local implementation:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 291.90 Tm (app/serving/orchestrators/review_simulation.py,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 282.70 Tm (app/serving/orchestrators/recommendation.py) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 273.50 Tm (Profiling - Local implementation: app/services/profiling/,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 264.30 Tm (app/services/intelligence/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 255.10 Tm (Retrieval - Local implementation: app/services/retrieval/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 245.90 Tm (Ranking and rating - Local implementation: app/services/ranking/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 236.70 Tm (Generation - Local implementation: app/services/generation/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 227.50 Tm (Validation - Local implementation: app/services/validation/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 218.30 Tm (Nigerian context - Local implementation: app/services/nigerian/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 209.10 Tm (Conversation state - Local implementation: app/services/conversation/) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 199.90 Tm (Observability - Local implementation: app/stores/trace_store.py,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 190.70 Tm (/api/metrics, /api/traces) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 181.50 Tm (Evaluation - Local implementation: eval/) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 168.30 Tm (The production mapping is straightforward: local JSONL files) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 157.50 Tm (become an object-store data lake, local feature and model) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 146.70 Tm (registries become managed registries, local retrieval) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 135.90 Tm (artifacts become ANN/vector/graph services, and the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 125.10 Tm (in-process ranker becomes a dedicated ranking service. The) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 114.30 Tm (important design boundary is already present locally: offline) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 103.50 Tm (data and evaluation produce versioned artifacts; online) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 92.70 Tm (serving loads those artifacts, handles fallbacks, and records) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 81.90 Tm (traces.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 315.00 61.10 Tm (3. Task A: Rating-First Review Simulation) Tj ET
+BT /F1 6 Tf 1 0 0 1 278.00 24 Tm (Bluechip Solution Paper - 1/4) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Length 11973 >>
+stream
+0.05 0.08 0.10 rg
+BT /F1 8.80 Tf 1 0 0 1 42.00 750.00 Tm (Task A input is a persona or history plus a target product.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 739.20 Tm (The output is a predicted rating, generated review,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 728.40 Tm (confidence, user signals, item signals, validation result,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 717.60 Tm (and trace.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 702.80 Tm (The serving flow is:) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 688.00 Tm (1. Build a UserProfile from visible history and persona text.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 677.50 Tm (2. Build an ItemProfile from target item metadata and summary.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 667.00 Tm (3. Predict the rating using the promoted Task A serving policy) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 656.50 Tm (or deterministic fallback.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 646.00 Tm (4. Build a review plan from the predicted rating, user signals,) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 635.50 Tm (item signals, and target item facts.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 625.00 Tm (5. Generate review text through the configured provider or) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 614.50 Tm (deterministic template fallback.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 604.00 Tm (6. Validate rating-review consistency and grounding.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 593.50 Tm (7. Return the response and trace.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 579.00 Tm (The rating-first design is deliberate. If a generator writes) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 568.20 Tm (the review first, it can drift into text that implies a) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 557.40 Tm (different score from the measured rating. Bluechip fixes the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 546.60 Tm (star decision before generation, so the review has to explain) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 535.80 Tm (the rating rather than invent it. This mirrors the challenge) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 525.00 Tm (scoring, where rating accuracy and review quality are) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 514.20 Tm (separate criteria.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 499.40 Tm (Current Task A evidence:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 484.60 Tm (Serving strategy - Value or status: Rating-first generation) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 475.40 Tm (Latest documented all-category RMSE gate - Value or status: 1.2654 on) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 466.20 Tm (5,000 examples) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 457.00 Tm (Final all-category generation smoke - Value or status: 25 examples;) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 447.80 Tm (validation consistency 1.0, rating mention 1.0, item grounding 1.0,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 438.60 Tm (sentiment alignment 1.0) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 429.40 Tm (Generation checks - Value or status: Provider failure rate, fallback) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 420.20 Tm (rate, validation consistency, rating mention, item grounding, sentiment) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 411.00 Tm (alignment, ROUGE-L F1, unigram F1) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 401.80 Tm (Fallback behavior - Value or status: Runs without external API keys) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 388.60 Tm (The implementation also supports provider-backed review) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 377.80 Tm (generation with OpenRouter, DeepSeek, or OpenAI. External) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 367.00 Tm (provider evaluation defaults to restricted data handling,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 356.20 Tm (with redact or allow required for non-sample data export.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 42.00 335.40 Tm (4. Task B: Retrieval Before Ranking) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 313.90 Tm (Task B input is a persona or history, optional current) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 303.10 Tm (context, candidate items, locale, and limit. The output is) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 292.30 Tm (ranked recommendations with reasons, tradeoffs, source) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 281.50 Tm (attribution, score components, diagnostics, and trace.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 266.70 Tm (The serving flow is:) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 251.90 Tm (1. Build or load a user profile.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 241.40 Tm (2. Detect cold-start or sparse-history conditions.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 230.90 Tm (3. Retrieve candidates from multiple heads.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 220.40 Tm (4. Preserve candidate source attribution and retrieval scores.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 209.90 Tm (5. Rank candidates with a hybrid multi-objective scorer.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 199.40 Tm (6. Generate grounded explanations after ranking.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 188.90 Tm (7. Return candidate diagnostics and a trace.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 174.40 Tm (Candidate sources include co-visitation, user-neighbor) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 163.60 Tm (collaborative retrieval, review-term retrieval, lexical) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 152.80 Tm (item-neighbor retrieval, evidence graph retrieval, BM25) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 142.00 Tm (profile/context retrieval, category-affinity popularity,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 131.20 Tm (global popularity fallback, and vector diagnostics. This is a) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 120.40 Tm (local multi-head retrieval shape: each head contributes a) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 109.60 Tm (different kind of behavioral or semantic evidence, and the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 98.80 Tm (evaluator reports source-level performance.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 750.00 Tm (Ranking blends explicit components: preference match, context) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 739.20 Tm (match, category match, aspect match, sequential signal,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 728.40 Tm (evidence graph signal, Nigerian-context match, collaborative) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 717.60 Tm (signal, retrieval match, source diversity, popularity,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 706.80 Tm (novelty, item quality, confidence, and penalties for disliked) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 696.00 Tm (or context-mismatched evidence.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 681.20 Tm (Current bounded Task B metrics:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 666.40 Tm (hybrid_candidate_recall@50 - Value: 0.13 | Interpretation: Early) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 657.20 Tm (candidate pool remains weak.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 648.00 Tm (hybrid_candidate_recall@100 - Value: 0.18 | Interpretation: Recall is the) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 638.80 Tm (main bottleneck.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 629.60 Tm (hybrid_candidate_recall@1000 - Value: 0.34 | Interpretation: Best current) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 620.40 Tm (overall candidate recall signal.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 611.20 Tm (hybrid_ranker_hit_rate@10 - Value: 0.10 | Interpretation: Current top-10) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 602.00 Tm (ranking gate.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 592.80 Tm (hybrid_ranker_ndcg@10 - Value: 0.0766 | Interpretation: Current top-10) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 583.60 Tm (ranking gate.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 574.40 Tm (Sparse candidate recall@1000 - Value: 0.3611 | Interpretation:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 565.20 Tm (Sparse-user handling is credible but not solved.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 556.00 Tm (Cross-domain candidate recall@1000 - Value: 0.5484 | Interpretation:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 546.80 Tm (Strongest measured Task B slice.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 537.60 Tm (Vector source recall - Value: 0.0 | Interpretation: Diagnostic only; not) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 528.40 Tm (claimed as a quality improvement.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 515.20 Tm (A 24 May 2026 candidate-recall fast proof rebuilt retrieval) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 504.40 Tm (artifacts with rating-weighted all-interaction evidence in an) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 493.60 Tm (isolated directory. On the full all-interactions target, the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 482.80 Tm (result was mixed: Recall@1000 improved to 0.362 and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 472.00 Tm (cross-domain Recall@1000 to 0.5752, but Recall@100 fell to) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 461.20 Tm (0.1589. On the positive-recommendation target, which excludes) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 450.40 Tm (held-out ratings below 4, retrieval passed the diagnostic) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 439.60 Tm (gates: Recall@50 0.151, Recall@100 0.1823, Recall@1000) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 428.80 Tm (0.3986, sparse Recall@1000 0.3973, and cross-domain) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 418.00 Tm (Recall@1000 0.6081. This is not counted as a final ranking) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 407.20 Tm (promotion because it did not rerun the top-10 ranker metrics.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 392.40 Tm (Final validation also ran a fresh 50-example all-category) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 381.60 Tm (smoke at candidate-limit 100: hybrid HitRate@10 0.06, NDCG@10) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 370.80 Tm (0.0471, candidate Recall@50 0.08, candidate Recall@100 0.12,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 360.00 Tm (and cross-domain candidate Recall@100 0.2857. A separate) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 349.20 Tm (5-example all-category neural FAISS smoke confirmed the) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 338.40 Tm (prebuilt 188,236-vector index loads with the companion) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 327.60 Tm (item-id map and contributes neural_vector candidates; that) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 316.80 Tm (tiny slice had zero held-out hits and is used only as runtime) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 306.00 Tm (validation, not as a quality claim.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 291.20 Tm (These numbers are intentionally conservative. The submission) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 280.40 Tm (does not claim that semantic vectors solved recommendation.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 269.60 Tm (Instead, it shows the exact bottleneck: candidate generation) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 258.80 Tm (must improve before more sophisticated ranking models can) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 248.00 Tm (matter.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 315.00 227.20 Tm (5. Nigerian Contextualization) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 205.70 Tm (The brief awards additional marks for agents that behave and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 194.90 Tm (sound Nigerian. We implement this as evidence-aware) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 184.10 Tm (contextualization, not decorative phrasing.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 169.30 Tm (The Nigerian context layer detects and uses signals such as:) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 154.50 Tm (- city and regional cues including Lagos, Abuja, Kano, Ibadan,) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 144.00 Tm (  Port Harcourt, Aba, Onitsha, Enugu, Jos, and Calabar;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 133.50 Tm (- price sensitivity in a Naira economy;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 123.00 Tm (- delivery and logistics concern;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 112.50 Tm (- social proof and community recommendation behavior;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 102.00 Tm (- quality skepticism around "original" versus fake products;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 91.50 Tm (- market, mall, and online-shopping distinctions;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 81.00 Tm (- optional Nigerian English and light pidgin voice when the) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 70.50 Tm (  persona or locale supports it.) Tj ET
+BT /F1 6 Tf 1 0 0 1 278.00 24 Tm (Bluechip Solution Paper - 2/4) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Length 11395 >>
+stream
+0.05 0.08 0.10 rg
+BT /F1 8.80 Tf 1 0 0 1 42.00 750.00 Tm (For Task A, Nigerian voice is applied only after rating) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 739.20 Tm (prediction and only when locale or persona evidence justifies) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 728.40 Tm (it. For Task B, Nigerian context contributes to score) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 717.60 Tm (components when the user context makes it relevant, for) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 706.80 Tm (example affordable products, delivery reliability, gift) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 696.00 Tm (suitability, or quality-for-money concerns.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 681.20 Tm (This keeps the system from forcing Nigerian markers into) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 670.40 Tm (every output. A Lagos student looking for an affordable) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 659.60 Tm (dinner spot should sound different from a Kano trader buying) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 648.80 Tm (business inventory or an Abuja civil servant seeking a) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 638.00 Tm (reliable gift.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 42.00 617.20 Tm (6. Experiments and Ablations) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 595.70 Tm (The evaluation suite is designed around fixed, replayable) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 584.90 Tm (scripts:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 570.10 Tm (eval/eval_task_a.py - Purpose: Rating accuracy for Task A) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 560.90 Tm (eval/train_task_a_model.py - Purpose: Train and select Task A rating) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 551.70 Tm (artifacts) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 542.50 Tm (eval/promote_task_a.py - Purpose: Promote Task A serving policy after a) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 533.30 Tm (fixed gate) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 524.10 Tm (eval/eval_task_a_generation.py - Purpose: Review generation quality and) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 514.90 Tm (provider/fallback diagnostics) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 505.70 Tm (eval/eval_task_b.py - Purpose: Candidate recall, HitRate@K, NDCG@K,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 496.50 Tm (sparse and cross-domain slices) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 487.30 Tm (eval/aggregate_task_b_reports.py - Purpose: Aggregate deterministic Task) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 478.10 Tm (B eval shards) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 468.90 Tm (eval/report_task_b_from_row_cache.py - Purpose: Derive alternate Task B) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 459.70 Tm (target-mode reports from cached eval rows) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 450.50 Tm (eval/create_task_b_contextual_eval.py - Purpose: Human-eval packet for) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 441.30 Tm (contextual relevance) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 432.10 Tm (eval/eval_evidence_intelligence.py - Purpose: Aspect and evidence-layer) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 422.90 Tm (checks) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 409.70 Tm (Ablations already supported or documented include:) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 394.90 Tm (- Task A with and without promoted rating artifacts.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 384.40 Tm (- Task A generation with deterministic fallback versus) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 373.90 Tm (  provider-backed text.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 363.40 Tm (- Task B popularity and category baselines versus hybrid) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 352.90 Tm (  retrieval/ranking.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 342.40 Tm (- Candidate Recall@50/100/1000 separated from top-rank HitRate@10) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 331.90 Tm (  and NDCG@10.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 321.40 Tm (- Sparse-user and cross-domain slices separated from aggregate) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 310.90 Tm (  metrics.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 300.40 Tm (- All-interactions versus positive-recommendation target modes) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 289.90 Tm (  separated for Task B retrieval diagnostics.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 279.40 Tm (- Source-level diagnostics for retrieval heads, including neural) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 268.90 Tm (  FAISS and vector retrieval as diagnostic paths.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 42.00 258.40 Tm (- Contextual human-eval examples with source traces.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 243.90 Tm (The most important ablation result is negative: vector and) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 233.10 Tm (neural retrieval are implemented and observable, but current) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 222.30 Tm (tracked slices do not prove ranking lift. That result is) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 211.50 Tm (useful because it prevents the submission from overclaiming) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 200.70 Tm (neural semantics and points future work toward learned) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 189.90 Tm (retrieval only after fixed same-slice evals prove lift.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 42.00 169.10 Tm (7. Reproducibility) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 147.60 Tm (The repository is designed to run without secrets. A judge) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 136.80 Tm (can install dependencies, run the API, inspect OpenAPI docs,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 126.00 Tm (run sample evals, and build the Docker container.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 111.20 Tm (Core commands:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 42.00 96.40 Tm (python3 -m venv .venv) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 42.00 88.60 Tm (source .venv/bin/activate) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 42.00 80.80 Tm (pip install -e ".[dev]") Tj ET
+BT /F3 6.30 Tf 1 0 0 1 42.00 73.00 Tm (uvicorn app.main:app --reload) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 61.20 Tm (Docker:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 750.00 Tm (docker compose up --build) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 738.20 Tm (Useful local URLs:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 723.40 Tm (http://127.0.0.1:8000/ui/) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 715.60 Tm (http://127.0.0.1:8000/docs) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 707.80 Tm (http://127.0.0.1:8000/api/health) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 700.00 Tm (http://127.0.0.1:8000/api/metrics) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 692.20 Tm (http://127.0.0.1:8000/api/traces) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 680.40 Tm (Core validation:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 665.60 Tm (ruff check .) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 657.80 Tm (pytest) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 650.00 Tm (python -m compileall app eval scripts tests) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 638.20 Tm (Sample eval:) Tj ET
+BT /F3 6.30 Tf 1 0 0 1 315.00 623.40 Tm (make eval) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 611.60 Tm (Full-data evals require local Amazon Reviews 2023 artifacts) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 600.80 Tm (under data/processed/all_categories, which are intentionally) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 590.00 Tm (not committed. The README documents the download, ingestion,) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 579.20 Tm (indexing, Task A promotion, Task B evaluation, and contextual) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 568.40 Tm (human-eval commands.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 315.00 547.60 Tm (8. Limitations and Next Work) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 526.10 Tm (The current system is submission-ready, but it is not) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 515.30 Tm (presented as solved personalization.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 500.50 Tm (Known limitations:) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 485.70 Tm (- Candidate generation is still the main Task B bottleneck,) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 475.20 Tm (  especially at Recall@50 and Recall@100.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 464.70 Tm (- HitRate@10 and NDCG@10 are modest and should be treated as) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 454.20 Tm (  baseline gates, not final product performance.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 443.70 Tm (- Task B contextual human evaluation is scored on 20 examples;) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 433.20 Tm (  Task A has a judge-facing review pack, while the official) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 422.70 Tm (  behavioural score remains judge-run.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 412.20 Tm (- Neural/vector retrieval is wired and reproducible, but it is) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 401.70 Tm (  not a promoted quality signal until larger same-slice evals) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 391.20 Tm (  show lift.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 380.70 Tm (- Local feature/model registries are production-shaped) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 370.20 Tm (  abstractions, not managed cloud services.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 359.70 Tm (- LLM output improves readability but should remain downstream of) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 349.20 Tm (  deterministic scoring and validation.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 315.00 334.70 Tm (Highest-value next steps:) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 319.90 Tm (1. Run the same-target positive-recommendation ranker pass and) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 309.40 Tm (compare HitRate@10 and NDCG@10 against the current 0.10 /) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 298.90 Tm (0.0766 gate.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 288.40 Tm (2. Improve candidate Recall@50/100 while preserving) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 277.90 Tm (cross-domain Recall@1000.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 267.40 Tm (3. Train a true learned multi-head retriever only after fixed) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 256.90 Tm (retrieval ablations show a target signal.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 246.40 Tm (4. Collect human labels for behavioral fidelity and contextual) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 235.90 Tm (relevance.) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 225.40 Tm (5. Move local registry, trace, feature, and retrieval artifacts) Tj ET
+BT /F1 8.50 Tf 1 0 0 1 315.00 214.90 Tm (into managed production services.) Tj ET
+BT /F2 11.60 Tf 1 0 0 1 315.00 194.40 Tm (9. Rubric Alignment) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 172.90 Tm (Task A review and rating simulation - Bluechip response:) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 163.70 Tm (/api/simulate-review predicts rating, generates review, validates) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 154.50 Tm (consistency, returns trace.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 145.30 Tm (Task B personalized recommendation - Bluechip response: /api/recommend) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 136.10 Tm (retrieves, ranks, explains, and returns candidate diagnostics.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 126.90 Tm (Cold-start and cross-domain - Bluechip response: Persona-only and) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 117.70 Tm (sparse-user handling are implemented and measured; cross-domain candidate) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 108.50 Tm (Recall@1000 is 0.5484.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 99.30 Tm (Multi-turn scenarios - Bluechip response: /api/conversation/turn and) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 90.10 Tm (feedback endpoints maintain conversation state.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 80.90 Tm (Solution paper - Bluechip response: This paper explains architecture) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 315.00 71.70 Tm (decisions, experiments, ablations, limitations, and next work.) Tj ET
+BT /F1 6 Tf 1 0 0 1 278.00 24 Tm (Bluechip Solution Paper - 3/4) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 1438 >>
+stream
+0.05 0.08 0.10 rg
+BT /F1 7.40 Tf 1 0 0 1 42.00 750.00 Tm (Reproducible code - Bluechip response: FastAPI app, Dockerfile,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 740.80 Tm (docker-compose, sample data, eval scripts, README, and deterministic) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 731.60 Tm (fallback are included.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 722.40 Tm (Nigerian contextualization - Bluechip response: Dedicated Nigerian) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 713.20 Tm (context and voice services use locale/persona evidence for scoring and) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 704.00 Tm (generation.) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 694.80 Tm (Clean repository - Bluechip response: Modular services, typed schemas,) Tj ET
+BT /F1 7.40 Tf 1 0 0 1 42.00 685.60 Tm (tests, linting, metrics, traces, docs, and sample artifacts are included.) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 672.40 Tm (Bluechip's core claim is disciplined rather than exaggerated:) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 661.60 Tm (user modeling and recommendation should be measurable before) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 650.80 Tm (they are eloquent. The system therefore prioritizes traceable) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 640.00 Tm (evidence, evaluation gates, and honest failure analysis, then) Tj ET
+BT /F1 8.80 Tf 1 0 0 1 42.00 629.20 Tm (uses LLMs to express the result clearly.) Tj ET
+BT /F1 6 Tf 1 0 0 1 278.00 24 Tm (Bluechip Solution Paper - 4/4) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 4 0 R >>
+endobj
+9 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 5 0 R >>
+endobj
+10 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 6 0 R >>
+endobj
+11 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 7 0 R >>
+endobj
+12 0 obj
+<< /Type /Pages /Kids [8 0 R 9 0 R 10 0 R 11 0 R] /Count 4 >>
+endobj
+13 0 obj
+<< /Type /Catalog /Pages 12 0 R >>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000000222 00000 n 
+0000012314 00000 n 
+0000024340 00000 n 
+0000035788 00000 n 
+0000037278 00000 n 
+0000037425 00000 n 
+0000037572 00000 n 
+0000037720 00000 n 
+0000037868 00000 n 
+0000037946 00000 n 
+trailer
+<< /Size 14 /Root 13 0 R >>
+startxref
+37997
+%%EOF
