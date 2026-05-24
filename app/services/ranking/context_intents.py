@@ -30,6 +30,34 @@ class CategoryHintRule:
     terms: frozenset[str]
 
 
+@dataclass(frozen=True)
+class IntentExpansion:
+    intent_name: str
+    category_hint: str
+    retrieval_terms: tuple[str, ...]
+    required_terms: tuple[str, ...]
+    negative_terms: tuple[str, ...] = ()
+
+
+GIFT_RETRIEVAL_TERMS = frozenset(
+    {
+        "card",
+        "cards",
+        "gift",
+        "gifting",
+        "her",
+        "him",
+        "low-risk",
+        "popular",
+        "quality",
+        "reliable",
+        "restaurant",
+        "restaurants",
+        "specialty",
+    }
+)
+
+
 FALLBACK_INTENT_RULES: tuple[ContextIntentRule, ...] = (
     ContextIntentRule(
         name="hair",
@@ -146,6 +174,27 @@ def context_intent_rule(context_terms: list[str]) -> ContextIntentRule | None:
     return max(matching_rules, key=lambda rule: rule.priority) if matching_rules else None
 
 
+def context_intent_expansion(context_terms: list[str]) -> IntentExpansion | None:
+    rule = context_intent_rule(context_terms)
+    if rule is None:
+        return None
+    terms = set(context_terms)
+    triggered_terms = sorted(terms & rule.trigger_terms)
+    retrieval_terms = set(rule.trigger_terms) | set(rule.item_terms) | set(triggered_terms)
+    if rule.name == "gift":
+        retrieval_terms |= set(GIFT_RETRIEVAL_TERMS)
+    if rule.category_hint and rule.category_hint != "gift":
+        retrieval_terms.update(_terms(rule.category_hint))
+    if not retrieval_terms:
+        return None
+    return IntentExpansion(
+        intent_name=rule.name,
+        category_hint=rule.category_hint,
+        retrieval_terms=tuple(sorted(retrieval_terms)),
+        required_terms=tuple(triggered_terms or sorted(rule.trigger_terms)),
+    )
+
+
 def context_intent_boost(context_terms: list[str], item: Item) -> float:
     rule = context_intent_rule(context_terms)
     if rule is None:
@@ -184,6 +233,10 @@ def item_text_terms(item: Item) -> set[str]:
 
 def is_gift_category(category: str) -> bool:
     return category in GIFT_CATEGORIES
+
+
+def _terms(text: str) -> set[str]:
+    return set(re.findall(r"[a-zA-Z][a-zA-Z0-9_-]{2,}", text.lower()))
 
 
 def _load_context_intent_rules() -> tuple[
