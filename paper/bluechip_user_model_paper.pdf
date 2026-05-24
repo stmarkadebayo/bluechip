@@ -1,0 +1,208 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Length 3154 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip User Model Paper) Tj ET
+BT /F2 18 Tf 56 736 Td (Bluechip User Model Paper) Tj ET
+BT /F1 10 Tf 56 700 Td (DSN x BCT LLM Agent Challenge - Task A: User Modeling and Review Simulation) Tj ET
+BT /F2 13 Tf 56 668 Td (Abstract) Tj ET
+BT /F1 10 Tf 56 640 Td (Bluechip's user model is an evidence-first layer for predicting how a specific user would rate and) Tj ET
+BT /F1 10 Tf 56 622 Td (review an unseen product. The system does not ask an LLM to guess the rating directly. It first) Tj ET
+BT /F1 10 Tf 56 604 Td (builds structured user and item profiles, predicts the rating with deterministic or promoted rating) Tj ET
+BT /F1 10 Tf 56 586 Td (artifacts, plans the review from the predicted rating and evidence, then uses an LLM or fallback) Tj ET
+BT /F1 10 Tf 56 568 Td (template only to express the final review.) Tj ET
+BT /F1 10 Tf 56 546 Td (The current Task A evidence is conservative and reproducible. The documented all-category rating) Tj ET
+BT /F1 10 Tf 56 528 Td (gate is RMSE 1.2654 on 5,000 examples. A final 25-example all-category generation smoke achieved 1.0) Tj ET
+BT /F1 10 Tf 56 510 Td (validation consistency, rating mention, item mention, and sentiment alignment under deterministic) Tj ET
+BT /F1 10 Tf 56 492 Td (fallback. The main claim is not that the model is finished, but that the review simulation is) Tj ET
+BT /F1 10 Tf 56 474 Td (measurable, traceable, and grounded before language generation happens.) Tj ET
+BT /F2 13 Tf 56 442 Td (1. Task Framing) Tj ET
+BT /F1 10 Tf 56 414 Td (Task A asks for a personalized review and rating simulation agent. This is a user-modeling problem) Tj ET
+BT /F1 10 Tf 56 396 Td (before it is a text-generation problem. A generated review can sound fluent while still implying the) Tj ET
+BT /F1 10 Tf 56 378 Td (wrong score, mentioning unsupported product facts, or ignoring the user's known preferences.) Tj ET
+BT /F1 10 Tf 56 360 Td (Bluechip therefore separates the measurable decision from the prose.) Tj ET
+BT /F1 10 Tf 56 338 Td (The serving contract is:) Tj ET
+BT /F3 8 Tf 56 313 Td (user evidence + target item evidence) Tj ET
+BT /F3 8 Tf 56 298 Td (-> user profile) Tj ET
+BT /F3 8 Tf 56 283 Td (-> item profile) Tj ET
+BT /F3 8 Tf 56 268 Td (-> rating prediction) Tj ET
+BT /F3 8 Tf 56 253 Td (-> review plan) Tj ET
+BT /F3 8 Tf 56 238 Td (-> grounded review text) Tj ET
+BT /F3 8 Tf 56 223 Td (-> validation and trace) Tj ET
+BT /F1 10 Tf 56 201 Td (This shape makes failure visible. If the output is wrong, we can tell whether the rating model) Tj ET
+BT /F1 10 Tf 56 183 Td (failed, the evidence profile was weak, or the generator drifted from the planned sentiment.) Tj ET
+BT /F2 13 Tf 56 151 Td (2. User Evidence Model) Tj ET
+BT /F1 10 Tf 56 123 Td (The user model combines behavioral, textual, and contextual signals:) Tj ET
+BT /F1 8 Tf 66 101 Td (Signal family: Purpose) Tj ET
+BT /F1 8 Tf 66 86 Td (Rating behavior: Captures strictness, generosity, and category-specific rating tendency.) Tj ET
+BT /F1 8 Tf 66 71 Td (Review text: Extracts liked and disliked aspects from prior reviews.) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 1) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 3599 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip User Model Paper) Tj ET
+BT /F1 8 Tf 66 736 Td (Category affinity: Tracks repeated interest in product categories and domains.) Tj ET
+BT /F1 8 Tf 66 721 Td (Item evidence: Uses product title, category, metadata, and summary where available.) Tj ET
+BT /F1 8 Tf 66 706 Td (Nigerian context: Adds locale, budget, delivery, authenticity, and social-proof signals when supported by the persona or) Tj ET
+BT /F1 8 Tf 66 691 Td (history.) Tj ET
+BT /F1 8 Tf 66 676 Td (Confidence: Exposes when the system has enough user evidence and when it is relying on fallback priors.) Tj ET
+BT /F1 10 Tf 56 657 Td (The model is intentionally transparent. Instead of hiding all preference learning inside a prompt,) Tj ET
+BT /F1 10 Tf 56 639 Td (Bluechip returns signals and traces that a judge can inspect.) Tj ET
+BT /F2 13 Tf 56 607 Td (3. Rating-First Review Simulation) Tj ET
+BT /F1 10 Tf 56 579 Td (The most important design choice is rating-first generation. The system predicts the star rating) Tj ET
+BT /F1 10 Tf 56 561 Td (before writing the review. The review generator then explains the predicted rating using available) Tj ET
+BT /F1 10 Tf 56 543 Td (user and item evidence.) Tj ET
+BT /F1 10 Tf 56 521 Td (Serving flow:) Tj ET
+BT /F1 10 Tf 70 499 Td (1. Build a UserProfile from visible history and persona text.) Tj ET
+BT /F1 10 Tf 70 481 Td (2. Build an ItemProfile from target item metadata and summary.) Tj ET
+BT /F1 10 Tf 70 463 Td (3. Predict the rating through the promoted Task A serving policy or deterministic fallback.) Tj ET
+BT /F1 10 Tf 70 445 Td (4. Build a review plan from predicted rating, user signals, item signals, and target item facts.) Tj ET
+BT /F1 10 Tf 70 427 Td (5. Generate review text through OpenRouter, DeepSeek, OpenAI, or deterministic fallback.) Tj ET
+BT /F1 10 Tf 70 409 Td (6. Validate rating-review consistency, item grounding, and sentiment alignment.) Tj ET
+BT /F1 10 Tf 70 391 Td (7. Return the response with confidence, validation result, and trace.) Tj ET
+BT /F1 10 Tf 56 369 Td (This avoids a common agent failure mode: fluent text that disagrees with the numeric rating. The) Tj ET
+BT /F1 10 Tf 56 351 Td (rating is the measurable decision, and the review is the grounded explanation.) Tj ET
+BT /F2 13 Tf 56 319 Td (4. Implementation) Tj ET
+BT /F1 10 Tf 56 291 Td (Important local modules:) Tj ET
+BT /F1 8 Tf 66 269 Td (Area: Implementation) Tj ET
+BT /F1 8 Tf 66 254 Td (API: app/api/routes.py, app/main.py) Tj ET
+BT /F1 8 Tf 66 239 Td (Task A orchestration: app/serving/orchestrators/review_simulation.py) Tj ET
+BT /F1 8 Tf 66 224 Td (User and item profiling: app/services/profiling/, app/services/intelligence/) Tj ET
+BT /F1 8 Tf 66 209 Td (Rating model and features: app/services/ranking/task_a_model.py, app/services/ranking/rating_features.py) Tj ET
+BT /F1 8 Tf 66 194 Td (Generation providers: app/services/generation/) Tj ET
+BT /F1 8 Tf 66 179 Td (Validation: app/services/validation/) Tj ET
+BT /F1 8 Tf 66 164 Td (Nigerian context: app/services/nigerian/) Tj ET
+BT /F1 8 Tf 66 149 Td (Traces and metrics: app/stores/trace_store.py, /api/metrics, /api/traces) Tj ET
+BT /F1 8 Tf 66 134 Td (Evaluation: eval/eval_task_a.py, eval/train_task_a_model.py, eval/promote_task_a.py, eval/eval_task_a_generation.py) Tj ET
+BT /F1 10 Tf 56 115 Td (The repository runs without provider secrets. If no external LLM key is supplied, deterministic) Tj ET
+BT /F1 10 Tf 56 97 Td (fallback generation still produces a valid review and allows judges to test the full API flow.) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 2) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 2737 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip User Model Paper) Tj ET
+BT /F2 13 Tf 56 726 Td (5. Nigerian Contextualization) Tj ET
+BT /F1 10 Tf 56 698 Td (The Nigerian layer is evidence-aware rather than decorative. It uses context only when the persona) Tj ET
+BT /F1 10 Tf 56 680 Td (or locale supports it. Signals include price sensitivity in a Naira economy, delivery reliability,) Tj ET
+BT /F1 10 Tf 56 662 Td (authenticity concerns, market versus mall behavior, social proof, and city cues such as Lagos,) Tj ET
+BT /F1 10 Tf 56 644 Td (Abuja, Kano, Ibadan, Port Harcourt, Aba, Onitsha, Enugu, Jos, and Calabar.) Tj ET
+BT /F1 10 Tf 56 622 Td (For Task A, this affects review voice and evidence selection after rating prediction. A budget-) Tj ET
+BT /F1 10 Tf 56 604 Td (sensitive Lagos student, an Abuja professional buying a gift, and a trader seeking durable inventory) Tj ET
+BT /F1 10 Tf 56 586 Td (should not receive the same explanation style.) Tj ET
+BT /F2 13 Tf 56 554 Td (6. Evaluation Evidence) Tj ET
+BT /F1 10 Tf 56 526 Td (Current bounded Task A evidence:) Tj ET
+BT /F1 8 Tf 66 504 Td (Metric / gate: Value or status) Tj ET
+BT /F1 8 Tf 66 489 Td (Serving strategy: Rating-first review simulation) Tj ET
+BT /F1 8 Tf 66 474 Td (Latest documented all-category RMSE gate: 1.2654 on 5,000 examples) Tj ET
+BT /F1 8 Tf 66 459 Td (Final all-category generation smoke: 25 examples) Tj ET
+BT /F1 8 Tf 66 444 Td (Validation consistency: 1.0) Tj ET
+BT /F1 8 Tf 66 429 Td (Rating mention: 1.0) Tj ET
+BT /F1 8 Tf 66 414 Td (Item grounding: 1.0) Tj ET
+BT /F1 8 Tf 66 399 Td (Sentiment alignment: 1.0) Tj ET
+BT /F1 8 Tf 66 384 Td (Fallback behavior: Works without external API keys) Tj ET
+BT /F1 10 Tf 56 365 Td (The generation smoke is not presented as a full behavioral human evaluation. It is a sanity check) Tj ET
+BT /F1 10 Tf 56 347 Td (that the response remains internally consistent, mentions the target item, and expresses sentiment) Tj ET
+BT /F1 10 Tf 56 329 Td (aligned with the predicted rating.) Tj ET
+BT /F2 13 Tf 56 297 Td (7. Reproducibility) Tj ET
+BT /F1 10 Tf 56 269 Td (Core local commands:) Tj ET
+BT /F3 8 Tf 56 244 Td (python3 -m venv .venv) Tj ET
+BT /F3 8 Tf 56 229 Td (source .venv/bin/activate) Tj ET
+BT /F3 8 Tf 56 214 Td (pip install -e ".[dev]") Tj ET
+BT /F3 8 Tf 56 199 Td (uvicorn app.main:app --reload) Tj ET
+BT /F1 10 Tf 56 177 Td (Task A evaluation commands:) Tj ET
+BT /F3 8 Tf 56 152 Td (python eval/eval_task_a.py) Tj ET
+BT /F3 8 Tf 56 137 Td (python eval/train_task_a_model.py) Tj ET
+BT /F3 8 Tf 56 122 Td (python eval/promote_task_a.py) Tj ET
+BT /F3 8 Tf 56 107 Td (python eval/eval_task_a_generation.py) Tj ET
+BT /F1 10 Tf 56 85 Td (Useful URLs:) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 2614 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip User Model Paper) Tj ET
+BT /F3 8 Tf 56 736 Td (http://127.0.0.1:8000/ui/) Tj ET
+BT /F3 8 Tf 56 721 Td (http://127.0.0.1:8000/docs) Tj ET
+BT /F3 8 Tf 56 706 Td (http://127.0.0.1:8000/api/health) Tj ET
+BT /F3 8 Tf 56 691 Td (http://127.0.0.1:8000/api/metrics) Tj ET
+BT /F3 8 Tf 56 676 Td (http://127.0.0.1:8000/api/traces) Tj ET
+BT /F2 13 Tf 56 644 Td (8. Limitations and Next Work) Tj ET
+BT /F1 10 Tf 56 616 Td (Known limitations:) Tj ET
+BT /F1 10 Tf 70 594 Td (- The RMSE gate is credible but not state of the art.) Tj ET
+BT /F1 10 Tf 70 576 Td (- The final generation smoke is small and should not be confused with a large human behavioral) Tj ET
+BT /F1 10 Tf 70 558 Td (study.) Tj ET
+BT /F1 10 Tf 70 540 Td (- The local artifact registry is production-shaped, but not a managed cloud model registry.) Tj ET
+BT /F1 10 Tf 70 522 Td (- LLM provider output can improve fluency, but rating quality must remain controlled by evaluated) Tj ET
+BT /F1 10 Tf 70 504 Td (scoring.) Tj ET
+BT /F1 10 Tf 56 482 Td (Highest-value next work:) Tj ET
+BT /F1 10 Tf 70 460 Td (1. Expand behavioral human evaluation for review fidelity.) Tj ET
+BT /F1 10 Tf 70 442 Td (2. Add richer user-level calibration by category and time.) Tj ET
+BT /F1 10 Tf 70 424 Td (3. Train stronger rating models while preserving fallback reproducibility.) Tj ET
+BT /F1 10 Tf 70 406 Td (4. Add larger same-slice provider-backed generation evaluation.) Tj ET
+BT /F2 13 Tf 56 374 Td (9. Rubric Alignment) Tj ET
+BT /F1 8 Tf 66 346 Td (Brief requirement: User model response) Tj ET
+BT /F1 8 Tf 66 331 Td (Personalized review simulation: /api/simulate-review predicts rating, generates review, validates consistency, and returns) Tj ET
+BT /F1 8 Tf 66 316 Td (trace.) Tj ET
+BT /F1 8 Tf 66 301 Td (Rating prediction: Rating-first flow with documented RMSE gate.) Tj ET
+BT /F1 8 Tf 66 286 Td (Grounded generation: Review text is generated from predicted rating and bounded evidence.) Tj ET
+BT /F1 8 Tf 66 271 Td (Nigerian contextualization: Dedicated context layer uses locale/persona evidence for voice and tradeoffs.) Tj ET
+BT /F1 8 Tf 66 256 Td (Reproducibility: Runs locally without secrets and exposes deterministic fallback.) Tj ET
+BT /F1 8 Tf 66 241 Td (Observability: Metrics, traces, validation status, and confidence are returned.) Tj ET
+BT /F1 10 Tf 56 222 Td (Bluechip's user-model claim is disciplined: build and validate the user's likely decision first,) Tj ET
+BT /F1 10 Tf 56 204 Td (then use language generation to explain that decision clearly.) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 4) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R] /Count 4 >>
+endobj
+13 0 obj
+<< /Type /Catalog /Pages 12 0 R >>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000000222 00000 n 
+0000003428 00000 n 
+0000003575 00000 n 
+0000007226 00000 n 
+0000007373 00000 n 
+0000010162 00000 n 
+0000010309 00000 n 
+0000012976 00000 n 
+0000013125 00000 n 
+0000013202 00000 n 
+trailer
+<< /Size 14 /Root 13 0 R >>
+startxref
+13253
+%%EOF

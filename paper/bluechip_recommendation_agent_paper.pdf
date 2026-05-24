@@ -1,0 +1,253 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Length 3068 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip Recommendation Agent Paper) Tj ET
+BT /F2 18 Tf 56 736 Td (Bluechip Recommendation Agent Paper) Tj ET
+BT /F1 10 Tf 56 700 Td (DSN x BCT LLM Agent Challenge - Task B: Personalized Recommendation Agent) Tj ET
+BT /F2 13 Tf 56 668 Td (Abstract) Tj ET
+BT /F1 10 Tf 56 640 Td (Bluechip's recommendation agent is a retrieval-first, evidence-grounded system for personalized) Tj ET
+BT /F1 10 Tf 56 622 Td (product recommendation. It handles sparse users, cross-domain contexts, explicit conversational) Tj ET
+BT /F1 10 Tf 56 604 Td (context, and explanation generation through a multi-head retrieval and hybrid ranking pipeline. The) Tj ET
+BT /F1 10 Tf 56 586 Td (LLM is not the recommender. It is an optional explanation layer after retrieval and ranking have) Tj ET
+BT /F1 10 Tf 56 568 Td (already made the measurable decision.) Tj ET
+BT /F1 10 Tf 56 546 Td (The current Task B evidence shows the main bottleneck honestly: candidate recall. The strongest) Tj ET
+BT /F1 10 Tf 56 528 Td (logged 100-example/1000-candidate gate has candidate Recall@1000 0.34, HitRate@10 0.10, and NDCG@10) Tj ET
+BT /F1 10 Tf 56 510 Td (0.0766. Cross-domain candidate Recall@1000 is the strongest measured slice at 0.5484. A later) Tj ET
+BT /F1 10 Tf 56 492 Td (candidate-recall fast proof showed that positive-recommendation target alignment improves retrieval:) Tj ET
+BT /F1 10 Tf 56 474 Td (Recall@1000 0.3986, sparse Recall@1000 0.3973, and cross-domain Recall@1000 0.6081. We do not claim) Tj ET
+BT /F1 10 Tf 56 456 Td (that the final ranker has been promoted on this target until same-target HitRate@10 and NDCG@10 are) Tj ET
+BT /F1 10 Tf 56 438 Td (run.) Tj ET
+BT /F2 13 Tf 56 406 Td (1. Task Framing) Tj ET
+BT /F1 10 Tf 56 378 Td (Task B is a recommender-system problem with an agent interface. A useful agent must understand user) Tj ET
+BT /F1 10 Tf 56 360 Td (evidence, retrieve plausible products, rank them, explain why they fit, and expose enough) Tj ET
+BT /F1 10 Tf 56 342 Td (diagnostics to debug failures.) Tj ET
+BT /F1 10 Tf 56 320 Td (Bluechip uses this serving contract:) Tj ET
+BT /F3 8 Tf 56 295 Td (user history + persona + current context) Tj ET
+BT /F3 8 Tf 56 280 Td (-> user profile) Tj ET
+BT /F3 8 Tf 56 265 Td (-> candidate retrieval) Tj ET
+BT /F3 8 Tf 56 250 Td (-> hybrid ranking) Tj ET
+BT /F3 8 Tf 56 235 Td (-> grounded explanations) Tj ET
+BT /F3 8 Tf 56 220 Td (-> diagnostics and trace) Tj ET
+BT /F1 10 Tf 56 198 Td (The key design principle is retrieval before ranking. If the correct item is not in the candidate) Tj ET
+BT /F1 10 Tf 56 180 Td (pool, no ranker or LLM explanation can recover it. This is why the evaluation separates candidate) Tj ET
+BT /F1 10 Tf 56 162 Td (Recall@K from HitRate@10 and NDCG@10.) Tj ET
+BT /F2 13 Tf 56 130 Td (2. Retrieval Architecture) Tj ET
+BT /F1 10 Tf 56 102 Td (The agent uses multiple retrieval heads because no single source works across dense, sparse, cold-) Tj ET
+BT /F1 10 Tf 56 84 Td (start, and cross-domain users.) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 1) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 14 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 3113 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip Recommendation Agent Paper) Tj ET
+BT /F1 8 Tf 66 736 Td (Retrieval head: Purpose) Tj ET
+BT /F1 8 Tf 66 721 Td (Co-visitation / item-to-item: Finds items connected through shared user behavior.) Tj ET
+BT /F1 8 Tf 66 706 Td (User-neighbor collaborative retrieval: Uses similar users where enough behavior exists.) Tj ET
+BT /F1 8 Tf 66 691 Td (Review-term retrieval: Matches user aspect language to product evidence.) Tj ET
+BT /F1 8 Tf 66 676 Td (Lexical item-neighbor retrieval: Finds title and metadata neighbors.) Tj ET
+BT /F1 8 Tf 66 661 Td (Evidence graph retrieval: Connects user aspects, categories, and item evidence.) Tj ET
+BT /F1 8 Tf 66 646 Td (BM25 profile/context retrieval: Makes current intent and persona text affect retrieval.) Tj ET
+BT /F1 8 Tf 66 631 Td (Category-affinity popularity: Provides robust candidates for sparse users.) Tj ET
+BT /F1 8 Tf 66 616 Td (Global popularity fallback: Prevents empty or brittle candidate sets.) Tj ET
+BT /F1 8 Tf 66 601 Td (Neural FAISS diagnostics: Confirms vector index wiring, but is not claimed as a quality win yet.) Tj ET
+BT /F1 10 Tf 56 582 Td (Candidate source attribution is preserved through the pipeline. This lets the evaluator report which) Tj ET
+BT /F1 10 Tf 56 564 Td (heads found the held-out item and which heads only added noise.) Tj ET
+BT /F2 13 Tf 56 532 Td (3. Ranking and Explanation) Tj ET
+BT /F1 10 Tf 56 504 Td (After retrieval, Bluechip applies a hybrid scorer with explicit components:) Tj ET
+BT /F1 10 Tf 70 482 Td (- preference match) Tj ET
+BT /F1 10 Tf 70 464 Td (- context match) Tj ET
+BT /F1 10 Tf 70 446 Td (- category match) Tj ET
+BT /F1 10 Tf 70 428 Td (- aspect match) Tj ET
+BT /F1 10 Tf 70 410 Td (- sequential signal) Tj ET
+BT /F1 10 Tf 70 392 Td (- evidence graph signal) Tj ET
+BT /F1 10 Tf 70 374 Td (- Nigerian-context match) Tj ET
+BT /F1 10 Tf 70 356 Td (- collaborative signal) Tj ET
+BT /F1 10 Tf 70 338 Td (- retrieval match) Tj ET
+BT /F1 10 Tf 70 320 Td (- source diversity) Tj ET
+BT /F1 10 Tf 70 302 Td (- popularity) Tj ET
+BT /F1 10 Tf 70 284 Td (- novelty) Tj ET
+BT /F1 10 Tf 70 266 Td (- item quality) Tj ET
+BT /F1 10 Tf 70 248 Td (- confidence) Tj ET
+BT /F1 10 Tf 70 230 Td (- penalties for disliked or context-mismatched evidence) Tj ET
+BT /F1 10 Tf 56 208 Td (Explanations are generated after ranking. The explanation layer uses the ranked item, profile) Tj ET
+BT /F1 10 Tf 56 190 Td (evidence, item evidence, and score components. This prevents the LLM from inventing a recommendation) Tj ET
+BT /F1 10 Tf 56 172 Td (that the ranking system did not select.) Tj ET
+BT /F2 13 Tf 56 140 Td (4. Slice-Aware Recommendation Behavior) Tj ET
+BT /F1 10 Tf 56 112 Td (Sparse and dense users need different retrieval mixes. Dense users can rely more on collaborative) Tj ET
+BT /F1 10 Tf 56 94 Td (and item-to-item behavior. Sparse users need stronger category, lexical, aspect, and popularity) Tj ET
+BT /F1 10 Tf 56 76 Td (fallbacks. Beauty and other text-heavy categories benefit from review-term and aspect evidence) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 2) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 14 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 3446 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip Recommendation Agent Paper) Tj ET
+BT /F1 10 Tf 56 736 Td (because broad popularity alone misses many intent-specific products.) Tj ET
+BT /F1 10 Tf 56 714 Td (The current implementation includes the machinery for this slice-aware behavior. The fast proof also) Tj ET
+BT /F1 10 Tf 56 696 Td (showed that target alignment matters: when the task is framed as positive recommendation rather than) Tj ET
+BT /F1 10 Tf 56 678 Td (every next interaction, retrieval improves on the slices that matter most for recommendation) Tj ET
+BT /F1 10 Tf 56 660 Td (quality.) Tj ET
+BT /F2 13 Tf 56 628 Td (5. Implementation) Tj ET
+BT /F1 10 Tf 56 600 Td (Important local modules:) Tj ET
+BT /F1 8 Tf 66 578 Td (Area: Implementation) Tj ET
+BT /F1 8 Tf 66 563 Td (API: app/api/routes.py, app/main.py) Tj ET
+BT /F1 8 Tf 66 548 Td (Task B orchestration: app/serving/orchestrators/recommendation.py) Tj ET
+BT /F1 8 Tf 66 533 Td (Candidate retrieval: app/services/retrieval/candidates.py, app/services/retrieval/source_registry.py) Tj ET
+BT /F1 8 Tf 66 518 Td (Item similarity: app/services/retrieval/item_similarity.py) Tj ET
+BT /F1 8 Tf 66 503 Td (Context intent: app/services/ranking/context_intents.py, eval/task_b_context.py) Tj ET
+BT /F1 8 Tf 66 488 Td (Ranking: app/services/ranking/) Tj ET
+BT /F1 8 Tf 66 473 Td (Optional learned ranker: app/services/ranking/learned_task_b.py, eval/train_task_b_ranker.py) Tj ET
+BT /F1 8 Tf 66 458 Td (Evaluation: eval/eval_task_b.py, eval/aggregate_task_b_reports.py, eval/report_task_b_from_row_cache.py) Tj ET
+BT /F1 8 Tf 66 443 Td (Human-eval packet: eval/create_task_b_contextual_eval.py) Tj ET
+BT /F1 8 Tf 66 428 Td (Traces and diagnostics: /api/metrics, /api/traces) Tj ET
+BT /F1 10 Tf 56 409 Td (The optional learned ranker is gated. It is implemented, but the submission does not claim final) Tj ET
+BT /F1 10 Tf 56 391 Td (lift because the full same-target ranker run was not completed before submission.) Tj ET
+BT /F2 13 Tf 56 359 Td (6. Evaluation Evidence) Tj ET
+BT /F1 10 Tf 56 331 Td (Current bounded Task B metrics:) Tj ET
+BT /F1 8 Tf 66 309 Td (Metric: Value - Interpretation) Tj ET
+BT /F1 8 Tf 66 294 Td (hybrid_candidate_recall@50: 0.13 - Early candidate pool remains weak.) Tj ET
+BT /F1 8 Tf 66 279 Td (hybrid_candidate_recall@100: 0.18 - Recall is the main bottleneck.) Tj ET
+BT /F1 8 Tf 66 264 Td (hybrid_candidate_recall@1000: 0.34 - Best current overall candidate recall signal.) Tj ET
+BT /F1 8 Tf 66 249 Td (hybrid_ranker_hit_rate@10: 0.10 - Current top-10 ranking gate.) Tj ET
+BT /F1 8 Tf 66 234 Td (hybrid_ranker_ndcg@10: 0.0766 - Current top-10 ranking gate.) Tj ET
+BT /F1 8 Tf 66 219 Td (Sparse candidate recall@1000: 0.3611 - Sparse-user handling is credible but incomplete.) Tj ET
+BT /F1 8 Tf 66 204 Td (Cross-domain candidate recall@1000: 0.5484 - Strongest measured Task B slice.) Tj ET
+BT /F1 8 Tf 66 189 Td (Vector source recall: 0.0 - Diagnostic only, not a promoted quality signal.) Tj ET
+BT /F1 10 Tf 56 170 Td (Final 50-example all-category smoke at candidate-limit 100:) Tj ET
+BT /F1 8 Tf 66 148 Td (Metric: Value) Tj ET
+BT /F1 8 Tf 66 133 Td (HitRate@10: 0.06) Tj ET
+BT /F1 8 Tf 66 118 Td (NDCG@10: 0.0471) Tj ET
+BT /F1 8 Tf 66 103 Td (Candidate Recall@50: 0.08) Tj ET
+BT /F1 8 Tf 66 88 Td (Candidate Recall@100: 0.12) Tj ET
+BT /F1 8 Tf 66 73 Td (Cross-domain candidate Recall@100: 0.2857) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 14 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 2752 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip Recommendation Agent Paper) Tj ET
+BT /F1 10 Tf 56 736 Td (24 May 2026 candidate-recall fast proof:) Tj ET
+BT /F1 8 Tf 66 714 Td (Target mode: Key result) Tj ET
+BT /F1 8 Tf 66 699 Td (All interactions: Recall@1000 improved to 0.362, cross-domain Recall@1000 to 0.5752, but Recall@100 fell to 0.1589.) Tj ET
+BT /F1 8 Tf 66 684 Td (Positive recommendation: Recall@50 0.151, Recall@100 0.1823, Recall@1000 0.3986, sparse Recall@1000 0.3973, cross-domain) Tj ET
+BT /F1 8 Tf 66 669 Td (Recall@1000 0.6081.) Tj ET
+BT /F1 10 Tf 56 650 Td (This evidence supports the direction of the engineering work: target alignment and multi-head) Tj ET
+BT /F1 10 Tf 56 632 Td (candidate retrieval help. It does not yet support claiming a final top-10 ranking promotion.) Tj ET
+BT /F2 13 Tf 56 600 Td (7. Nigerian Contextualization) Tj ET
+BT /F1 10 Tf 56 572 Td (For recommendations, Nigerian context affects score components and explanations when relevant. The) Tj ET
+BT /F1 10 Tf 56 554 Td (agent can use budget sensitivity, delivery reliability, authenticity concerns, city cues,) Tj ET
+BT /F1 10 Tf 56 536 Td (market/mall distinctions, and social proof. These are not added as generic flavor. They contribute) Tj ET
+BT /F1 10 Tf 56 518 Td (when the user's persona or request makes them decision-relevant.) Tj ET
+BT /F1 10 Tf 56 496 Td (Example contextual intents include affordable gifts, reliable delivery in Lagos or Abuja, durable) Tj ET
+BT /F1 10 Tf 56 478 Td (business inventory, original-versus-fake quality concerns, and value-for-money choices.) Tj ET
+BT /F2 13 Tf 56 446 Td (8. Reproducibility) Tj ET
+BT /F1 10 Tf 56 418 Td (Core local commands:) Tj ET
+BT /F3 8 Tf 56 393 Td (python3 -m venv .venv) Tj ET
+BT /F3 8 Tf 56 378 Td (source .venv/bin/activate) Tj ET
+BT /F3 8 Tf 56 363 Td (pip install -e ".[dev]") Tj ET
+BT /F3 8 Tf 56 348 Td (uvicorn app.main:app --reload) Tj ET
+BT /F1 10 Tf 56 326 Td (Task B evaluation commands:) Tj ET
+BT /F3 8 Tf 56 301 Td (python eval/eval_task_b.py) Tj ET
+BT /F3 8 Tf 56 286 Td (python eval/aggregate_task_b_reports.py) Tj ET
+BT /F3 8 Tf 56 271 Td (python eval/report_task_b_from_row_cache.py) Tj ET
+BT /F3 8 Tf 56 256 Td (python eval/create_task_b_contextual_eval.py) Tj ET
+BT /F1 10 Tf 56 234 Td (Useful URLs:) Tj ET
+BT /F3 8 Tf 56 209 Td (http://127.0.0.1:8000/ui/) Tj ET
+BT /F3 8 Tf 56 194 Td (http://127.0.0.1:8000/docs) Tj ET
+BT /F3 8 Tf 56 179 Td (http://127.0.0.1:8000/api/health) Tj ET
+BT /F3 8 Tf 56 164 Td (http://127.0.0.1:8000/api/metrics) Tj ET
+BT /F3 8 Tf 56 149 Td (http://127.0.0.1:8000/api/traces) Tj ET
+BT /F2 13 Tf 56 117 Td (9. Limitations and Next Work) Tj ET
+BT /F1 10 Tf 56 89 Td (Known limitations:) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 4) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 14 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 2805 >>
+stream
+BT /F1 8 Tf 56 758 Td (Bluechip Recommendation Agent Paper) Tj ET
+BT /F1 10 Tf 70 736 Td (- Candidate Recall@50 and Recall@100 are still too low.) Tj ET
+BT /F1 10 Tf 70 718 Td (- HitRate@10 and NDCG@10 are modest and should be treated as baseline gates.) Tj ET
+BT /F1 10 Tf 70 700 Td (- Positive-recommendation retrieval improved recall, but same-target top-10 ranker metrics remain) Tj ET
+BT /F1 10 Tf 70 682 Td (next work.) Tj ET
+BT /F1 10 Tf 70 664 Td (- Neural/vector retrieval is wired and reproducible, but not yet a promoted quality signal.) Tj ET
+BT /F1 10 Tf 70 646 Td (- Local retrieval artifacts are production-shaped, not managed vector or graph services.) Tj ET
+BT /F1 10 Tf 56 624 Td (Highest-value next work:) Tj ET
+BT /F1 10 Tf 70 602 Td (1. Promote the positive-recommendation target only after same-target HitRate@10 and NDCG@10 beat) Tj ET
+BT /F1 10 Tf 70 584 Td (the current 0.10 / 0.0766 gate.) Tj ET
+BT /F1 10 Tf 70 566 Td (2. Improve candidate Recall@50 and Recall@100 before investing more in ranker complexity.) Tj ET
+BT /F1 10 Tf 70 548 Td (3. Make candidate mixing more slice-aware for sparse users and Beauty-like text-heavy categories.) Tj ET
+BT /F1 10 Tf 70 530 Td (4. Train pairwise or listwise rankers with hard negatives once candidate recall is high enough.) Tj ET
+BT /F1 10 Tf 70 512 Td (5. Move retrieval artifacts to managed vector, lexical, and graph services for production scale.) Tj ET
+BT /F2 13 Tf 56 480 Td (10. Rubric Alignment) Tj ET
+BT /F1 8 Tf 66 452 Td (Brief requirement: Recommendation agent response) Tj ET
+BT /F1 8 Tf 66 437 Td (Personalized recommendations: /api/recommend retrieves, ranks, explains, and returns diagnostics.) Tj ET
+BT /F1 8 Tf 66 422 Td (Cold-start and sparse users: Persona, category, lexical, aspect, and popularity fallbacks are implemented.) Tj ET
+BT /F1 8 Tf 66 407 Td (Cross-domain behavior: Cross-domain candidate Recall@1000 is the strongest measured slice at 0.5484; positive target proof) Tj ET
+BT /F1 8 Tf 66 392 Td (reached 0.6081.) Tj ET
+BT /F1 8 Tf 66 377 Td (Multi-turn scenarios: Conversation and feedback endpoints maintain context.) Tj ET
+BT /F1 8 Tf 66 362 Td (Explainability: Reasons are grounded in user evidence, item evidence, and score components.) Tj ET
+BT /F1 8 Tf 66 347 Td (Reproducibility: Runs locally without secrets and exposes deterministic fallbacks.) Tj ET
+BT /F1 8 Tf 66 332 Td (Honest evaluation: Candidate recall, ranking metrics, source attribution, and limitations are separated.) Tj ET
+BT /F1 10 Tf 56 313 Td (Bluechip's recommendation-agent claim is intentionally practical: improve retrieval first, prove) Tj ET
+BT /F1 10 Tf 56 295 Td (top-10 lift second, and let the LLM explain the ranked decision rather than make it.) Tj ET
+BT /F1 8 Tf 56 30 Td (Bluechip submission paper - page 5) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 14 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R] /Count 5 >>
+endobj
+15 0 obj
+<< /Type /Catalog /Pages 14 0 R >>
+endobj
+xref
+0 16
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000000222 00000 n 
+0000003342 00000 n 
+0000003489 00000 n 
+0000006654 00000 n 
+0000006801 00000 n 
+0000010299 00000 n 
+0000010446 00000 n 
+0000013251 00000 n 
+0000013400 00000 n 
+0000016258 00000 n 
+0000016407 00000 n 
+0000016491 00000 n 
+trailer
+<< /Size 16 /Root 15 0 R >>
+startxref
+16542
+%%EOF

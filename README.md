@@ -26,7 +26,9 @@ This repository provides a FastAPI app, browser demo, Dockerfile, docker-compose
 
 Judge-facing docs:
 
-- [Solution paper](paper/solution_paper.md)
+- [Combined solution paper](paper/solution_paper.md)
+- [User model paper](paper/user_model_paper.md) / [PDF](paper/bluechip_user_model_paper.pdf)
+- [Recommendation agent paper](paper/recommendation_agent_paper.md) / [PDF](paper/bluechip_recommendation_agent_paper.pdf)
 - [Submission freeze plan](docs/SUBMISSION_FREEZE.md)
 - [Submission evaluation summary](docs/evaluation/SUBMISSION_EVAL_SUMMARY.md)
 - [Dataset EDA](docs/evaluation/DATASET_EDA.md)
