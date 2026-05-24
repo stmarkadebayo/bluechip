@@ -25,16 +25,37 @@ def main() -> None:
     parser.add_argument("--max-positive-items-per-user", type=int, default=50)
     parser.add_argument("--review-term-max-terms-per-item", type=int, default=18)
     parser.add_argument("--review-term-max-items-per-term", type=int, default=250)
+    parser.add_argument(
+        "--interaction-mode",
+        choices=["positive", "all_rating_weighted"],
+        default="positive",
+        help=(
+            "Build positive-only recommendation artifacts or all-interaction "
+            "next-item artifacts with rating-weighted edges."
+        ),
+    )
     args = parser.parse_args()
 
     train = read_jsonl(Path(args.train))
     items = read_jsonl(Path(args.items)) if args.items else []
-    item_neighbors = build_item_neighbors_from_reviews(train, top_k=args.top_k)
+    positive_threshold = 0.0 if args.interaction_mode == "all_rating_weighted" else 4.0
+    rating_weighted = args.interaction_mode == "all_rating_weighted"
+    item_neighbors = build_item_neighbors_from_reviews(
+        train,
+        top_k=args.top_k,
+        positive_threshold=positive_threshold,
+        rating_weighted=rating_weighted,
+    )
     output_dir = Path(args.output_dir)
     write_json(
         output_dir / "item_neighbors.json",
         {
-            "type": "positive_item_cooccurrence",
+            "type": "rating_weighted_item_cooccurrence"
+            if rating_weighted
+            else "positive_item_cooccurrence",
+            "interaction_mode": args.interaction_mode,
+            "positive_threshold": positive_threshold,
+            "rating_weighted": rating_weighted,
             "top_k": args.top_k,
             "items": item_neighbors,
         },
@@ -42,6 +63,8 @@ def main() -> None:
     collaborative = build_collaborative_retrieval_index(
         train,
         top_k=args.top_k,
+        positive_threshold=positive_threshold,
+        rating_weighted=rating_weighted,
         max_positive_items_per_user=args.max_positive_items_per_user,
         max_users_per_item=args.max_users_per_item,
     )
@@ -49,6 +72,8 @@ def main() -> None:
     review_terms = build_review_term_retrieval_index(
         train,
         items=items,
+        positive_threshold=positive_threshold,
+        rating_weighted=rating_weighted,
         max_terms_per_item=args.review_term_max_terms_per_item,
         max_items_per_term=args.review_term_max_items_per_term,
     )

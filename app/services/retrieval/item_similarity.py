@@ -112,41 +112,53 @@ def build_item_neighbors_from_reviews(
     top_k: int = 20,
     positive_threshold: float = 4.0,
     max_positive_items_per_user: int = 50,
+    rating_weighted: bool = False,
 ) -> dict[str, list[dict]]:
     """Build item-item neighbors from positive user co-occurrence."""
 
-    user_items: dict[str, dict[str, int]] = defaultdict(dict)
+    user_items: dict[str, dict[str, dict]] = defaultdict(dict)
     co_counts: dict[str, Counter] = defaultdict(Counter)
 
     for row in reviews:
-        if float(row.get("rating") or 0) < positive_threshold:
+        rating = float(row.get("rating") or 0)
+        weight = _interaction_weight(
+            rating=rating,
+            positive_threshold=positive_threshold,
+            rating_weighted=rating_weighted,
+        )
+        if weight <= 0:
             continue
         user_id = row["user_id"]
         item_id = row["item_id"]
         timestamp = int(row.get("timestamp") or 0)
-        user_items[user_id][item_id] = max(timestamp, user_items[user_id].get(item_id, 0))
+        existing = user_items[user_id].get(item_id)
+        if existing is None or timestamp >= int(existing.get("timestamp") or 0):
+            user_items[user_id][item_id] = {"timestamp": timestamp, "weight": weight}
 
-    item_counts = Counter(item_id for items in user_items.values() for item_id in items)
+    item_weights = Counter()
+    for items in user_items.values():
+        for item_id, record in items.items():
+            item_weights[item_id] += float(record.get("weight") or 0)
 
     for items in user_items.values():
         bounded_items = [
-            item_id
-            for item_id, _ in sorted(
+            (item_id, float(record.get("weight") or 0))
+            for item_id, record in sorted(
                 items.items(),
-                key=lambda row: (row[1], row[0]),
+                key=lambda row: (int(row[1].get("timestamp") or 0), row[0]),
                 reverse=True,
             )[:max_positive_items_per_user]
         ]
-        for left in bounded_items:
-            for right in bounded_items:
+        for left, left_weight in bounded_items:
+            for right, right_weight in bounded_items:
                 if left != right:
-                    co_counts[left][right] += 1
+                    co_counts[left][right] += math.sqrt(left_weight * right_weight)
 
     neighbors = {}
     for item_id, counts in co_counts.items():
         scored = []
         for other_id, co_count in counts.items():
-            denom = math.sqrt(item_counts[item_id] * item_counts[other_id])
+            denom = math.sqrt(item_weights[item_id] * item_weights[other_id])
             score = co_count / denom if denom else 0.0
             scored.append({"item_id": other_id, "score": round(score, 4)})
         scored.sort(key=lambda row: row["score"], reverse=True)
@@ -160,6 +172,7 @@ def build_collaborative_retrieval_index(
     positive_threshold: float = 4.0,
     max_positive_items_per_user: int = 50,
     max_users_per_item: int = 500,
+    rating_weighted: bool = False,
 ) -> dict:
     """Build compact collaborative retrieval artifacts from temporal train reviews.
 
@@ -173,13 +186,19 @@ def build_collaborative_retrieval_index(
 
     for row in reviews:
         rating = float(row.get("rating") or 0)
-        if rating < positive_threshold:
+        weight = _interaction_weight(
+            rating=rating,
+            positive_threshold=positive_threshold,
+            rating_weighted=rating_weighted,
+        )
+        if weight <= 0:
             continue
         user_id = str(row["user_id"])
         item_id = str(row["item_id"])
         record = {
             "item_id": item_id,
             "rating": rating,
+            "weight": round(weight, 4),
             "timestamp": int(row.get("timestamp") or 0),
             "category": row.get("category") or "unknown",
         }
@@ -200,6 +219,7 @@ def build_collaborative_retrieval_index(
                 {
                     "user_id": user_id,
                     "rating": round(float(record.get("rating") or 0), 3),
+                    "weight": round(float(record.get("weight") or 0), 4),
                     "timestamp": int(record.get("timestamp") or 0),
                 }
             )
@@ -212,12 +232,15 @@ def build_collaborative_retrieval_index(
     return {
         "type": "collaborative_retrieval",
         "positive_threshold": positive_threshold,
+        "rating_weighted": rating_weighted,
+        "interaction_mode": _interaction_mode_name(positive_threshold, rating_weighted),
         "top_k": top_k,
         "item_neighbors": build_item_neighbors_from_reviews(
             reviews,
             top_k=top_k,
             positive_threshold=positive_threshold,
             max_positive_items_per_user=max_positive_items_per_user,
+            rating_weighted=rating_weighted,
         ),
         "user_positive_items": compact_users,
         "item_positive_users": compact_item_users,
@@ -230,6 +253,7 @@ def build_review_term_retrieval_index(
     positive_threshold: float = 4.0,
     max_terms_per_item: int = 18,
     max_items_per_term: int = 250,
+    rating_weighted: bool = False,
 ) -> dict:
     """Build item retrieval from item metadata plus positive review language.
 
@@ -260,16 +284,21 @@ def build_review_term_retrieval_index(
 
     for row in reviews:
         rating = float(row.get("rating") or 0)
-        if rating < positive_threshold:
+        weight = _interaction_weight(
+            rating=rating,
+            positive_threshold=positive_threshold,
+            rating_weighted=rating_weighted,
+        )
+        if weight <= 0:
             continue
         item_id = str(row.get("item_id") or "")
         if not item_id:
             continue
         category = str(row.get("category") or item_categories.get(item_id) or "unknown")
         item_categories[item_id] = category
-        item_positive_counts[item_id] += 1
+        item_positive_counts[item_id] += weight
         text = embedding_text(row.get("item_name"), category, row.get("review"))
-        item_counters[item_id].update(_weighted_terms(text, weight=2.0))
+        item_counters[item_id].update(_weighted_terms(text, weight=2.0 * weight))
 
     item_ids = sorted(item_counters)
     doc_freq = Counter()
@@ -306,6 +335,8 @@ def build_review_term_retrieval_index(
     return {
         "type": "review_term_retrieval",
         "positive_threshold": positive_threshold,
+        "rating_weighted": rating_weighted,
+        "interaction_mode": _interaction_mode_name(positive_threshold, rating_weighted),
         "max_terms_per_item": max_terms_per_item,
         "max_items_per_term": max_items_per_term,
         "item_terms": item_terms,
@@ -327,13 +358,15 @@ def scored_candidate_ids_from_history(
     history: list[UserHistoryItem],
     item_neighbors: dict[str, list[dict]],
     limit: int = 100,
+    min_seed_rating: float = 4.0,
 ) -> list[tuple[str, float]]:
     scores = Counter()
     for item in history:
-        if item.rating < 4:
+        if item.rating < min_seed_rating:
             continue
+        history_weight = _history_item_weight(item.rating, min_seed_rating)
         for neighbor in item_neighbors.get(item.item_id, []):
-            scores[neighbor["item_id"]] += float(neighbor.get("score") or 0)
+            scores[neighbor["item_id"]] += history_weight * float(neighbor.get("score") or 0)
     return _normalized_counter(scores, limit)
 
 
@@ -385,16 +418,20 @@ def candidate_ids_from_user_neighbors(
 ) -> list[tuple[str, float]]:
     item_users = collaborative_index.get("item_positive_users") or {}
     user_items = collaborative_index.get("user_positive_items") or {}
+    min_seed_rating = _seed_rating_threshold(collaborative_index)
     seen = {item.item_id for item in history}
-    liked_history = [item for item in history if item.rating >= 4]
+    liked_history = [item for item in history if item.rating >= min_seed_rating]
     if not liked_history:
         return []
 
     user_scores = Counter()
     for item in liked_history:
-        history_weight = max((float(item.rating) - 3.0) / 2.0, 0.1)
+        history_weight = _history_item_weight(item.rating, min_seed_rating)
         for neighbor in item_users.get(item.item_id, []):
-            rating_weight = max((float(neighbor.get("rating") or 0) - 3.0) / 2.0, 0.1)
+            rating_weight = float(neighbor.get("weight") or 0) or _history_item_weight(
+                float(neighbor.get("rating") or 0),
+                min_seed_rating,
+            )
             user_scores[str(neighbor["user_id"])] += history_weight * rating_weight
 
     item_scores = Counter()
@@ -403,7 +440,10 @@ def candidate_ids_from_user_neighbors(
             item_id = str(record["item_id"])
             if item_id in seen:
                 continue
-            rating_weight = max((float(record.get("rating") or 0) - 3.0) / 2.0, 0.1)
+            rating_weight = float(record.get("weight") or 0) or _history_item_weight(
+                float(record.get("rating") or 0),
+                min_seed_rating,
+            )
             item_scores[item_id] += user_score * rating_weight
 
     return _normalized_counter(item_scores, limit)
@@ -453,10 +493,11 @@ def candidate_ids_from_lexical_item_neighbors(
     term_items = review_term_index.get("term_items") or {}
     seen = {item.item_id for item in history}
     scores = Counter()
+    min_seed_rating = 1.0 if review_term_index.get("interaction_mode") == "all_rating_weighted" else 4.0
     for item in history:
-        if item.rating < 4:
+        if item.rating < min_seed_rating:
             continue
-        history_weight = max((float(item.rating) - 3.0) / 2.0, 0.2)
+        history_weight = _history_item_weight(item.rating, min_seed_rating)
         for term, term_weight in _item_terms(item_terms.get(item.item_id, []))[:max_terms_per_history_item]:
             for neighbor_id, posting_score in _postings(term_items.get(term, [])):
                 if neighbor_id in seen:
@@ -473,6 +514,34 @@ def _normalized_counter(scores: Counter, limit: int) -> list[tuple[str, float]]:
         (item_id, round(min(float(score) / max_score, 1.0), 4))
         for item_id, score in scores.most_common(limit)
     ]
+
+
+def _interaction_weight(
+    rating: float,
+    positive_threshold: float,
+    rating_weighted: bool,
+) -> float:
+    if rating < positive_threshold:
+        return 0.0
+    if not rating_weighted:
+        return 1.0
+    return max(min(rating / 5.0, 1.0), 0.15)
+
+
+def _history_item_weight(rating: float, min_seed_rating: float) -> float:
+    if min_seed_rating < 4:
+        return max(min(float(rating) / 5.0, 1.0), 0.15)
+    return max((float(rating) - 3.0) / 2.0, 0.1)
+
+
+def _seed_rating_threshold(collaborative_index: dict) -> float:
+    return 1.0 if collaborative_index.get("interaction_mode") == "all_rating_weighted" else 4.0
+
+
+def _interaction_mode_name(positive_threshold: float, rating_weighted: bool) -> str:
+    if rating_weighted and positive_threshold <= 0:
+        return "all_rating_weighted"
+    return "positive"
 
 
 def _history_query_terms(
