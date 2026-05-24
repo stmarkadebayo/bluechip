@@ -248,8 +248,14 @@ class RecommendationAgent:
                         detail=f"LLM re-ranked {len(reranked_ranked)} candidates",
                     )
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            trace.append(
+                AgentTraceStep(
+                    step="agentic_rerank",
+                    status="failed",
+                    detail=f"LLM re-ranking failed, fell back to hybrid: {e}",
+                )
+            )
 
         recommendations = []
         explanation_issues = []

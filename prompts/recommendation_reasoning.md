@@ -13,4 +13,3 @@ Generation requirements:
 - Mention tradeoffs when relevant.
 - Do not re-rank candidates unless explicitly asked by the ranking service.
 - Avoid claims not supported by item metadata or retrieved evidence.
-

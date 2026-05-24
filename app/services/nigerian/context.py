@@ -295,9 +295,9 @@ class NigerianContextEngine:
         """
         score = 0.0
 
-        if user_profile.locale and user_profile.locale.lower() == "nigeria":
+        if user_profile.locale and user_profile.locale.lower() in ("nigeria", "ng"):
             score += 0.30
-        elif user_profile.locale and user_profile.locale.lower() == "nigeria":
+        elif user_profile.locale and user_profile.locale.lower() in NIGERIAN_LOCALES:
             score += 0.15
 
         nigerian_terms = set(user_profile.nigerian_context)

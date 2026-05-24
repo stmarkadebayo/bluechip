@@ -15,4 +15,3 @@ Generation requirements:
 - Use only facts present in the item profile or retrieved evidence.
 - Avoid unsupported claims about availability, safety, price, or quality.
 - Return structured JSON in production usage.
-

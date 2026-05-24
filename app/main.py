@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
@@ -46,6 +46,9 @@ if ui_dir.exists():
     app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
 
 
-@app.get("/", include_in_schema=False)
-async def root() -> RedirectResponse:
-    return RedirectResponse(url="/ui/")
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False, response_class=HTMLResponse)
+async def root() -> HTMLResponse:
+    index_file = ui_dir / "index.html"
+    if index_file.exists():
+        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>UI Index File Not Found</h1>", status_code=404)
