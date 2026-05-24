@@ -206,10 +206,10 @@ def test_ui_demo_surface_exposes_submission_flow() -> None:
 
     assert response.status_code == 200
     html = response.text
-    assert "Bluechip Demo Console" in html
-    assert "Task B Recommend" in html
-    assert "Task A Review" in html
-    assert "Cold-start Dinner" in html
-    assert "Cross-domain Gift" in html
-    assert "Candidate Sources" in html
+    assert "Bluechip Marvid Console" in html
+    assert "Review Simulation" in html
+    assert "Candidate Ranking" in html
+    assert "Cold-start dinner" in html
+    assert "Cross-domain gift" in html
+    assert "Candidate source counts" in html
     assert "score components" in html

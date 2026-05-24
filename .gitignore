@@ -19,3 +19,14 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+
+# Local planning and submission-prep artifacts that should not appear on GitHub.
+PLAN.md
+BCT_Hack_Brief_Extracted.txt
+BCT Hack Brief.pdf
+paper.tex
+docs/HANDOFF.md
+docs/PUSH_READY.md
+docs/SUBMISSION_FREEZE.md
+docs/IMPLEMENTATION_LOG.md
+docs/FEATURE_STORE_10_PLAN.md

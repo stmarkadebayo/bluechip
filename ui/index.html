@@ -3,36 +3,36 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bluechip Marvid</title>
+    <title>Bluechip Marvid Console</title>
     <style>
       :root {
         color-scheme: light;
-        --bg: #f7f7f4;
-        --bg-gradient: #f7f7f4;
+        --bg: #f7f7f2;
         --surface: #ffffff;
-        --surface-soft: #f3f3ef;
-        --surface-warm: #f7f7f4;
-        --ink: #171717;
-        --muted: #6f6f67;
-        --muted-strong: #4a4a45;
-        --line: #e4e4dc;
-        --line-strong: #cfcfc7;
-        --control: #f5f5f1;
-        --control-hover: #ecece6;
-        --teal: #0f766e;
-        --teal-dark: #115e59;
+        --surface-soft: #fbfbf7;
+        --surface-tint: #f0f4f2;
+        --ink: #111111;
+        --ink-soft: #343430;
+        --muted: #6f6f68;
+        --muted-soft: #8b8b84;
+        --line: #dfdfd7;
+        --line-strong: #c9c9bf;
+        --accent: #0f8f70;
+        --accent-soft: #e9f6f1;
         --blue: #2563eb;
-        --amber: #b45309;
-        --violet: #6d28d9;
-        --rose: #b91c1c;
-        --green: #16884a;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-        --neon-glow: none;
+        --amber: #a16207;
+        --red: #b42318;
+        --green: #15803d;
+        --mono:
+          ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas,
+          "Liberation Mono", monospace;
+        --sans:
+          ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Helvetica, Arial, sans-serif;
       }
 
       * {
         box-sizing: border-box;
-        transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s, transform 0.2s;
       }
 
       [hidden] {
@@ -41,127 +41,12 @@
 
       body {
         margin: 0;
-        background: var(--bg-gradient);
-        background-image: 
-          radial-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), 
-          radial-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px);
-        background-size: 32px 32px;
-        background-position: 0 0, 16px 16px;
-        color: var(--ink);
-        font-family:
-          ui-sans-serif,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          sans-serif;
-        font-size: 14px;
         min-height: 100vh;
-        letter-spacing: 0;
-      }
-
-      button,
-      input,
-      textarea {
-        font-family: inherit;
-      }
-
-      button {
-        min-height: 42px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: rgba(31, 41, 55, 0.4);
+        background: var(--bg);
         color: var(--ink);
-        cursor: pointer;
-        font-weight: 600;
-        padding: 0 16px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      button:hover {
-        border-color: var(--line-strong);
-        background: rgba(31, 41, 55, 0.6);
-        transform: translateY(-1px);
-      }
-
-      button:active {
-        transform: translateY(0);
-      }
-
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-        transform: none !important;
-      }
-
-      button.primary {
-        background: linear-gradient(135deg, var(--teal), var(--teal-dark));
-        border: none;
-        color: #030712;
-        font-weight: 700;
-        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3), var(--neon-glow);
-      }
-
-      button.primary:hover {
-        background: linear-gradient(135deg, #34d399, var(--teal));
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4), var(--neon-glow);
-      }
-
-      button.active {
-        background: rgba(16, 185, 129, 0.15);
-        border-color: var(--teal);
-        color: var(--teal);
-        box-shadow: var(--neon-glow);
-      }
-
-      .wrap {
-        width: min(1440px, calc(100vw - 32px));
-        margin: 0 auto;
-      }
-
-      .topbar {
-        border-bottom: 1px solid var(--line);
-        background: rgba(3, 7, 18, 0.7);
-        backdrop-filter: blur(16px);
-        position: sticky;
-        top: 0;
-        z-index: 100;
-      }
-
-      .topbar-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-        min-height: 80px;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        min-width: 0;
-      }
-
-      .brand-mark {
-        display: grid;
-        flex: 0 0 46px;
-        height: 46px;
-        place-items: center;
-        border-radius: 12px;
-        background: linear-gradient(135deg, var(--teal), #0284c7);
-        color: #030712;
-        font-weight: 800;
-        font-size: 20px;
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-        animation: brand-glow-pulse 4s infinite alternate;
-      }
-
-      @keyframes brand-glow-pulse {
-        0% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-        100% { box-shadow: 0 0 25px rgba(2, 132, 199, 0.6); }
+        font-family: var(--sans);
+        font-size: 14px;
+        letter-spacing: 0;
       }
 
       h1,
@@ -171,1877 +56,1116 @@
         margin: 0;
       }
 
-      h1 {
-        font-size: clamp(20px, 2.5vw, 24px);
-        font-weight: 800;
-        background: linear-gradient(135deg, #ffffff, #9ca3af);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button,
+      select {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--ink);
+      }
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 13px;
+        cursor: pointer;
+        font-weight: 620;
+      }
+
+      button:hover,
+      select:hover {
+        border-color: var(--line-strong);
+        background: var(--surface-soft);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      button:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: none;
+        border-color: var(--ink);
+        box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+      }
+
+      .primary {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: #ffffff;
+      }
+
+      .primary:hover {
+        border-color: #2d2d29;
+        background: #2d2d29;
+      }
+
+      .quiet {
+        color: var(--ink-soft);
+        background: transparent;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        border-right: 1px solid var(--line);
+        background: #fbfbf8;
+        padding: 18px 14px;
+      }
+
+      .brand {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
+        padding: 4px 4px 18px;
+        border-bottom: 1px solid var(--line);
       }
 
-      h1::after {
-        content: "";
-        font-size: 9px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-        color: var(--teal);
-        background: rgba(16, 185, 129, 0.15);
-        padding: 2px 6px;
-        border-radius: 4px;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--ink);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 720;
       }
 
-      .subhead {
+      .brand strong {
+        display: block;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 680;
+      }
+
+      .brand span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .nav-group {
+        margin-top: 18px;
+      }
+
+      .nav-label {
+        margin: 0 8px 8px;
+        color: var(--muted-soft);
+        font-size: 11px;
+        font-weight: 650;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .nav-button {
+        width: 100%;
+        min-height: 48px;
+        justify-content: flex-start;
+        border-color: transparent;
+        background: transparent;
+        padding: 7px 8px;
+        text-align: left;
+      }
+
+      .nav-button + .nav-button {
         margin-top: 4px;
+      }
+
+      .nav-button.active {
+        border-color: var(--line);
+        background: var(--surface);
+      }
+
+      .nav-index {
+        display: grid;
+        flex: 0 0 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .nav-button.active .nav-index {
+        border-color: #cde6dc;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .nav-copy strong,
+      .nav-copy span {
+        display: block;
+      }
+
+      .nav-copy strong {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .nav-copy span {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .sidebar-note {
+        position: absolute;
+        right: 14px;
+        bottom: 18px;
+        left: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .main {
+        min-width: 0;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        min-height: 60px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(247, 247, 242, 0.92);
+        padding: 0 28px;
+        backdrop-filter: blur(14px);
+      }
+
+      .breadcrumbs {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 9px;
         color: var(--muted);
         font-size: 13px;
       }
 
-      .header-actions,
-      .status,
+      .breadcrumbs strong {
+        overflow: hidden;
+        color: var(--ink);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .topbar-actions,
       .button-row,
-      .scenario-row,
-      .mode-row,
-      .toggle-row,
+      .inline-actions,
       .chip-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
       }
 
-      .status {
-        padding: 8px 14px;
+      .health {
+        display: inline-flex;
+        min-height: 30px;
+        align-items: center;
+        gap: 8px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: rgba(31, 41, 55, 0.3);
-        color: #e5e7eb;
-        font-weight: 600;
+        background: var(--surface);
+        color: var(--ink-soft);
+        padding: 0 11px;
         font-size: 13px;
+        font-weight: 600;
       }
 
       .dot {
         width: 8px;
         height: 8px;
-        border-radius: 999px;
+        border-radius: 50%;
         background: var(--amber);
-        display: inline-block;
-        box-shadow: 0 0 8px var(--amber);
       }
 
       .dot.ok {
         background: var(--green);
-        box-shadow: 0 0 8px var(--green);
-        animation: pulse-dot-green 2s infinite;
-      }
-
-      @keyframes pulse-dot-green {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
       }
 
       .dot.bad {
-        background: var(--rose);
-        box-shadow: 0 0 8px var(--rose);
+        background: var(--red);
       }
 
-      main {
-        padding: 24px 0 40px;
+      .content {
+        width: min(1500px, calc(100vw - 304px));
+        margin: 0 auto;
+        padding: 26px 28px 42px;
       }
 
-      .task-strip {
+      .task-header {
         display: grid;
-        grid-template-columns: repeat(4, minmax(150px, 1fr));
-        gap: 12px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: start;
         margin-bottom: 20px;
       }
 
-      .task-cell {
-        min-height: 80px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        background: rgba(17, 24, 39, 0.55);
-        padding: 16px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-      }
-
-      .task-cell:hover {
-        transform: translateY(-2px);
-        border-color: rgba(255, 255, 255, 0.15);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-      }
-
-      .task-cell strong {
-        display: block;
-        margin-bottom: 4px;
-        font-size: 13px;
-        color: #ffffff;
+      .eyebrow {
+        color: var(--accent);
+        font-size: 12px;
         font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
 
-      .task-cell span {
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.4;
-      }
-
-      .method-panel {
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        background: rgba(17, 24, 39, 0.55);
-        margin-bottom: 20px;
-        padding: 18px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-      }
-
-      .method-head {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 14px;
-      }
-
-      .method-head h2 {
-        font-size: 16px;
-        font-weight: 800;
-        color: #ffffff;
-      }
-
-      .method-head p {
-        margin-top: 4px;
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .method-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(150px, 1fr));
-        gap: 12px;
-      }
-
-      .method-item {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(31, 41, 55, 0.22);
-        padding: 13px;
-      }
-
-      .method-item strong {
-        display: block;
-        color: #ffffff;
-        font-size: 12px;
-        font-weight: 800;
-        line-height: 1.3;
-      }
-
-      .method-item span {
-        display: block;
+      h1 {
         margin-top: 5px;
+        color: var(--ink);
+        font-size: clamp(26px, 3vw, 36px);
+        font-weight: 680;
+        line-height: 1.08;
+      }
+
+      .task-subtitle {
+        max-width: 780px;
+        margin-top: 8px;
         color: var(--muted);
-        font-size: 11.5px;
-        line-height: 1.45;
+        font-size: 15px;
+        line-height: 1.48;
+      }
+
+      .endpoint {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 6px 10px;
+        white-space: nowrap;
       }
 
       .workspace {
         display: grid;
-        grid-template-columns: minmax(380px, 0.9fr) minmax(560px, 1.35fr);
-        gap: 20px;
+        grid-template-columns: minmax(360px, 0.78fr) minmax(0, 1.22fr);
+        gap: 18px;
         align-items: start;
       }
 
-      .surface {
+      .panel {
         border: 1px solid var(--line);
-        border-radius: 16px;
+        border-radius: 8px;
         background: var(--surface);
-        backdrop-filter: blur(12px);
-        box-shadow: var(--shadow);
-        overflow: hidden;
       }
 
-      .surface-header {
+      .panel-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 14px;
-        padding: 20px;
+        gap: 12px;
         border-bottom: 1px solid var(--line);
-        background: rgba(31, 41, 55, 0.2);
+        padding: 15px 16px;
       }
 
-      .surface-header h2 {
-        font-size: 18px;
-        font-weight: 800;
-        color: #ffffff;
+      .panel-header h2 {
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 680;
       }
 
-      .surface-header p {
-        margin-top: 4px;
+      .panel-header p {
+        margin-top: 3px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 12.5px;
       }
 
-      .input-body,
-      .output-body {
-        padding: 20px;
+      .panel-body {
+        padding: 16px;
       }
 
-      .mode-row {
-        margin-bottom: 16px;
+      .field + .field,
+      .field + details,
+      details + .field,
+      .form-stack > * + * {
+        margin-top: 14px;
       }
 
-      .mode-row button {
-        flex: 1 1 110px;
-        border-radius: 10px;
-        background: rgba(31, 41, 55, 0.25);
-        border: 1px solid var(--line);
-      }
-
-      .mode-row button.active {
-        background: rgba(16, 185, 129, 0.12);
-        border-color: var(--teal);
-        color: var(--teal);
-        box-shadow: var(--neon-glow);
-      }
-
-      .scenario-row {
-        align-items: stretch;
-        margin-bottom: 16px;
-        border-bottom: 1px solid var(--line);
-        padding-bottom: 16px;
-      }
-
-      .scenario-row button {
-        flex: 1 1 110px;
-        font-size: 13px;
-        border-radius: 20px;
-        background: rgba(31, 41, 55, 0.3);
-        border: 1px solid var(--line);
-      }
-
-      .scenario-row button:hover {
-        background: rgba(59, 130, 246, 0.1);
-        border-color: rgba(59, 130, 246, 0.4);
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
-      }
-
-      .scenario-row button.active {
-        background: rgba(59, 130, 246, 0.18);
-        border-color: var(--blue);
-        color: #60a5fa;
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-      }
-
-      .toggle-row {
-        justify-content: space-between;
-        margin-top: 16px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(31, 41, 55, 0.2);
-        padding: 12px 16px;
-      }
-
-      .toggle-copy {
-        min-width: 0;
-      }
-
-      .toggle-copy strong {
-        display: block;
-        font-size: 13px;
-        color: #ffffff;
-      }
-
-      .toggle-copy span {
-        display: block;
-        margin-top: 2px;
-        color: var(--muted);
-        font-size: 11px;
-        line-height: 1.4;
-      }
-
-      .switch {
-        position: relative;
-        flex: 0 0 46px;
-        height: 26px;
-        cursor: pointer;
-      }
-
-      .switch input {
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-
-      .switch span {
-        position: absolute;
-        inset: 0;
-        border-radius: 999px;
-        background: #374151;
-        border: 1px solid var(--line);
-      }
-
-      .switch span::after {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 18px;
-        height: 18px;
-        border-radius: 999px;
-        background: #ffffff;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .switch input:checked + span {
-        background: var(--teal);
-        border-color: var(--teal);
-      }
-
-      .switch input:checked + span::after {
-        transform: translateX(20px);
-        background: #030712;
-      }
-
-      .field {
-        margin-top: 16px;
-      }
-
-      label {
+      label,
+      .field-label {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 8px;
-        color: #e5e7eb;
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        gap: 10px;
+        margin-bottom: 7px;
+        color: var(--ink-soft);
+        font-size: 12.5px;
+        font-weight: 630;
       }
 
-      label span {
+      label span,
+      .field-label span {
         color: var(--muted);
-        font-weight: 600;
-        text-transform: none;
-        letter-spacing: 0;
+        font-weight: 520;
       }
 
-      textarea,
-      input {
+      select,
+      textarea {
         width: 100%;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(10, 15, 30, 0.7);
-        color: #ffffff;
-        padding: 14px;
-        line-height: 1.55;
-        font-size: 13.5px;
       }
 
-      textarea:focus,
-      input:focus,
-      button:focus-visible {
-        outline: none;
-        border-color: var(--teal);
-        background: rgba(10, 15, 30, 0.9);
-        box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+      select {
+        padding: 0 10px;
       }
 
       textarea {
-        min-height: 110px;
+        min-height: 104px;
         resize: vertical;
-      }
-
-      .json-editor {
-        min-height: 180px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 12px;
-        background: rgba(3, 7, 18, 0.6);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--ink);
+        padding: 11px 12px;
+        line-height: 1.55;
       }
 
       .compact-editor {
-        min-height: 100px;
+        min-height: 86px;
       }
 
-      .context-editor {
-        min-height: 76px;
+      .json-editor {
+        min-height: 168px;
+        background: var(--surface-soft);
+        font-family: var(--mono);
+        font-size: 12px;
       }
 
       .button-row {
-        margin-top: 20px;
+        margin-top: 16px;
         border-top: 1px solid var(--line);
-        padding-top: 20px;
+        padding-top: 16px;
       }
 
-      .button-row button.primary {
-        flex: 2 1 200px;
+      .button-row .primary {
+        min-width: 142px;
       }
 
-      .button-row button {
-        flex: 1 1 100px;
-      }
-
-      .endpoint-pill,
-      .trace-pill,
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        min-height: 26px;
-        border-radius: 999px;
+      details.drawer,
+      details.advanced {
         border: 1px solid var(--line);
-        background: rgba(31, 41, 55, 0.4);
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 700;
-        padding: 2px 10px;
-        white-space: nowrap;
-      }
-
-      .endpoint-pill {
-        color: var(--blue);
-        border-color: rgba(59, 130, 246, 0.3);
-        background: rgba(59, 130, 246, 0.1);
-      }
-
-      .trace-pill {
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(110px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      .kpi {
-        min-height: 80px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(31, 41, 55, 0.25);
-        padding: 12px;
-      }
-
-      .kpi span {
-        display: block;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .kpi strong {
-        display: block;
-        margin-top: 6px;
-        font-size: 20px;
-        color: #ffffff;
-        font-weight: 800;
-        word-break: break-word;
-      }
-
-      .quality-strip {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(130px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      .quality-item {
-        border: 1px solid var(--line);
-        border-radius: 12px;
+        border-radius: 8px;
         background: var(--surface-soft);
-        padding: 12px;
       }
 
-      .quality-item span {
-        display: block;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
+      details.drawer + details.drawer {
+        margin-top: 10px;
       }
 
-      .quality-item strong {
-        display: block;
-        margin-top: 4px;
-        font-size: 13px;
-        color: #ffffff;
-        font-weight: 700;
-      }
-
-      .quality-item.ok {
-        border-color: rgba(16, 185, 129, 0.3);
-        background: rgba(16, 185, 129, 0.08);
-      }
-
-      .quality-item.ok span {
-        color: #34d399;
-      }
-
-      .quality-item.warn {
-        border-color: rgba(245, 158, 11, 0.3);
-        background: rgba(245, 158, 11, 0.08);
-      }
-
-      .quality-item.warn span {
-        color: #fbbf24;
-      }
-
-      .output-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-        gap: 16px;
-      }
-
-      .output-section {
-        min-width: 0;
-      }
-
-      .section-title {
+      details.drawer summary,
+      details.advanced summary {
         display: flex;
+        min-height: 40px;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
-        margin: 16px 0 10px;
+        cursor: pointer;
+        padding: 0 13px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 640;
       }
 
-      .section-title h3 {
-        font-size: 11px;
-        text-transform: uppercase;
+      details.drawer summary::after,
+      details.advanced summary::after {
+        content: "Open";
         color: var(--muted);
-        letter-spacing: 0.08em;
-        font-weight: 800;
+        font-size: 12px;
+        font-weight: 560;
+      }
+
+      details[open].drawer summary::after,
+      details[open].advanced summary::after {
+        content: "Close";
+      }
+
+      .drawer-body,
+      .advanced-body {
+        border-top: 1px solid var(--line);
+        padding: 13px;
+      }
+
+      .status-line {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border-bottom: 1px solid var(--line);
+      }
+
+      .status-item {
+        min-height: 72px;
+        border-right: 1px solid var(--line);
+        padding: 13px 14px;
+      }
+
+      .status-item:last-child {
+        border-right: 0;
+      }
+
+      .status-item span {
+        display: block;
+        color: var(--muted);
+        font-size: 11.5px;
+        font-weight: 650;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .status-item strong {
+        display: block;
+        margin-top: 5px;
+        overflow-wrap: anywhere;
+        color: var(--ink);
+        font-size: 18px;
+        font-weight: 680;
+        line-height: 1.2;
+      }
+
+      .result-body {
+        padding: 16px;
       }
 
       .empty {
-        border: 1px dashed var(--line-strong);
-        border-radius: 12px;
-        background: rgba(31, 41, 55, 0.1);
-        color: var(--muted);
-        line-height: 1.5;
-        padding: 20px;
-        text-align: center;
-      }
-
-      .reco-list {
+        min-height: 176px;
         display: grid;
-        gap: 12px;
+        place-items: center;
+        border: 1px dashed var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        color: var(--muted);
+        padding: 22px;
+        text-align: center;
+        line-height: 1.5;
       }
 
-      .reco-card,
-      .review-card,
-      .metric-card {
+      .error {
+        border-color: #efc4bd;
+        background: #fff7f5;
+        color: var(--red);
+        font-weight: 650;
+      }
+
+      .review-output h3,
+      .recommendation-row h3,
+      .runtime-row h3 {
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 660;
+      }
+
+      .review-text {
+        margin-top: 12px;
+        border-left: 3px solid var(--accent);
+        background: var(--surface-soft);
+        padding: 13px 14px;
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 1.62;
+      }
+
+      .recommendation-list,
+      .runtime-list {
+        display: grid;
         border: 1px solid var(--line);
-        border-radius: 14px;
-        background: rgba(31, 41, 55, 0.2);
-        padding: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        overflow: hidden;
       }
 
-      .reco-card:hover,
-      .review-card:hover {
-        border-color: var(--line-strong);
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-      }
-
-      .reco-card:first-child {
-        border-color: rgba(16, 185, 129, 0.45);
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(17, 24, 39, 0.75) 100%);
-        box-shadow: 0 12px 40px rgba(16, 185, 129, 0.15);
-        position: relative;
-      }
-
-      .reco-card:first-child::after {
-        content: "Top match";
-        position: absolute;
-        top: 14px;
-        right: 16px;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-        color: var(--teal);
-        background: rgba(16, 185, 129, 0.15);
-        padding: 3px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-      }
-
-      .reco-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 10px;
-      }
-
-      .rank-name {
-        display: flex;
-        align-items: center;
+      .recommendation-row,
+      .runtime-row {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 74px;
         gap: 12px;
-        min-width: 0;
+        align-items: start;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+        padding: 13px;
+      }
+
+      .recommendation-row:last-child,
+      .runtime-row:last-child {
+        border-bottom: 0;
       }
 
       .rank {
         display: grid;
-        flex: 0 0 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         place-items: center;
-        border-radius: 10px;
-        background: rgba(59, 130, 246, 0.15);
-        color: #60a5fa;
-        font-weight: 800;
-        font-size: 15px;
-        border: 1px solid rgba(59, 130, 246, 0.3);
-      }
-
-      .reco-card:first-child .rank {
-        background: rgba(16, 185, 129, 0.15);
-        color: var(--teal);
-        border-color: rgba(16, 185, 129, 0.3);
-      }
-
-      .reco-card h3,
-      .review-card h3 {
-        font-size: 16px;
-        line-height: 1.3;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface-soft);
+        color: var(--muted);
+        font-size: 12px;
         font-weight: 700;
-        color: #ffffff;
+      }
+
+      .recommendation-row:first-child .rank {
+        border-color: #cde6dc;
+        background: var(--accent-soft);
+        color: var(--accent);
       }
 
       .score {
-        color: var(--teal);
-        font-size: 18px;
-        font-weight: 800;
-        white-space: nowrap;
-      }
-
-      .reco-card:first-child .score {
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 700;
+        text-align: right;
       }
 
       .reason {
-        margin-top: 12px;
-        line-height: 1.55;
-        color: #e5e7eb;
-        font-size: 13.5px;
+        margin-top: 7px;
+        color: var(--ink-soft);
+        line-height: 1.5;
       }
 
       .tradeoff {
-        margin-top: 10px;
+        margin-top: 7px;
         color: var(--muted);
         font-size: 12.5px;
-        line-height: 1.5;
-        border-left: 2px solid var(--line-strong);
-        padding-left: 10px;
+        line-height: 1.45;
       }
 
       .chip-row {
-        margin-top: 12px;
+        margin-top: 9px;
       }
 
       .chip {
         display: inline-flex;
-        align-items: center;
-        min-height: 26px;
+        min-height: 23px;
         max-width: 100%;
+        align-items: center;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: rgba(55, 65, 81, 0.3);
-        color: #d1d5db;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 2px 10px;
-        word-break: break-word;
-      }
-
-      .chip.source {
-        background: rgba(249, 115, 22, 0.1);
-        border-color: rgba(249, 115, 22, 0.3);
-        color: #fdba74;
+        background: var(--surface-soft);
+        color: var(--ink-soft);
+        font-size: 11.5px;
+        padding: 2px 8px;
       }
 
       .chip.signal {
-        background: rgba(16, 185, 129, 0.1);
-        border-color: rgba(16, 185, 129, 0.3);
-        color: #6ee7b7;
+        border-color: #d7eadf;
+        background: #f3faf6;
+        color: var(--green);
+      }
+
+      .chip.source {
+        border-color: #d7dded;
+        background: #f5f7fc;
+        color: #31558f;
+      }
+
+      .kv-table {
+        display: grid;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .kv-row {
+        display: grid;
+        grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1fr);
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      .kv-row:last-child {
+        border-bottom: 0;
+      }
+
+      .kv-row span,
+      .kv-row strong {
+        padding: 9px 11px;
+      }
+
+      .kv-row span {
+        border-right: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .kv-row strong {
+        overflow-wrap: anywhere;
+        color: var(--ink-soft);
+        font-size: 12.5px;
+        font-weight: 600;
       }
 
       .component-list {
         display: grid;
-        gap: 10px;
-        margin-top: 12px;
+        gap: 9px;
       }
 
       .component {
         display: grid;
-        grid-template-columns: minmax(100px, 0.8fr) minmax(90px, 1fr) 46px;
+        grid-template-columns: minmax(120px, 0.52fr) minmax(80px, 1fr) 48px;
         align-items: center;
-        gap: 10px;
+        gap: 9px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 12px;
       }
 
       .bar {
-        height: 6px;
+        height: 5px;
         overflow: hidden;
         border-radius: 999px;
-        background: #1f2937;
-        border: 1px solid rgba(255,255,255,0.02);
+        background: #e8e8df;
       }
 
       .bar span {
         display: block;
         height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, var(--teal-dark), var(--teal));
         border-radius: 999px;
-      }
-
-      .evidence-panel {
-        display: grid;
-        gap: 10px;
-      }
-
-      .evidence-box {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(31, 41, 55, 0.15);
-        padding: 14px;
-      }
-
-      .evidence-box h4 {
-        margin: 0 0 6px;
-        font-size: 13px;
-        color: #ffffff;
-      }
-
-      .evidence-box p {
-        color: var(--muted);
-        line-height: 1.45;
-        font-size: 12px;
+        background: var(--ink);
       }
 
       .trace-list {
         display: grid;
-        gap: 14px;
+        gap: 8px;
         margin: 0;
-        padding: 0 0 0 12px;
+        padding: 0;
         list-style: none;
-        border-left: 2px solid rgba(255, 255, 255, 0.05);
-        position: relative;
       }
 
       .trace-step {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+        display: grid;
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
         border: 1px solid var(--line);
-        border-radius: 12px;
-        background: rgba(17, 24, 39, 0.35);
-        padding: 12px 16px;
-        position: relative;
-      }
-
-      .trace-step:hover {
-        border-color: var(--line-strong);
-        background: rgba(17, 24, 39, 0.55);
-        transform: translateX(2px);
-      }
-
-      .trace-step::before {
-        content: "";
-        position: absolute;
-        left: -19px;
-        top: 18px;
-        width: 10px;
-        height: 10px;
-        border-radius: 999px;
-        background: var(--line-strong);
-        border: 2px solid var(--bg);
-      }
-
-      .trace-step.ok::before {
-        background: var(--teal);
-        box-shadow: 0 0 8px var(--teal);
-      }
-
-      .trace-step.failed::before {
-        background: var(--rose);
-        box-shadow: 0 0 8px var(--rose);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 10px 11px;
       }
 
       .trace-step strong {
-        color: var(--teal);
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .trace-step.failed strong {
-        color: var(--rose);
-      }
-
-      .trace-step span {
-        display: block;
-        color: #d1d5db;
-        line-height: 1.4;
-        font-size: 12px;
-        word-break: break-word;
-      }
-
-      .review-body {
-        margin-top: 12px;
-        border-radius: 12px;
-        background: rgba(17, 24, 39, 0.4);
-        padding: 16px;
-        color: #ffffff;
-        font-size: 15px;
-        line-height: 1.6;
-        border: 1px solid var(--line);
-      }
-
-      .raw-block {
-        margin-top: 20px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #030712;
-        overflow: hidden;
-      }
-
-      .raw-block summary {
-        cursor: pointer;
-        padding: 12px 16px;
-        color: #e5e7eb;
+        color: var(--muted);
+        font-size: 11.5px;
         font-weight: 700;
-        font-size: 13px;
-        background: rgba(31, 41, 55, 0.3);
-      }
-
-      pre {
-        margin: 0;
-        max-height: 400px;
-        overflow: auto;
-        padding: 16px;
-        color: #9ca3af;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 12px;
-        line-height: 1.6;
-      }
-
-      .error {
-        border-color: rgba(239, 68, 68, 0.3);
-        background: rgba(239, 68, 68, 0.08);
-        color: #fca5a5;
-        font-weight: 700;
-        padding: 14px;
-        border-radius: 12px;
-      }
-
-      .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(110px, 1fr));
-        gap: 12px;
-      }
-
-      /* Codex/OpenAI-inspired product surface: flat, neutral, and information-first. */
-      * {
-        transition:
-          border-color 140ms ease,
-          background-color 140ms ease,
-          color 140ms ease,
-          opacity 140ms ease;
-      }
-
-      body {
-        background: var(--bg);
-        color: var(--ink);
-      }
-
-      button {
-        min-height: 38px;
-        border-color: var(--line);
-        border-radius: 7px;
-        background: var(--surface);
-        color: var(--ink);
-        font-size: 13px;
-        font-weight: 600;
-        padding: 0 14px;
-      }
-
-      button:hover {
-        border-color: var(--line-strong);
-        background: var(--control);
-        transform: none;
-        box-shadow: none;
-      }
-
-      button:active {
-        transform: none;
-      }
-
-      button.primary {
-        border: 1px solid #171717;
-        background: #171717;
-        color: #ffffff;
-        font-weight: 650;
-        box-shadow: none;
-      }
-
-      button.primary:hover {
-        background: #30302c;
-        box-shadow: none;
-      }
-
-      button.active,
-      .mode-row button.active,
-      .scenario-row button.active {
-        border-color: #171717;
-        background: #171717;
-        color: #ffffff;
-        box-shadow: none;
-      }
-
-      .wrap {
-        width: min(1480px, calc(100vw - 48px));
-      }
-
-      .topbar {
-        border-bottom-color: var(--line);
-        background: rgba(247, 247, 244, 0.92);
-        backdrop-filter: blur(14px);
-      }
-
-      .topbar-inner {
-        min-height: 78px;
-      }
-
-      .brand {
-        gap: 14px;
-      }
-
-      .brand-mark {
-        flex-basis: 42px;
-        height: 42px;
-        border: 1px solid #171717;
-        border-radius: 8px;
-        background: #171717;
-        color: #ffffff;
-        font-size: 17px;
-        font-weight: 680;
-        box-shadow: none;
-        animation: none;
-      }
-
-      h1 {
-        background: none;
-        -webkit-text-fill-color: currentColor;
-        color: var(--ink);
-        font-size: clamp(20px, 2vw, 24px);
-        font-weight: 680;
-        letter-spacing: 0;
-      }
-
-      h1::after {
-        display: none;
-      }
-
-      .subhead {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .status,
-      .endpoint-pill,
-      .trace-pill,
-      .pill {
-        min-height: 24px;
-        border-radius: 999px;
-        border-color: var(--line);
-        background: var(--surface);
-        color: var(--muted-strong);
-        font-size: 12px;
-        font-weight: 600;
-        padding: 2px 10px;
-      }
-
-      .endpoint-pill,
-      .trace-pill {
-        font-family:
-          ui-monospace,
-          "SFMono-Regular",
-          Menlo,
-          Consolas,
-          monospace;
-        color: #2f2f2b;
-      }
-
-      .dot,
-      .dot.ok,
-      .dot.bad {
-        box-shadow: none;
-        animation: none;
-      }
-
-      main {
-        padding: 26px 0 44px;
-      }
-
-      .task-strip {
-        gap: 10px;
-        margin-bottom: 22px;
-      }
-
-      .task-cell {
-        min-height: 76px;
-        border-color: var(--line);
-        border-radius: 8px;
-        background: var(--surface);
-        padding: 15px 16px;
-        backdrop-filter: none;
-        box-shadow: var(--shadow);
-      }
-
-      .task-cell:hover {
-        border-color: var(--line-strong);
-        box-shadow: var(--shadow);
-        transform: none;
-      }
-
-      .task-cell strong {
-        color: var(--ink);
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      .task-cell span {
-        color: var(--muted);
-        font-size: 12.5px;
-      }
-
-      .method-panel {
-        border: 0;
-        border-radius: 0;
-        background: transparent;
-        margin-bottom: 24px;
-        padding: 0;
-        backdrop-filter: none;
-        box-shadow: none;
-      }
-
-      .method-head {
-        align-items: center;
-        margin-bottom: 12px;
-      }
-
-      .method-head h2,
-      .surface-header h2 {
-        color: var(--ink);
-        font-size: 17px;
-        font-weight: 680;
-        letter-spacing: 0;
-      }
-
-      .method-head p,
-      .surface-header p {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.45;
-      }
-
-      .method-grid {
-        gap: 10px;
-      }
-
-      .supporting-context {
-        margin-top: 28px;
-      }
-
-      .request-summary {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        margin-bottom: 18px;
-      }
-
-      .request-summary div {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fbfbf8;
-        padding: 12px 13px;
-      }
-
-      .request-summary span {
-        display: block;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 650;
         letter-spacing: 0.03em;
         text-transform: uppercase;
       }
 
-      .request-summary strong {
-        display: block;
-        margin-top: 5px;
-        color: var(--ink);
-        font-size: 15px;
-        font-weight: 680;
-        line-height: 1.25;
+      .trace-step.ok strong {
+        color: var(--green);
+      }
+
+      .trace-step.failed strong {
+        color: var(--red);
+      }
+
+      .trace-step span {
+        color: var(--ink-soft);
+        font-size: 12.5px;
+        line-height: 1.42;
+      }
+
+      .raw-block {
+        max-height: 440px;
+        overflow: auto;
+        margin: 0;
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+
+      .method-panel {
+        margin-top: 18px;
+      }
+
+      .method-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
       }
 
       .method-item {
-        border-color: var(--line);
+        border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--surface);
-        padding: 14px 15px;
-        box-shadow: var(--shadow);
+        padding: 12px;
       }
 
       .method-item strong {
+        display: block;
         color: var(--ink);
         font-size: 13px;
         font-weight: 650;
       }
 
       .method-item span {
+        display: block;
+        margin-top: 4px;
         color: var(--muted);
         font-size: 12.5px;
+        line-height: 1.42;
       }
 
-      .workspace {
-        grid-template-columns: minmax(360px, 0.88fr) minmax(560px, 1.4fr);
-        gap: 18px;
+      .is-running {
+        opacity: 0.8;
       }
 
-      .surface {
-        border-color: var(--line);
-        border-radius: 9px;
-        background: var(--surface);
-        backdrop-filter: none;
-        box-shadow: var(--shadow);
-      }
-
-      .surface-header {
-        padding: 20px 22px;
-        border-bottom-color: var(--line);
-        background: var(--surface);
-      }
-
-      .input-body,
-      .output-body {
-        padding: 22px;
-      }
-
-      .mode-row,
-      .scenario-row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
-      }
-
-      .mode-row {
-        margin-bottom: 12px;
-      }
-
-      .mode-row button,
-      .scenario-row button {
-        flex: 0 1 auto;
-        border-radius: 7px;
-        background: var(--surface);
-        border-color: var(--line);
-        color: var(--muted-strong);
-        font-size: 13px;
-        min-width: 0;
-      }
-
-      .scenario-row {
-        margin-bottom: 18px;
-        border-bottom-color: var(--line);
-        padding-bottom: 18px;
-      }
-
-      .scenario-row button:hover {
-        border-color: var(--line-strong);
-        background: var(--control);
-        box-shadow: none;
-      }
-
-      .toggle-row {
-        border-color: var(--line);
-        border-radius: 8px;
-        background: var(--control);
-        padding: 12px 14px;
-      }
-
-      .toggle-copy strong {
-        color: var(--ink);
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      .toggle-copy span {
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .switch span {
-        background: #d8d8d0;
-        border-color: #ccccbf;
-      }
-
-      .switch input:checked + span {
-        background: #171717;
-        border-color: #171717;
-      }
-
-      .switch input:checked + span::after {
-        background: #ffffff;
-      }
-
-      label {
-        color: var(--muted-strong);
-        font-size: 12px;
-        font-weight: 650;
-        letter-spacing: 0;
-        text-transform: none;
-      }
-
-      label span {
-        color: var(--muted);
-      }
-
-      textarea,
-      input {
-        border-color: var(--line);
-        border-radius: 8px;
-        background: #ffffff;
-        color: var(--ink);
-        font-size: 13.5px;
-        padding: 12px 13px;
-      }
-
-      textarea:focus,
-      input:focus,
-      button:focus-visible {
-        border-color: #171717;
-        background: #ffffff;
-        box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.08);
-      }
-
-      .json-editor,
-      pre,
-      .raw-block {
-        font-family:
-          ui-monospace,
-          "SFMono-Regular",
-          Menlo,
-          Consolas,
-          monospace;
-      }
-
-      .json-editor {
-        background: #fbfbf8;
-        font-size: 12.5px;
-      }
-
-      .button-row {
-        border-top-color: var(--line);
-        gap: 8px;
-      }
-
-      .advanced-fields {
-        margin-top: 16px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fbfbf8;
-        overflow: hidden;
-      }
-
-      .advanced-fields summary {
-        cursor: pointer;
-        padding: 12px 14px;
-        color: var(--ink);
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      .advanced-fields-body {
-        border-top: 1px solid var(--line);
-        padding: 0 14px 16px;
-      }
-
-      .advanced-fields .field {
-        margin-top: 14px;
-      }
-
-      .kpi-grid,
-      .quality-strip,
-      .output-grid {
-        gap: 12px;
-      }
-
-      .kpi,
-      .quality-item,
-      .evidence-box,
-      .reco-card,
-      .review-card,
-      .metric-card {
-        border-color: var(--line);
-        border-radius: 8px;
-        background: #ffffff;
-        box-shadow: none;
-      }
-
-      .kpi {
-        min-height: 76px;
-        padding: 13px 14px;
-      }
-
-      .kpi span,
-      .quality-item span,
-      .section-title h3 {
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 650;
-        letter-spacing: 0.03em;
-      }
-
-      .kpi strong {
-        color: var(--ink);
-        font-size: 20px;
-        font-weight: 680;
-      }
-
-      .quality-item strong {
-        color: var(--ink);
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      .quality-item.ok,
-      .quality-item.warn {
-        background: #ffffff;
-      }
-
-      .quality-item.ok {
-        border-left: 3px solid var(--green);
-      }
-
-      .quality-item.warn {
-        border-left: 3px solid var(--amber);
-      }
-
-      .quality-item.ok span {
-        color: var(--green);
-      }
-
-      .quality-item.warn span {
-        color: var(--amber);
-      }
-
-      .empty {
-        border-color: var(--line-strong);
-        border-radius: 8px;
-        background: #fbfbf8;
-        color: var(--muted);
-      }
-
-      .reco-card:hover,
-      .review-card:hover {
-        border-color: var(--line-strong);
-        box-shadow: none;
-      }
-
-      .reco-card:first-child {
-        border-color: #b7d6c6;
-        background: #ffffff;
-        box-shadow: none;
-      }
-
-      .reco-card:first-child::after {
-        content: "Top match";
-        top: 14px;
-        right: 14px;
-        border-color: #d8e8df;
-        border-radius: 999px;
-        background: #f4faf6;
-        color: var(--green);
-        font-size: 11px;
-        font-weight: 650;
-        letter-spacing: 0;
-      }
-
-      .rank {
-        flex-basis: 32px;
-        height: 32px;
-        border-color: var(--line);
-        border-radius: 7px;
-        background: var(--control);
-        color: var(--ink);
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      .reco-card:first-child .rank {
-        background: #f4faf6;
-        color: var(--green);
-        border-color: #d8e8df;
-      }
-
-      .reco-card h3,
-      .review-card h3,
-      .evidence-box h4 {
-        color: var(--ink);
-        font-weight: 650;
-      }
-
-      .score {
-        color: var(--ink);
-        font-size: 16px;
-        font-weight: 680;
-      }
-
-      .reco-card:first-child .score {
-        text-shadow: none;
-      }
-
-      .reason,
-      .review-body {
-        color: var(--ink);
-      }
-
-      .tradeoff,
-      .evidence-box p,
-      .trace-step span {
-        color: var(--muted);
-      }
-
-      .tradeoff {
-        border-left-color: var(--line-strong);
-      }
-
-      .chip {
-        min-height: 24px;
-        border-color: var(--line);
-        border-radius: 999px;
-        background: #fbfbf8;
-        color: var(--muted-strong);
-        font-size: 11.5px;
-        font-weight: 550;
-        padding: 2px 9px;
-      }
-
-      .chip.source,
-      .chip.signal {
-        border-color: var(--line);
-        background: #fbfbf8;
-        color: var(--muted-strong);
-      }
-
-      .component {
-        color: var(--muted);
-      }
-
-      .bar {
-        height: 5px;
-        border: 0;
-        background: #ebebe4;
-      }
-
-      .bar span {
-        background: #171717;
-      }
-
-      .trace-list {
-        border-left-color: var(--line);
-      }
-
-      .trace-step {
-        border-color: var(--line);
-        border-radius: 8px;
-        background: #ffffff;
-      }
-
-      .trace-step:hover {
-        border-color: var(--line-strong);
-        background: #ffffff;
-        transform: none;
-      }
-
-      .trace-step::before {
-        border-color: var(--surface);
-        background: var(--line-strong);
-        box-shadow: none;
-      }
-
-      .trace-step.ok::before {
-        background: var(--green);
-        box-shadow: none;
-      }
-
-      .trace-step.failed::before {
-        background: var(--rose);
-        box-shadow: none;
-      }
-
-      .trace-step strong {
-        color: var(--muted-strong);
-        font-weight: 650;
-        letter-spacing: 0.03em;
-      }
-
-      .trace-step.failed strong {
-        color: var(--rose);
-      }
-
-      .review-body {
-        border-color: var(--line);
-        border-radius: 8px;
-        background: #fbfbf8;
-      }
-
-      .raw-block {
-        border-color: var(--line);
-        border-radius: 8px;
-        background: #fbfbf8;
-      }
-
-      .raw-block summary {
-        background: #ffffff;
-        color: var(--ink);
-        font-weight: 650;
-      }
-
-      pre {
-        color: var(--muted-strong);
-      }
-
-      .error {
-        border-color: #f0c0c0;
-        background: #fff8f8;
-        color: var(--rose);
-      }
-
-      .pulse-running,
-      button.primary.pulse-running {
-        animation: none;
-        border-color: #171717 !important;
-        background: #30302c;
-        color: #ffffff;
-        box-shadow: none;
-      }
-
-      /* Loading state keeps movement subtle so the console stays calm. */
-      @keyframes pulse-glow {
-        0% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.84;
-        }
-        100% {
-          opacity: 1;
-        }
-      }
-
-      .pulse-running {
-        animation: pulse-glow 1.4s ease-in-out infinite;
-        border-color: #171717 !important;
-        background: #30302c;
-        color: #ffffff;
-        box-shadow: none;
-      }
-
-      @media (max-width: 1100px) {
-        .workspace,
-        .output-grid {
+      @media (max-width: 1120px) {
+        .app-shell {
           grid-template-columns: 1fr;
         }
 
-        .task-strip,
-        .request-summary,
-        .kpi-grid,
-        .quality-strip,
-        .method-grid {
-          grid-template-columns: repeat(2, minmax(140px, 1fr));
+        .sidebar {
+          position: relative;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .nav-group {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .nav-label,
+        .sidebar-note {
+          display: none;
+        }
+
+        .nav-button + .nav-button {
+          margin-top: 0;
+        }
+
+        .content {
+          width: min(100%, 1500px);
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
         }
       }
 
-      @media (max-width: 680px) {
-        .wrap {
-          width: min(100vw - 20px, 1440px);
-        }
-
-        .topbar-inner {
+      @media (max-width: 720px) {
+        .topbar,
+        .task-header,
+        .panel-header {
           align-items: stretch;
           flex-direction: column;
-          padding: 16px 0;
         }
 
-        .header-actions {
-          align-items: stretch;
+        .topbar {
+          display: grid;
+          padding: 12px 16px;
         }
 
-        .header-actions button,
-        .status {
-          width: 100%;
-          justify-content: center;
+        .content {
+          padding: 20px 12px 34px;
         }
 
-        .task-strip,
-        .request-summary,
-        .kpi-grid,
-        .quality-strip,
+        .task-header {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .status-line,
         .method-grid,
-        .metric-grid {
+        .nav-group {
           grid-template-columns: 1fr;
         }
 
-        .method-head {
-          align-items: flex-start;
-          flex-direction: column;
+        .status-item {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
         }
 
-        .surface-header,
-        .reco-head {
-          flex-direction: column;
-          align-items: flex-start;
+        .status-item:last-child {
+          border-bottom: 0;
         }
 
+        .recommendation-row,
+        .runtime-row,
+        .trace-step,
         .component {
-          grid-template-columns: minmax(0, 1fr) 46px;
-        }
-
-        .component .bar {
-          grid-column: 1 / -1;
-        }
-
-        .trace-step {
           grid-template-columns: 1fr;
+        }
+
+        .score {
+          text-align: left;
         }
       }
     </style>
   </head>
   <body>
-    <header class="topbar">
-      <div class="wrap topbar-inner">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Bluechip console navigation">
         <div class="brand">
           <div class="brand-mark">BM</div>
           <div>
-            <h1>Bluechip Marvid</h1>
-            <p class="subhead">Two-task agent demo: Task B recommends products, Task A simulates a customer review.</p>
+            <strong>Bluechip Marvid</strong>
+            <span>Agent evaluation console</span>
           </div>
         </div>
-        <div class="header-actions">
-          <div class="status">
-            <span id="health-dot" class="dot"></span>
-            <span id="health">Checking API</span>
-          </div>
-          <button id="header-refresh" type="button">Refresh Runtime</button>
-        </div>
-      </div>
-    </header>
 
-    <main class="wrap">
-      <div class="workspace">
-        <section class="surface" aria-label="Demo inputs">
-          <div class="surface-header">
+        <div class="nav-group" role="tablist" aria-label="Workspaces">
+          <p class="nav-label">Workspaces</p>
+          <button class="nav-button active" type="button" data-mode="review" aria-selected="true">
+            <span class="nav-index">A</span>
+            <span class="nav-copy">
+              <strong>Review Simulation</strong>
+              <span>Rating and review for one item</span>
+            </span>
+          </button>
+          <button class="nav-button" type="button" data-mode="recommend" aria-selected="false">
+            <span class="nav-index">B</span>
+            <span class="nav-copy">
+              <strong>Candidate Ranking</strong>
+              <span>Recommendations for a context</span>
+            </span>
+          </button>
+          <button class="nav-button" type="button" data-mode="runtime" aria-selected="false">
+            <span class="nav-index">R</span>
+            <span class="nav-copy">
+              <strong>Runtime</strong>
+              <span>Metrics, traces, and fallback state</span>
+            </span>
+          </button>
+        </div>
+
+        <p class="sidebar-note">
+          Task A and Task B use the same profile evidence layer, but each task has its own focused run path.
+        </p>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="breadcrumbs">
+            <span>Console</span>
+            <span>/</span>
+            <strong id="breadcrumb-task">Task A</strong>
+          </div>
+          <div class="topbar-actions">
+            <div class="health">
+              <span id="health-dot" class="dot"></span>
+              <span id="health">Checking API</span>
+            </div>
+            <button id="header-refresh" class="quiet" type="button">Refresh runtime</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="task-header" aria-labelledby="task-title">
             <div>
-              <h2 id="input-title">Task B recommendation request</h2>
-              <p id="input-subtitle">Rank products for a user profile and current context.</p>
+              <div id="task-eyebrow" class="eyebrow">Task A</div>
+              <h1 id="task-title">Review Simulation</h1>
+              <p id="task-subtitle" class="task-subtitle">
+                Predict the rating and written review a specific user would leave for a target item.
+              </p>
             </div>
-            <span id="endpoint-pill" class="endpoint-pill">POST /api/recommend</span>
-          </div>
-
-          <div class="input-body">
-            <div class="mode-row" role="tablist" aria-label="Demo mode">
-              <button id="mode-recommend" class="active" type="button" data-mode="recommend">Task B Recommend</button>
-              <button id="mode-review" type="button" data-mode="review">Task A Review</button>
-              <button id="mode-runtime" type="button" data-mode="runtime">Runtime</button>
+            <div class="inline-actions">
+              <span id="endpoint" class="endpoint">POST /api/simulate-review</span>
+              <button id="run-button" class="primary" type="button">Run Task A</button>
             </div>
+          </section>
 
-            <div class="scenario-row" aria-label="Scenario presets">
-              <button id="scenario-cold" class="active" type="button" data-scenario="cold">Cold start</button>
-              <button id="scenario-cross" type="button" data-scenario="cross">Gift transfer</button>
-              <button id="scenario-review" type="button" data-scenario="review">Strict reviewer</button>
-            </div>
-
-            <div class="request-summary" aria-label="Active request summary">
-              <div>
-                <span>Task</span>
-                <strong id="request-mode-label">Task B</strong>
+          <div class="workspace">
+            <section class="panel" aria-label="Request builder">
+              <div class="panel-header">
+                <div>
+                  <h2 id="request-title">Task A request</h2>
+                  <p id="request-subtitle">Persona, history, and target item.</p>
+                </div>
               </div>
-              <div>
-                <span>Preset</span>
-                <strong id="request-scenario-label">Cold start</strong>
-              </div>
-              <div>
-                <span>State</span>
-                <strong id="request-status-label">Ready</strong>
-              </div>
-            </div>
+              <div class="panel-body form-stack">
+                <div class="field">
+                  <label for="preset">Preset <span id="preset-hint">Task A</span></label>
+                  <select id="preset"></select>
+                </div>
 
-            <div id="request-fields">
-              <div class="field">
-                <label for="persona">User persona <span>plain text</span></label>
-                <textarea id="persona"></textarea>
-              </div>
+                <div class="field">
+                  <label for="persona">User persona <span>plain text</span></label>
+                  <textarea id="persona"></textarea>
+                </div>
 
-              <div id="context-field" class="field">
-                <label for="context">Current context <span>Task B</span></label>
-                <textarea id="context" class="context-editor"></textarea>
-              </div>
+                <div id="context-field" class="field" hidden>
+                  <label for="context">Current context <span>Task B</span></label>
+                  <textarea id="context" class="compact-editor"></textarea>
+                </div>
 
-              <details class="advanced-fields">
-                <summary>Request data</summary>
-                <div class="advanced-fields-body">
-                  <div class="field">
-                    <label for="history">User history JSON <span>reviews and ratings</span></label>
-                    <textarea id="history" class="json-editor compact-editor"></textarea>
-                  </div>
-
-                  <div class="toggle-row">
-                    <div class="toggle-copy">
-                      <strong>LLM profile enhancement</strong>
-                      <span>Request bounded LLM enrichment for profile terms and aspects when a provider is configured.</span>
+                <details class="advanced">
+                  <summary>Request data</summary>
+                  <div class="advanced-body">
+                    <div class="field">
+                      <label for="history">User history JSON <span>ratings and reviews</span></label>
+                      <textarea id="history" class="json-editor compact-editor"></textarea>
                     </div>
-                    <label class="switch" for="enhance-llm" aria-label="Toggle LLM profile enhancement">
-                      <input id="enhance-llm" type="checkbox" />
-                      <span></span>
-                    </label>
-                  </div>
 
-                  <div id="candidate-field" class="field">
-                    <label for="candidate-items">Candidate items JSON <span>Task B product pool</span></label>
-                    <textarea id="candidate-items" class="json-editor"></textarea>
-                  </div>
+                    <div id="candidate-field" class="field" hidden>
+                      <label for="candidate-items">Candidate items JSON <span>Task B pool</span></label>
+                      <textarea id="candidate-items" class="json-editor"></textarea>
+                    </div>
 
-                  <div id="target-field" class="field" hidden>
-                    <label for="target-item">Target item JSON <span>Task A product</span></label>
-                    <textarea id="target-item" class="json-editor"></textarea>
+                    <div id="target-field" class="field">
+                      <label for="target-item">Target item JSON <span>Task A item</span></label>
+                      <textarea id="target-item" class="json-editor"></textarea>
+                    </div>
+
+                    <div class="field">
+                      <div class="field-label">LLM profile enhancement <span>off by default</span></div>
+                      <button id="enhance-toggle" class="quiet" type="button" aria-pressed="false">
+                        Rule-based profile
+                      </button>
+                      <input id="enhance-llm" type="checkbox" hidden />
+                    </div>
                   </div>
+                </details>
+
+                <div class="button-row">
+                  <button id="profile-button" type="button">Profile user</button>
+                  <button id="trace-button" type="button">Open runtime</button>
                 </div>
-              </details>
-            </div>
+              </div>
+            </section>
 
-            <div class="button-row">
-              <button id="run-button" class="primary" type="button">Run Task B</button>
-              <button id="profile-button" type="button">Profile User</button>
-              <button id="trace-button" type="button">Refresh Traces</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="surface" aria-label="Demo outputs">
-          <div class="surface-header">
-            <div>
-              <h2 id="result-title">Task B result</h2>
-              <p id="result-subtitle">Ranked products with reasons, evidence, and trace steps.</p>
-            </div>
-            <span id="trace-pill" class="trace-pill">No trace yet</span>
-          </div>
-
-          <div class="output-body">
-            <div id="quality-strip" class="quality-strip"></div>
-            <div id="kpi-grid" class="kpi-grid"></div>
-
-            <div class="output-grid">
-              <div class="output-section">
-                <div class="section-title">
-                  <h3 id="primary-title">Products</h3>
-                  <span id="result-count" class="pill">0 results</span>
+            <section class="panel" aria-label="Result workspace">
+              <div class="panel-header">
+                <div>
+                  <h2 id="result-title">Task A result</h2>
+                  <p id="result-subtitle">Rating, generated review, validation, evidence, and trace.</p>
                 </div>
-                <div id="primary-output" class="empty">Run Task B to rank candidate products.</div>
+                <span id="trace-pill" class="endpoint">No trace yet</span>
               </div>
 
-              <div class="output-section">
-                <div class="section-title">
-                  <h3>Evidence</h3>
-                  <span id="evidence-status" class="pill">Waiting</span>
-                </div>
-                <div id="evidence-output" class="evidence-panel"></div>
+              <div id="status-line" class="status-line" aria-label="Result metrics"></div>
 
-                <div class="section-title">
-                  <h3>Trace</h3>
-                  <span id="trace-count" class="pill">0 steps</span>
-                </div>
-                <ol id="trace-output" class="trace-list"></ol>
+              <div class="result-body">
+                <div id="primary-output" class="empty">Run Task A to simulate the review.</div>
+
+                <details id="evidence-drawer" class="drawer" open>
+                  <summary>Evidence</summary>
+                  <div id="evidence-output" class="drawer-body"></div>
+                </details>
+
+                <details id="reliability-drawer" class="drawer">
+                  <summary>Reliability</summary>
+                  <div id="reliability-output" class="drawer-body"></div>
+                </details>
+
+                <details id="trace-drawer" class="drawer">
+                  <summary>Trace</summary>
+                  <div class="drawer-body">
+                    <ol id="trace-output" class="trace-list"></ol>
+                  </div>
+                </details>
+
+                <details class="drawer">
+                  <summary>Raw response JSON</summary>
+                  <div class="drawer-body">
+                    <pre id="raw-output" class="raw-block">{}</pre>
+                  </div>
+                </details>
+              </div>
+            </section>
+          </div>
+
+          <details class="drawer method-panel">
+            <summary>Methods surfaced by the runtime</summary>
+            <div class="drawer-body method-grid">
+              <div class="method-item">
+                <strong>Task A profile modeling</strong>
+                <span>Builds a review-aware user profile, predicts rating, generates review text, then validates consistency.</span>
+              </div>
+              <div class="method-item">
+                <strong>Task B retrieve then rank</strong>
+                <span>Uses candidate sources, item-neighbor signals, context features, and hybrid ranking before explanation.</span>
+              </div>
+              <div class="method-item">
+                <strong>Shared evidence</strong>
+                <span>Both tasks expose profile signals, matched item signals, source families, and score components.</span>
+              </div>
+              <div class="method-item">
+                <strong>Runtime reliability</strong>
+                <span>Trace records include latency, fallback status, model versions, validation status, and retrieval counts.</span>
               </div>
             </div>
-
-            <details class="raw-block">
-              <summary>Raw response JSON</summary>
-              <pre id="raw-output">{}</pre>
-            </details>
-          </div>
-        </section>
+          </details>
+        </main>
       </div>
-
-      <div class="supporting-context">
-        <div class="task-strip" aria-label="Task visibility">
-          <div class="task-cell">
-            <strong>Task B Recommendation</strong>
-            <span id="task-b-state">Active demo flow</span>
-          </div>
-          <div class="task-cell">
-            <strong>Task A Review simulation</strong>
-            <span id="task-a-state">Uses the same profile evidence</span>
-          </div>
-          <div class="task-cell">
-            <strong>Evidence</strong>
-            <span id="source-state">Sources and score components after each run</span>
-          </div>
-          <div class="task-cell">
-            <strong>Traceability</strong>
-            <span id="trace-state">Validation, latency, model versions, and trace steps</span>
-          </div>
-        </div>
-
-        <section class="method-panel" aria-label="Implemented methods and evidence">
-          <div class="method-head">
-            <div>
-              <h2>Methods and evidence</h2>
-              <p>Retrieval, ranking, profile modeling, generation, and validation are surfaced directly in the demo runtime.</p>
-            </div>
-            <span class="pill">Evidence-first runtime</span>
-          </div>
-          <div class="method-grid">
-            <div class="method-item">
-              <strong>Retrieve, then rank</strong>
-              <span>Candidate generation runs before hybrid top-10 scoring.</span>
-            </div>
-            <div class="method-item">
-              <strong>Item-neighbor signals</strong>
-              <span>Co-engagement, item similarity, and baseline comparisons.</span>
-            </div>
-            <div class="method-item">
-              <strong>Review-aware profiles</strong>
-              <span>Aspect evidence extracted from history and current context.</span>
-            </div>
-            <div class="method-item">
-              <strong>Grounded explanations</strong>
-              <span>Bounded evidence, deterministic fallback, and validation traces.</span>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
+    </div>
 
     <script>
       const $ = (id) => document.getElementById(id);
 
       const examples = {
+        review: {
+          label: "Strict reviewer",
+          mode: "review",
+          persona:
+            "A strict but fair buyer who rewards durable products, quiet operation, and clear value. They punish hype, flimsy materials, and weak after-sales support.",
+          history: [
+            {
+              item_id: "fan_001",
+              item_name: "Dorm Quiet Fan",
+              rating: 5,
+              review: "Quiet enough for night study, sturdy for the price, and simple to clean.",
+              category: "appliance"
+            },
+            {
+              item_id: "speaker_002",
+              item_name: "Boom Mini Speaker",
+              rating: 2,
+              review: "Too loud in a harsh way, battery faded quickly, and support was unhelpful.",
+              category: "electronics"
+            }
+          ],
+          targetItem: {
+            item_id: "fan_220",
+            name: "BreezeLite Desk Fan",
+            category: "appliance",
+            metadata: {
+              price: "medium",
+              noise_level: "quiet",
+              warranty: "12 months",
+              build: "metal stand",
+              review_count: 146
+            },
+            summary:
+              "Compact desk fan with quiet night mode, metal stand, washable grille, and a 12-month warranty.",
+            average_rating: 4.3
+          }
+        },
         cold: {
+          label: "Cold-start dinner",
           mode: "recommend",
           persona:
             "A Lagos-based student on a tight budget who wants calm places, fast service, spicy food, and no surprise fees.",
@@ -2084,6 +1208,7 @@
           ]
         },
         cross: {
+          label: "Cross-domain gift",
           mode: "recommend",
           persona:
             "An Abuja professional who buys gentle skin care, practical books, and calm acoustic music for focused evenings.",
@@ -2147,49 +1272,61 @@
               average_rating: 4.2
             }
           ]
-        },
+        }
+      };
+
+      const modeCopy = {
         review: {
-          mode: "review",
-          persona:
-            "A strict but fair buyer who rewards durable products, quiet operation, and clear value. They punish hype, flimsy materials, and weak after-sales support.",
-          history: [
-            {
-              item_id: "fan_001",
-              item_name: "Dorm Quiet Fan",
-              rating: 5,
-              review: "Quiet enough for night study, sturdy for the price, and simple to clean.",
-              category: "appliance"
-            },
-            {
-              item_id: "speaker_002",
-              item_name: "Boom Mini Speaker",
-              rating: 2,
-              review: "Too loud in a harsh way, battery faded quickly, and support was unhelpful.",
-              category: "electronics"
-            }
-          ],
-          targetItem: {
-            item_id: "fan_220",
-            name: "BreezeLite Desk Fan",
-            category: "appliance",
-            metadata: {
-              price: "medium",
-              noise_level: "quiet",
-              warranty: "12 months",
-              build: "metal stand",
-              review_count: 146
-            },
-            summary:
-              "Compact desk fan with quiet night mode, metal stand, washable grille, and a 12-month warranty.",
-            average_rating: 4.3
-          }
+          breadcrumb: "Task A",
+          eyebrow: "Task A",
+          title: "Review Simulation",
+          subtitle: "Predict the rating and written review a specific user would leave for a target item.",
+          requestTitle: "Task A request",
+          requestSubtitle: "Persona, history, and target item.",
+          resultTitle: "Task A result",
+          resultSubtitle: "Rating, generated review, validation, evidence, and trace.",
+          endpoint: "POST /api/simulate-review",
+          run: "Run Task A",
+          empty: "Run Task A to simulate the review."
+        },
+        recommend: {
+          breadcrumb: "Task B",
+          eyebrow: "Task B",
+          title: "Candidate Ranking",
+          subtitle: "Rank candidate items for a user profile and active context, with evidence for the ordering.",
+          requestTitle: "Task B request",
+          requestSubtitle: "Persona, context, history, and candidate pool.",
+          resultTitle: "Task B result",
+          resultSubtitle: "Ranked products, matched signals, score components, source families, and trace.",
+          endpoint: "POST /api/recommend",
+          run: "Run Task B",
+          empty: "Run Task B to rank the candidate items."
+        },
+        runtime: {
+          breadcrumb: "Runtime",
+          eyebrow: "Runtime",
+          title: "Runtime Inspector",
+          subtitle: "Request volume, latency, fallback state, validation failures, model versions, and recent traces.",
+          requestTitle: "Runtime request",
+          requestSubtitle: "Refresh metrics and trace records.",
+          resultTitle: "Runtime result",
+          resultSubtitle: "Operational metrics and recent trace records.",
+          endpoint: "GET /api/metrics",
+          run: "Refresh runtime",
+          empty: "Refresh runtime to inspect recent requests."
         }
       };
 
       const state = {
-        mode: "recommend",
-        scenario: "cold",
+        mode: "review",
+        preset: "review",
         lastRaw: null
+      };
+
+      const presetsByMode = {
+        review: ["review"],
+        recommend: ["cold", "cross"],
+        runtime: []
       };
 
       function escapeHtml(value) {
@@ -2207,9 +1344,7 @@
 
       function parseJsonField(id, fallback) {
         const value = $(id).value.trim();
-        if (!value && fallback !== undefined) {
-          return fallback;
-        }
+        if (!value && fallback !== undefined) return fallback;
         try {
           return JSON.parse(value);
         } catch (error) {
@@ -2233,189 +1368,174 @@
         return data;
       }
 
-      function setMode(mode) {
-        state.mode = mode;
-        for (const button of document.querySelectorAll("[data-mode]")) {
-          button.classList.toggle("active", button.dataset.mode === mode);
-          button.setAttribute("aria-selected", String(button.dataset.mode === mode));
-        }
-
-        const isRecommend = mode === "recommend";
-        const isReview = mode === "review";
-        $("request-fields").hidden = mode === "runtime";
-        $("context-field").hidden = !isRecommend;
-        $("candidate-field").hidden = !isRecommend;
-        $("target-field").hidden = !isReview;
-        $("profile-button").disabled = mode === "runtime";
-
-        $("request-mode-label").textContent =
-          mode === "recommend" ? "Task B" : mode === "review" ? "Task A" : "Runtime";
-        if (mode === "runtime") {
-          $("request-scenario-label").textContent = "Recent traces";
-        } else {
-          $("request-scenario-label").textContent = {
-            cold: "Cold start",
-            cross: "Gift transfer",
-            review: "Strict reviewer"
-          }[state.scenario];
-        }
-        $("request-status-label").textContent = "Ready";
-        $("input-title").textContent =
-          mode === "recommend" ? "Task B recommendation request" : mode === "review" ? "Task A review request" : "Runtime request";
-        $("input-subtitle").textContent =
-          mode === "recommend"
-            ? "Rank products for a user profile and current context."
-            : mode === "review"
-              ? "User profile and target item for predicting a rating and review."
-              : "Request recent metrics and traces from the local FastAPI process.";
-        $("endpoint-pill").textContent =
-          mode === "recommend" ? "POST /api/recommend" : mode === "review" ? "POST /api/simulate-review" : "GET /api/metrics";
-        $("run-button").textContent =
-          mode === "recommend" ? "Run Task B" : mode === "review" ? "Run Task A" : "Refresh runtime";
-        $("result-title").textContent =
-          mode === "recommend" ? "Task B result" : mode === "review" ? "Task A result" : "Runtime result";
-        $("result-subtitle").textContent =
-          mode === "recommend"
-            ? "Ranked products with reasons, evidence, and trace steps."
-            : mode === "review"
-              ? "Predicted rating, generated review, validation, and trace steps."
-              : "Aggregate metrics and recent request traces.";
-        $("primary-title").textContent =
-          mode === "recommend" ? "Products" : mode === "review" ? "Generated Review" : "Recent Requests";
-      }
-
-      function loadScenario(name) {
-        const example = examples[name];
-        state.scenario = name;
-        setMode(example.mode);
-
-        for (const button of document.querySelectorAll("[data-scenario]")) {
-          button.classList.toggle("active", button.dataset.scenario === name);
-        }
-
-        $("persona").value = example.persona || "";
-        $("context").value = example.context || "";
-        $("history").value = pretty(example.history || []);
-        $("candidate-items").value = pretty(example.candidateItems || []);
-        $("target-item").value = pretty(example.targetItem || {});
-        $("request-scenario-label").textContent = {
-          cold: "Cold start",
-          cross: "Gift transfer",
-          review: "Strict reviewer"
-        }[name];
-        renderIdle(example.mode, name);
-      }
-
-      function setLoading(label) {
-        setResultStatsVisible(false);
-        $("request-status-label").textContent = "Running";
-        for (const button of document.querySelectorAll("[data-mode], [data-scenario]")) {
-          button.disabled = true;
-        }
-        $("run-button").disabled = true;
-        $("run-button").classList.add("pulse-running");
-        $("profile-button").disabled = true;
-        $("trace-button").disabled = true;
-        $("primary-output").className = "empty";
-        $("primary-output").textContent = label;
-        $("evidence-output").innerHTML = "";
-        $("trace-output").innerHTML = "";
-      }
-
-      function clearLoading() {
-        for (const button of document.querySelectorAll("[data-mode], [data-scenario]")) {
-          button.disabled = false;
-        }
-        $("run-button").disabled = false;
-        $("run-button").classList.remove("pulse-running");
-        $("profile-button").disabled = state.mode === "runtime";
-        $("trace-button").disabled = false;
-        $("request-status-label").textContent = "Ready";
-      }
-
       function setRaw(payload) {
         state.lastRaw = payload;
         $("raw-output").textContent = pretty(payload || {});
       }
 
-      function setResultStatsVisible(visible) {
-        $("quality-strip").hidden = !visible;
-        $("kpi-grid").hidden = !visible;
+      function setStatusItems(items) {
+        $("status-line").innerHTML = items
+          .map(
+            ([label, value]) => `
+              <div class="status-item">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `
+          )
+          .join("");
       }
 
-      function renderIdle(mode, scenario) {
-        setResultStatsVisible(false);
-        $("kpi-grid").innerHTML = "";
-        $("quality-strip").innerHTML = "";
-        $("result-count").textContent = "0 results";
-        $("evidence-status").textContent = "Waiting";
-        $("trace-count").textContent = "0 steps";
+      function setMode(mode, options = {}) {
+        state.mode = mode;
+        const copy = modeCopy[mode];
+
+        for (const button of document.querySelectorAll("[data-mode]")) {
+          const active = button.dataset.mode === mode;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-selected", String(active));
+        }
+
+        $("breadcrumb-task").textContent = copy.breadcrumb;
+        $("task-eyebrow").textContent = copy.eyebrow;
+        $("task-title").textContent = copy.title;
+        $("task-subtitle").textContent = copy.subtitle;
+        $("request-title").textContent = copy.requestTitle;
+        $("request-subtitle").textContent = copy.requestSubtitle;
+        $("result-title").textContent = copy.resultTitle;
+        $("result-subtitle").textContent = copy.resultSubtitle;
+        $("endpoint").textContent = copy.endpoint;
+        $("run-button").textContent = copy.run;
+
+        $("context-field").hidden = mode !== "recommend";
+        $("candidate-field").hidden = mode !== "recommend";
+        $("target-field").hidden = mode !== "review";
+        $("profile-button").disabled = mode === "runtime";
+        $("preset").disabled = mode === "runtime";
+        $("preset-hint").textContent =
+          mode === "review" ? "Task A" : mode === "recommend" ? "Task B" : "Runtime";
+
+        fillPresetOptions();
+        if (!options.keepOutput) renderIdle();
+      }
+
+      function fillPresetOptions() {
+        const presetIds = presetsByMode[state.mode] || [];
+        $("preset").innerHTML = presetIds
+          .map((id) => `<option value="${escapeHtml(id)}">${escapeHtml(examples[id].label)}</option>`)
+          .join("");
+        if (presetIds.length && !presetIds.includes(state.preset)) {
+          state.preset = presetIds[0];
+        }
+        if (presetIds.length) $("preset").value = state.preset;
+      }
+
+      function loadPreset(id) {
+        const example = examples[id];
+        state.preset = id;
+        setMode(example.mode, { keepOutput: false });
+        $("preset").value = id;
+        $("persona").value = example.persona || "";
+        $("context").value = example.context || "";
+        $("history").value = pretty(example.history || []);
+        $("candidate-items").value = pretty(example.candidateItems || []);
+        $("target-item").value = pretty(example.targetItem || {});
+      }
+
+      function renderIdle() {
+        const copy = modeCopy[state.mode];
         $("trace-pill").textContent = "No trace yet";
+        setStatusItems([
+          ["Workspace", copy.breadcrumb],
+          ["Preset", state.preset && examples[state.preset] ? examples[state.preset].label : "Runtime"],
+          ["State", "Ready"],
+          ["LLM profile", $("enhance-llm").checked ? "Enabled" : "Off"]
+        ]);
         $("primary-output").className = "empty";
-        $("primary-output").textContent =
-          mode === "recommend"
-            ? "Run Task B to rank candidate products."
-            : mode === "review"
-              ? "Run Task A to simulate a rating and review."
-              : "Refresh runtime to inspect recent traces.";
-        $("evidence-output").innerHTML = "";
-        $("trace-output").innerHTML = "";
+        $("primary-output").textContent = copy.empty;
+        $("evidence-output").innerHTML = emptyMessage("Evidence appears after a run.");
+        $("reliability-output").innerHTML = emptyMessage("Reliability metrics appear after a run.");
+        renderTrace([]);
         setRaw({});
       }
 
-      function renderKpis(items) {
-        return items
-          .map(
-            ([label, value]) => `
-              <div class="kpi">
-                <span>${escapeHtml(label)}</span>
-                <strong>${escapeHtml(value)}</strong>
-              </div>
-            `
-          )
-          .join("");
+      function emptyMessage(text) {
+        return `<div class="empty">${escapeHtml(text)}</div>`;
       }
 
-      function renderQualityStrip(items) {
-        $("quality-strip").innerHTML = items
-          .map(
-            ([label, value, state = ""]) => `
-              <div class="quality-item ${escapeHtml(state)}">
-                <span>${escapeHtml(label)}</span>
-                <strong>${escapeHtml(value)}</strong>
-              </div>
-            `
-          )
-          .join("");
+      function setLoading(label) {
+        $("run-button").disabled = true;
+        $("run-button").classList.add("is-running");
+        $("profile-button").disabled = true;
+        $("trace-button").disabled = true;
+        $("primary-output").className = "empty";
+        $("primary-output").textContent = label;
+        setStatusItems([
+          ["Workspace", modeCopy[state.mode].breadcrumb],
+          ["Preset", state.preset && examples[state.preset] ? examples[state.preset].label : "Runtime"],
+          ["State", "Running"],
+          ["LLM profile", $("enhance-llm").checked ? "Enabled" : "Off"]
+        ]);
+      }
+
+      function clearLoading() {
+        $("run-button").disabled = false;
+        $("run-button").classList.remove("is-running");
+        $("profile-button").disabled = state.mode === "runtime";
+        $("trace-button").disabled = false;
       }
 
       function chip(value, type = "") {
         return `<span class="chip ${type}">${escapeHtml(value)}</span>`;
       }
 
-      function chipList(values, type = "", empty = "None recorded") {
+      function chipList(values, type = "", empty = "None returned") {
         const list = Array.isArray(values) ? values.filter(Boolean) : [];
-        if (!list.length) {
-          return `<p>${escapeHtml(empty)}</p>`;
-        }
+        if (!list.length) return `<p class="tradeoff">${escapeHtml(empty)}</p>`;
         return `<div class="chip-row">${list.map((value) => chip(value, type)).join("")}</div>`;
       }
 
-      function sourceCounts(counts) {
+      function sourceRows(counts) {
         const entries = Object.entries(counts || {});
-        if (!entries.length) {
-          return "<p>No retrieval source counts returned.</p>";
-        }
-        return `<div class="chip-row">${entries.map(([name, count]) => chip(`${name}: ${count}`, "source")).join("")}</div>`;
+        if (!entries.length) return emptyMessage("No source counts returned.");
+        return `
+          <div class="kv-table">
+            ${entries
+              .map(
+                ([name, value]) => `
+                  <div class="kv-row">
+                    <span>${escapeHtml(name)}</span>
+                    <strong>${escapeHtml(value)}</strong>
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        `;
+      }
+
+      function kvRows(items) {
+        return `
+          <div class="kv-table">
+            ${items
+              .map(
+                ([label, value]) => `
+                  <div class="kv-row">
+                    <span>${escapeHtml(label)}</span>
+                    <strong>${escapeHtml(value)}</strong>
+                  </div>
+                `
+              )
+              .join("")}
+          </div>
+        `;
       }
 
       function componentRows(components) {
         const entries = Object.entries(components || {})
           .filter(([, value]) => Number.isFinite(Number(value)))
           .sort((a, b) => Number(b[1]) - Number(a[1]));
-        if (!entries.length) {
-          return "";
-        }
+        if (!entries.length) return emptyMessage("No score components returned.");
         return `
           <div class="component-list">
             ${entries
@@ -2436,7 +1556,6 @@
 
       function renderTrace(steps) {
         const traceSteps = Array.isArray(steps) ? steps : [];
-        $("trace-count").textContent = `${traceSteps.length} steps`;
         if (!traceSteps.length) {
           $("trace-output").innerHTML = '<li class="empty">No trace steps returned.</li>';
           return;
@@ -2444,7 +1563,7 @@
         $("trace-output").innerHTML = traceSteps
           .map(
             (step) => `
-              <li class="trace-step ${escapeHtml(step.status || '')}">
+              <li class="trace-step ${escapeHtml(step.status || "")}">
                 <strong>${escapeHtml(step.step || "step")}</strong>
                 <span>${escapeHtml(step.detail || "")}</span>
               </li>
@@ -2454,41 +1573,21 @@
       }
 
       function renderProfile(profile) {
-        if (!profile) {
-          return `
-            <div class="evidence-box">
-              <h4>User Profile</h4>
-              <p>No profile preview returned.</p>
-            </div>
-          `;
-        }
+        if (!profile) return emptyMessage("No profile evidence returned.");
         const affinities = Object.entries(profile.category_affinity || {})
           .sort((a, b) => Number(b[1]) - Number(a[1]))
-          .slice(0, 5)
+          .slice(0, 6)
           .map(([name, value]) => `${name}: ${Number(value).toFixed(2)}`);
         return `
-          <div class="evidence-box">
-            <h4>User Profile</h4>
-            <p>Confidence ${Number(profile.confidence || 0).toFixed(2)} from ${profile.evidence_count || 0} evidence items.</p>
-            ${chipList(profile.signals || [], "signal", "No profile signals returned.")}
-          </div>
-          <div class="evidence-box">
-            <h4>Profile Enhancement</h4>
-            ${
-              profile.profile_enhancement && profile.profile_enhancement.llm_augmented
-                ? `<p>${escapeHtml(profile.profile_enhancement.rationale || "LLM enrichment applied.")}</p>
-                   ${chipList(Object.values(profile.profile_enhancement.added_terms || {}).flat().slice(0, 8), "signal", "No added terms returned.")}`
-                : "<p>Rule-based profile only. Toggle LLM profile enhancement to request bounded enrichment.</p>"
-            }
-          </div>
-          <div class="evidence-box">
-            <h4>Preference Terms</h4>
-            ${chipList([...(profile.preferred_terms || []), ...(profile.positive_aspects || [])].slice(0, 10))}
-          </div>
-          <div class="evidence-box">
-            <h4>Category Affinity</h4>
-            ${chipList(affinities)}
-          </div>
+          ${kvRows([
+            ["Profile confidence", Number(profile.confidence || 0).toFixed(2)],
+            ["Evidence items", profile.evidence_count || 0],
+            ["Rating strictness", profile.rating_strictness || "n/a"],
+            ["Voice style", profile.voice_style || "n/a"]
+          ])}
+          ${chipList(profile.signals || [], "signal", "No profile signals returned.")}
+          ${chipList([...(profile.preferred_terms || []), ...(profile.positive_aspects || [])].slice(0, 12), "", "No preference terms returned.")}
+          ${chipList(affinities, "source", "No category affinities returned.")}
         `;
       }
 
@@ -2523,16 +1622,6 @@
         };
       }
 
-      async function runRecommendation() {
-        const payload = recommendationPayload();
-        setLoading("Ranking candidates and generating explanations...");
-        const [profileResult, data] = await Promise.all([
-          api("/api/profile-user", profilePayload(payload.user_history)),
-          api("/api/recommend", payload)
-        ]);
-        renderRecommendation(data, profileResult.profile);
-      }
-
       async function runReview() {
         const payload = reviewPayload();
         setLoading("Predicting rating, generating review, and validating consistency...");
@@ -2543,221 +1632,200 @@
         renderReview(data, profileResult.profile);
       }
 
-      function renderRecommendation(data, profile) {
-        setResultStatsVisible(true);
-        const recommendations = data.recommendations || [];
-        const top = recommendations[0];
-        const diagnostics = data.candidate_diagnostics || {};
-        $("trace-pill").textContent = data.trace_id ? `trace ${data.trace_id}` : "No trace id";
-        $("result-count").textContent = `${recommendations.length} products`;
-        $("evidence-status").textContent = diagnostics.strategy || "returned";
-        $("kpi-grid").innerHTML = renderKpis([
-          ["Top score", top ? Number(top.score || 0).toFixed(2) : "n/a"],
-          ["Strategy", diagnostics.strategy || "n/a"],
-          ["Candidates", `${diagnostics.candidate_count || 0}/${diagnostics.input_count || 0}`],
-          ["Sources", Object.keys(diagnostics.source_counts || {}).length || "n/a"]
+      async function runRecommendation() {
+        const payload = recommendationPayload();
+        setLoading("Ranking candidates and preparing recommendation evidence...");
+        const [profileResult, data] = await Promise.all([
+          api("/api/profile-user", profilePayload(payload.user_history)),
+          api("/api/recommend", payload)
         ]);
-        renderQualityStrip([
-          ["Reason style", "Conversational, user-facing", "ok"],
-          ["Profile", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "LLM enriched" : "Rule-based", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "ok" : ""],
-          ["Fallback", data.fallback_reason || "No fallback reported", data.fallback_reason ? "warn" : "ok"]
-        ]);
-
-        $("primary-output").className = "reco-list";
-        $("primary-output").innerHTML = recommendations.length
-          ? recommendations
-              .map(
-                (item) => `
-                  <article class="reco-card">
-                    <div class="reco-head">
-                      <div class="rank-name">
-                        <div class="rank">#${escapeHtml(item.rank)}</div>
-                        <div>
-                          <h3>${escapeHtml(item.name)}</h3>
-                          <div class="chip-row">
-                            ${(item.candidate_sources || []).map((source) => chip(source, "source")).join("")}
-                          </div>
-                        </div>
-                      </div>
-                      <div class="score">${Number(item.score || 0).toFixed(2)}</div>
-                    </div>
-                    <p class="reason">${escapeHtml(item.reason)}</p>
-                    <p class="tradeoff"><b>Tradeoff:</b> ${escapeHtml(item.tradeoffs || "No major tradeoff returned.")}</p>
-                    ${chipList([...(item.matched_signals || []), ...(item.signals || [])].slice(0, 8), "signal")}
-                    ${componentRows(item.score_components)}
-                  </article>
-                `
-              )
-              .join("")
-          : '<div class="empty">No recommendations returned.</div>';
-
-        $("evidence-output").innerHTML = `
-          ${renderProfile(profile)}
-          <div class="evidence-box">
-            <h4>Candidate Sources</h4>
-            ${sourceCounts(diagnostics.source_counts)}
-          </div>
-          <div class="evidence-box">
-            <h4>Retrieval Scores</h4>
-            ${top ? sourceCounts(top.retrieval_scores) : "<p>No top candidate yet.</p>"}
-          </div>
-        `;
-        renderTrace(data.agent_trace || []);
-        setRaw(data);
+        renderRecommendation(data, profileResult.profile);
       }
 
       function renderReview(data, profile) {
-        setResultStatsVisible(true);
+        const isConsistent = data.validation && data.validation.is_consistent;
         $("trace-pill").textContent = data.trace_id ? `trace ${data.trace_id}` : "No trace id";
-        $("result-count").textContent = "1 review";
-        $("evidence-status").textContent = data.validation && data.validation.is_consistent ? "validated" : "warning";
-        $("kpi-grid").innerHTML = renderKpis([
+        setStatusItems([
           ["Predicted rating", `${data.predicted_rating}/5`],
           ["Score", data.predicted_score ? Number(data.predicted_score).toFixed(2) : "n/a"],
           ["Confidence", Number(data.confidence || 0).toFixed(2)],
-          ["Model", data.model_name || "default"]
-        ]);
-        renderQualityStrip([
-          ["Review style", (data.review || "").toLowerCase().startsWith("i would rate") ? "Template-like opening" : "Natural opening", (data.review || "").toLowerCase().startsWith("i would rate") ? "warn" : "ok"],
-          ["Validation", data.validation && data.validation.is_consistent ? "Consistent" : "Needs review", data.validation && data.validation.is_consistent ? "ok" : "warn"],
-          ["Profile", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "LLM enriched" : "Rule-based", profile && profile.profile_enhancement && profile.profile_enhancement.llm_augmented ? "ok" : ""]
+          ["Validation", isConsistent ? "Consistent" : "Warning"]
         ]);
 
-        $("primary-output").className = "review-card";
+        $("primary-output").className = "review-output";
         $("primary-output").innerHTML = `
           <h3>Generated customer review</h3>
-          <p class="review-body">${escapeHtml(data.review || "")}</p>
+          <p class="review-text">${escapeHtml(data.review || "")}</p>
           <div class="chip-row">
-            ${chip(`validation: ${data.validation && data.validation.is_consistent ? "ok" : "warning"}`, data.validation && data.validation.is_consistent ? "signal" : "")}
-            ${chip(`trace: ${data.trace_id || "none"}`)}
+            ${chip(`model: ${data.model_name || "default"}`, "source")}
+            ${chip(`validation: ${isConsistent ? "ok" : "warning"}`, isConsistent ? "signal" : "")}
           </div>
         `;
 
         const issues = data.validation && data.validation.issues ? data.validation.issues : [];
         $("evidence-output").innerHTML = `
           ${renderProfile(profile)}
-          <div class="evidence-box">
-            <h4>User Signals</h4>
-            ${chipList(data.user_signals || [], "signal")}
-          </div>
-          <div class="evidence-box">
-            <h4>Item Signals</h4>
-            ${chipList(data.item_signals || [])}
-          </div>
-          <div class="evidence-box ${issues.length ? "error" : ""}">
-            <h4>Validation</h4>
-            ${issues.length ? chipList(issues) : "<p>No consistency issues returned.</p>"}
-          </div>
+          <h3>User signals</h3>
+          ${chipList(data.user_signals || [], "signal")}
+          <h3>Item signals</h3>
+          ${chipList(data.item_signals || [])}
+        `;
+        $("reliability-output").innerHTML = `
+          ${kvRows([
+            ["Model", data.model_name || "default"],
+            ["Trace id", data.trace_id || "none"],
+            ["Validation status", isConsistent ? "consistent" : "warning"],
+            ["Validation issues", issues.length ? issues.join("; ") : "none"]
+          ])}
+        `;
+        renderTrace(data.agent_trace || []);
+        setRaw(data);
+      }
+
+      function renderRecommendation(data, profile) {
+        const recommendations = data.recommendations || [];
+        const diagnostics = data.candidate_diagnostics || {};
+        const top = recommendations[0];
+        $("trace-pill").textContent = data.trace_id ? `trace ${data.trace_id}` : "No trace id";
+        setStatusItems([
+          ["Top score", top ? Number(top.score || 0).toFixed(2) : "n/a"],
+          ["Returned", recommendations.length],
+          ["Candidates", `${diagnostics.candidate_count || 0}/${diagnostics.input_count || 0}`],
+          ["Strategy", diagnostics.strategy || "n/a"]
+        ]);
+
+        $("primary-output").className = "recommendation-list";
+        $("primary-output").innerHTML = recommendations.length
+          ? recommendations
+              .map(
+                (item) => `
+                  <article class="recommendation-row">
+                    <div class="rank">#${escapeHtml(item.rank)}</div>
+                    <div>
+                      <h3>${escapeHtml(item.name)}</h3>
+                      <p class="reason">${escapeHtml(item.reason)}</p>
+                      <p class="tradeoff">Tradeoff: ${escapeHtml(item.tradeoffs || "No major tradeoff returned.")}</p>
+                      ${chipList([...(item.candidate_sources || [])], "source", "")}
+                      ${chipList([...(item.matched_signals || []), ...(item.signals || [])].slice(0, 8), "signal", "")}
+                    </div>
+                    <div class="score">${Number(item.score || 0).toFixed(2)}</div>
+                  </article>
+                `
+              )
+              .join("")
+          : emptyMessage("No recommendations returned.");
+
+        $("evidence-output").innerHTML = `
+          ${renderProfile(profile)}
+          <h3>Candidate source counts</h3>
+          ${sourceRows(diagnostics.source_counts)}
+          <h3>Top item score components</h3>
+          ${top ? componentRows(top.score_components) : emptyMessage("No top candidate returned.")}
+        `;
+        $("reliability-output").innerHTML = `
+          ${kvRows([
+            ["Ranking policy", diagnostics.ranking_policy || "n/a"],
+            ["Semantic retrieval", diagnostics.semantic_retrieval_enabled ? "enabled" : "disabled"],
+            ["Collaborative source", diagnostics.used_collaborative ? "used" : "not used"],
+            ["Disabled sources", (diagnostics.disabled_sources || []).join(", ") || "none"],
+            ["Trace id", data.trace_id || "none"]
+          ])}
         `;
         renderTrace(data.agent_trace || []);
         setRaw(data);
       }
 
       function renderMetrics(metrics, traces) {
-        setResultStatsVisible(true);
+        const latest = traces[0];
         $("trace-pill").textContent = `${traces.length} recent traces`;
-        $("result-count").textContent = `${traces.length} traces`;
-        $("evidence-status").textContent = "runtime";
-        $("kpi-grid").innerHTML = renderKpis([
+        setStatusItems([
           ["Requests", metrics.requests || 0],
           ["Avg latency", `${Number(metrics.average_latency_ms || 0).toFixed(1)} ms`],
           ["Fallback rate", Number(metrics.fallback_rate || 0).toFixed(2)],
           ["Validation failures", metrics.validation_failures || 0]
         ]);
-        renderQualityStrip([
-          ["Generation", `${metrics.estimated_generation_tokens || 0} est. tokens`],
-          ["Fallbacks", `${metrics.fallback_count || 0} total`, metrics.fallback_count ? "warn" : "ok"],
-          ["Validation", `${metrics.validation_failure_rate ? Number(metrics.validation_failure_rate).toFixed(2) : "0.00"} failure rate`, metrics.validation_failures ? "warn" : "ok"]
-        ]);
 
-        $("primary-output").className = "reco-list";
+        $("primary-output").className = "runtime-list";
         $("primary-output").innerHTML = traces.length
           ? traces
               .map(
                 (trace) => `
-                  <article class="metric-card">
-                    <div class="reco-head">
-                      <div>
-                        <h3>${escapeHtml(trace.endpoint)}</h3>
-                        <p class="tradeoff">${escapeHtml(trace.created_at)} - ${Number(trace.latency_ms || 0).toFixed(1)} ms</p>
+                  <article class="runtime-row">
+                    <div class="rank">${escapeHtml(trace.endpoint || "api").slice(0, 3)}</div>
+                    <div>
+                      <h3>${escapeHtml(trace.endpoint || "unknown endpoint")}</h3>
+                      <p class="reason">${escapeHtml(trace.created_at || "")}</p>
+                      <div class="chip-row">
+                        ${chip(`provider: ${trace.generation_provider || "unknown"}`, "source")}
+                        ${chip(`tokens: ${trace.estimated_generation_tokens || 0}`)}
+                        ${chip(`trace: ${trace.trace_id || "none"}`)}
                       </div>
-                      <span class="pill">${escapeHtml(trace.validation_status || "unknown")}</span>
                     </div>
-                    <div class="chip-row">
-                      ${chip(`provider: ${trace.generation_provider || "unknown"}`)}
-                      ${chip(`tokens: ${trace.estimated_generation_tokens || 0}`)}
-                      ${chip(`trace: ${trace.trace_id || "none"}`)}
-                    </div>
+                    <div class="score">${Number(trace.latency_ms || 0).toFixed(0)} ms</div>
                   </article>
                 `
               )
               .join("")
-          : '<div class="empty">No request traces recorded yet.</div>';
+          : emptyMessage("No request traces recorded yet.");
 
         $("evidence-output").innerHTML = `
-          <div class="evidence-box">
-            <h4>Endpoint Mix</h4>
-            ${sourceCounts(metrics.by_endpoint)}
-          </div>
-          <div class="evidence-box">
-            <h4>Retrieval Source Counts</h4>
-            ${sourceCounts(metrics.retrieval_source_counts)}
-          </div>
-          <div class="evidence-box">
-            <h4>Model Versions</h4>
-            ${sourceCounts(metrics.model_version_counts)}
-          </div>
+          <h3>Endpoint mix</h3>
+          ${sourceRows(metrics.by_endpoint)}
+          <h3>Retrieval source counts</h3>
+          ${sourceRows(metrics.retrieval_source_counts)}
         `;
-        renderTrace(traces[0] ? traces[0].steps : []);
+        $("reliability-output").innerHTML = `
+          <h3>Generation providers</h3>
+          ${sourceRows(metrics.by_generation_provider)}
+          <h3>Model versions</h3>
+          ${sourceRows(metrics.model_version_counts)}
+          <h3>Index versions</h3>
+          ${sourceRows(metrics.index_version_counts)}
+        `;
+        renderTrace(latest ? latest.steps : []);
         setRaw({ metrics, traces });
       }
 
       async function loadMetrics() {
-        setMode("runtime");
+        setMode("runtime", { keepOutput: true });
         setLoading("Loading runtime metrics and recent traces...");
-        try {
-          const [metrics, traces] = await Promise.all([api("/api/metrics"), api("/api/traces?limit=8")]);
-          renderMetrics(metrics, traces);
-        } finally {
-          clearLoading();
-        }
+        const [metrics, traces] = await Promise.all([api("/api/metrics"), api("/api/traces?limit=8")]);
+        renderMetrics(metrics, traces);
       }
 
       async function previewProfile() {
         const history = parseJsonField("history", []);
-        setLoading("Profiling user evidence...");
+        setLoading("Profiling current user evidence...");
         const data = await api("/api/profile-user", profilePayload(history));
-        setResultStatsVisible(true);
         $("trace-pill").textContent = "profile preview";
-        $("result-count").textContent = "1 profile";
-        $("evidence-status").textContent = "profiled";
-        $("kpi-grid").innerHTML = renderKpis([
+        setStatusItems([
           ["Evidence items", data.profile.evidence_count || 0],
           ["Confidence", Number(data.profile.confidence || 0).toFixed(2)],
           ["Strictness", data.profile.rating_strictness || "n/a"],
           ["Avg rating", Number(data.profile.average_rating || 0).toFixed(2)]
         ]);
-        renderQualityStrip([
-          ["Profile", data.profile.profile_enhancement && data.profile.profile_enhancement.llm_augmented ? "LLM enriched" : "Rule-based", data.profile.profile_enhancement && data.profile.profile_enhancement.llm_augmented ? "ok" : ""],
-          ["Evidence", `${data.profile.evidence_count || 0} history items`, (data.profile.evidence_count || 0) ? "ok" : "warn"],
-          ["Voice", data.profile.voice_style || "Not inferred"]
-        ]);
-        $("primary-output").className = "review-card";
+        $("primary-output").className = "review-output";
         $("primary-output").innerHTML = `
           <h3>User intelligence profile</h3>
           ${chipList(data.profile.signals || [], "signal")}
         `;
         $("evidence-output").innerHTML = renderProfile(data.profile);
+        $("reliability-output").innerHTML = kvRows([
+          ["Profile mode", data.profile.profile_enhancement && data.profile.profile_enhancement.llm_augmented ? "LLM enriched" : "rule-based"],
+          ["Locale", data.profile.locale || "Nigeria"],
+          ["Recent average rating", Number(data.profile.recent_average_rating || 0).toFixed(2)],
+          ["Rating standard deviation", Number(data.profile.rating_std || 0).toFixed(2)]
+        ]);
         renderTrace([{ step: "profile_user", status: "ok", detail: "Profile preview generated from current persona and history." }]);
         setRaw(data);
       }
 
       async function runActive() {
         try {
-          if (state.mode === "recommend") {
-            await runRecommendation();
-          } else if (state.mode === "review") {
+          if (state.mode === "review") {
             await runReview();
+          } else if (state.mode === "recommend") {
+            await runRecommendation();
           } else {
             await loadMetrics();
           }
@@ -2769,12 +1837,11 @@
       }
 
       function renderError(error) {
-        setResultStatsVisible(false);
         $("primary-output").className = "empty error";
         $("primary-output").textContent = error.message || String(error);
-        $("evidence-output").innerHTML = "";
-        $("trace-output").innerHTML = "";
-        $("trace-count").textContent = "0 steps";
+        $("evidence-output").innerHTML = emptyMessage("No evidence returned because the request failed.");
+        $("reliability-output").innerHTML = kvRows([["Error", error.message || String(error)]]);
+        renderTrace([]);
         setRaw({ error: error.message || String(error) });
       }
 
@@ -2792,28 +1859,19 @@
       for (const button of document.querySelectorAll("[data-mode]")) {
         button.addEventListener("click", () => {
           const nextMode = button.dataset.mode;
-          if (nextMode === "review" && state.mode !== "review") {
-            loadScenario("review");
-            return;
-          }
-          if (nextMode === "recommend" && state.mode !== "recommend" && state.scenario === "review") {
-            loadScenario("cold");
-            return;
-          }
-          setMode(nextMode);
           if (nextMode === "runtime") {
             loadMetrics().catch((error) => {
               renderError(error);
               clearLoading();
             });
+            return;
           }
+          const nextPreset = nextMode === "review" ? "review" : state.preset === "cross" ? "cross" : "cold";
+          loadPreset(nextPreset);
         });
       }
 
-      for (const button of document.querySelectorAll("[data-scenario]")) {
-        button.addEventListener("click", () => loadScenario(button.dataset.scenario));
-      }
-
+      $("preset").addEventListener("change", () => loadPreset($("preset").value));
       $("run-button").addEventListener("click", runActive);
       $("profile-button").addEventListener("click", () => {
         previewProfile()
@@ -2830,8 +1888,14 @@
           .catch(renderError)
           .finally(clearLoading);
       });
+      $("enhance-toggle").addEventListener("click", () => {
+        $("enhance-llm").checked = !$("enhance-llm").checked;
+        $("enhance-toggle").setAttribute("aria-pressed", String($("enhance-llm").checked));
+        $("enhance-toggle").textContent = $("enhance-llm").checked ? "LLM profile enabled" : "Rule-based profile";
+        renderIdle();
+      });
 
-      loadScenario("cold");
+      loadPreset("review");
       checkHealth();
     </script>
   </body>
