@@ -4,7 +4,8 @@ from app.agents.recommendation_agent import RecommendationAgent
 from app.models.schemas import Item, RecommendationRequest, UserHistoryItem
 from app.serving.orchestrators import recommendation as recommendation_orchestrator
 from app.services.profiling.user_profile import build_user_profile
-from app.services.ranking.context_intents import context_category_hint
+from app.services.ranking.context_intents import context_category_hint, context_intent_expansion
+from app.services.ranking.learned_task_b import TaskBLinearRanker, TaskBRankerArtifact
 from app.services.ranking.recommendation import adaptive_recommendation_policy, rank_candidates
 from app.services.retrieval.candidates import generate_candidate_pool
 from app.services.retrieval.item_similarity import (
@@ -119,6 +120,55 @@ def test_rejected_item_ids_are_removed_before_ranking(monkeypatch) -> None:
     response = RecommendationAgent().run(request)
 
     assert [item.item_id for item in response.recommendations] == ["quiet_value"]
+
+
+def test_serving_applies_optional_learned_task_b_ranker(monkeypatch) -> None:
+    monkeypatch.setattr(recommendation_orchestrator, "_load_neural_index", lambda: None)
+    monkeypatch.setattr(
+        recommendation_orchestrator.RecommenderReasoner,
+        "rerank_candidates",
+        lambda self, **kwargs: [],
+    )
+    ranker = TaskBLinearRanker(
+        TaskBRankerArtifact(
+            feature_names=("component:raw_score", "retrieval:context_intent_profile"),
+            weights={
+                "component:raw_score": -0.5,
+                "retrieval:context_intent_profile": 4.0,
+            },
+        )
+    )
+    monkeypatch.setattr(recommendation_orchestrator, "_load_task_b_ranker", lambda: ranker)
+    request = RecommendationRequest(
+        user_persona="A budget shopper looking for practical beauty products.",
+        user_history=[],
+        context="Need a hair styling product for curls.",
+        candidate_items=[
+            Item(
+                item_id="generic_popular",
+                name="Popular Body Mist",
+                category="All_Beauty",
+                metadata={"review_count": 5000},
+                summary="Popular fragrance body mist.",
+                average_rating=4.9,
+            ),
+            Item(
+                item_id="hair_target",
+                name="Curl Styling Cream",
+                category="All_Beauty",
+                metadata={"review_count": 35},
+                summary="Hair styling cream for curls and natural hair.",
+                average_rating=4.1,
+            ),
+        ],
+        limit=2,
+    )
+
+    response = RecommendationAgent().run(request)
+
+    assert response.recommendations[0].item_id == "hair_target"
+    assert "learned_ranker_score" in response.recommendations[0].score_components
+    assert any(step.step == "learned_ranker" for step in response.agent_trace)
 
 
 def test_profile_keeps_cold_start_identity_terms() -> None:
@@ -313,6 +363,89 @@ def test_candidate_pool_uses_review_term_sources_for_lexical_neighbors() -> None
         "beauty_review_term_profile",
         "beauty_lexical_item_neighbor",
     }
+
+
+def test_context_intent_expansion_reuses_rule_terms() -> None:
+    expansion = context_intent_expansion(["need", "hair", "styling", "under", "budget"])
+
+    assert expansion is not None
+    assert expansion.intent_name == "hair"
+    assert expansion.category_hint == "All_Beauty"
+    assert "conditioner" in expansion.retrieval_terms
+    assert "styling" in expansion.required_terms
+
+
+def test_candidate_pool_retrieves_context_intent_profile_candidates() -> None:
+    history: list[UserHistoryItem] = []
+    user_profile = build_user_profile(
+        "A budget shopper looking for practical beauty products.",
+        history,
+    )
+    items = [
+        Item(
+            item_id="generic_popular",
+            name="Popular Body Mist",
+            category="All_Beauty",
+            metadata={"review_count": 5000},
+            summary="Popular fragrance body mist.",
+            average_rating=4.8,
+        ),
+        Item(
+            item_id="hair_target",
+            name="Curl Styling Cream",
+            category="All_Beauty",
+            metadata={"review_count": 35},
+            summary="Hair styling cream for curls and natural hair.",
+            average_rating=4.1,
+        ),
+    ]
+
+    pool = generate_candidate_pool(
+        user_profile=user_profile,
+        history=history,
+        items=items,
+        context="Need a hair styling product for curls.",
+        disabled_sources={"global_popular", "category_affinity_popular", "category_popular"},
+        limit=5,
+    )
+
+    assert "hair_target" in {item.item_id for item in pool.items}
+    assert "context_intent_profile" in pool.sources["hair_target"]
+
+
+def test_candidate_pool_retrieves_context_intent_category_candidates() -> None:
+    history: list[UserHistoryItem] = []
+    user_profile = build_user_profile("A careful buyer looking for low-risk gifts.", history)
+    items = [
+        Item(
+            item_id="gift_target",
+            name="Elegant Choice",
+            category="For Her",
+            metadata={"review_count": 40},
+            summary="A safe pick with broad appeal.",
+            average_rating=4.2,
+        ),
+        Item(
+            item_id="unrelated",
+            name="Everyday Shampoo",
+            category="All_Beauty",
+            metadata={"review_count": 4000},
+            summary="Shampoo for daily washing.",
+            average_rating=4.7,
+        ),
+    ]
+
+    pool = generate_candidate_pool(
+        user_profile=user_profile,
+        history=history,
+        items=items,
+        context="Need a low-risk gift.",
+        disabled_sources={"global_popular", "category_affinity_popular", "category_popular"},
+        limit=5,
+    )
+
+    assert "gift_target" in {item.item_id for item in pool.items}
+    assert "context_intent_category" in pool.sources["gift_target"]
 
 
 def test_candidate_pool_includes_beauty_taxonomy_source() -> None:

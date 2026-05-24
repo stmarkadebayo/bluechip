@@ -17,6 +17,7 @@ from app.services.retrieval.text import BM25Retriever  # noqa: E402
 from app.services.retrieval.vector_store import LocalVectorRetriever  # noqa: E402
 from eval.common import histories_by_user, load_eval_data, persona_from_history  # noqa: E402
 from eval.eval_task_b import _items_with_train_popularity, _load_collaborative_index  # noqa: E402
+from eval.task_b_context import context_for_task_b_row  # noqa: E402
 
 
 def main() -> None:
@@ -113,26 +114,7 @@ def main() -> None:
 
 
 def _context_for(row: dict, history: list) -> str:
-    category = row.get("category") or "products"
-    positive_text = " ".join(
-        f"{item.item_name} {item.review}" for item in history if item.rating >= 4
-    ).lower()
-    if category == "All_Beauty":
-        if any(term in positive_text for term in ("skin", "serum", "face", "cream")):
-            return (
-                "Needs a beauty product for a gentle skincare routine; "
-                "avoid harsh-feeling items."
-            )
-        if any(term in positive_text for term in ("hair", "wig", "shampoo", "brush")):
-            return "Needs a practical hair or styling product for regular use."
-        if any(term in positive_text for term in ("nail", "manicure", "polish")):
-            return "Needs a nail-care or manicure product that feels useful, not gimmicky."
-        return "Needs a practical beauty item aligned with recent positive purchases."
-    if category == "Digital_Music":
-        return "Wants music that fits the user's recent taste and is easy to replay."
-    if "Card" in category or category in {"Restaurants", "For Him"}:
-        return "Needs a low-risk gift option that matches recent gifting behavior."
-    return f"Needs a recommendation in or near {category} that fits prior positive reviews."
+    return context_for_task_b_row(row, history)
 
 
 def _configured_disabled_sources(value: str | None) -> set[str] | None:

@@ -20,6 +20,7 @@ from app.services.generation.generator import generate_recommendation_reason_res
 from app.services.generation.providers import generation_provider_name
 from app.services.nigerian.context import NigerianContextEngine
 from app.services.profiling.user_profile import build_user_profile
+from app.services.ranking.learned_task_b import TaskBLinearRanker
 from app.services.ranking.recommendation import adaptive_recommendation_policy, rank_candidates
 from app.services.retrieval.candidates import generate_candidate_pool
 from app.services.retrieval.embeddings import embedding_text, hashed_embedding
@@ -182,11 +183,15 @@ class RecommendationAgent:
             )
         )
 
+        learned_ranker = _load_task_b_ranker()
+        deterministic_rank_limit = (
+            len(candidate_pool.items) if learned_ranker is not None else request.limit
+        )
         ranked = rank_candidates(
             user_profile=user_profile,
             context=request.context,
             candidate_items=candidate_pool.items,
-            limit=request.limit,
+            limit=deterministic_rank_limit,
             policy=ranking_policy,
             candidate_sources=candidate_pool.sources,
             candidate_source_scores=candidate_pool.source_scores,
@@ -200,6 +205,16 @@ class RecommendationAgent:
                 detail=f"ranked top {len(ranked)}",
             )
         )
+
+        if learned_ranker is not None:
+            ranked = learned_ranker.rerank(ranked, limit=request.limit)
+            trace.append(
+                AgentTraceStep(
+                    step="learned_ranker",
+                    status="ok",
+                    detail=f"linear artifact re-ranked top {len(ranked)}",
+                )
+            )
 
         try:
             reranked = self._reasoner.rerank_candidates(
@@ -449,6 +464,10 @@ def _attach_evidence_graph_index(payload: dict) -> dict:
 
 
 def _task_b_ranker_version() -> str:
+    versions = get_model_registry().versions("task_b_ranker_artifact")
+    artifact_version = versions.get("task_b_ranker_artifact")
+    if artifact_version:
+        return f"adaptive_hybrid_policy_v2+task_b_linear_ranker:{artifact_version}"
     return "adaptive_hybrid_policy_v2"
 
 
@@ -479,6 +498,17 @@ def _load_neural_index() -> FAISSVectorStore | None:
     try:
         return FAISSVectorStore.deserialize(str(path), [])
     except (OSError, json.JSONDecodeError, RuntimeError):
+        return None
+
+
+@lru_cache(maxsize=1)
+def _load_task_b_ranker() -> TaskBLinearRanker | None:
+    path = get_model_registry().resolve_path("task_b_ranker_artifact")
+    if not path or not path.exists():
+        return None
+    try:
+        return TaskBLinearRanker.from_json(path)
+    except (OSError, json.JSONDecodeError, RuntimeError, ValueError):
         return None
 
 
