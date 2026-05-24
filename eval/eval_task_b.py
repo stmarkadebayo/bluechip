@@ -18,10 +18,13 @@ from eval.common import (  # noqa: E402
     write_report,
 )
 from eval.metrics import hit_rate_at_k, ndcg_at_k, recall_at_k, rounded  # noqa: E402
-from app.models.schemas import Item  # noqa: E402
+from app.models.schemas import Item, RecommendationItem  # noqa: E402
 from app.platform.artifacts import read_json_artifact  # noqa: E402
 from app.services.profiling.user_profile import build_user_profile  # noqa: E402
+from app.services.ranking.learned_task_b import TaskBLinearRanker  # noqa: E402
+from app.services.ranking.context_intents import context_intent_rule  # noqa: E402
 from app.services.ranking.recommendation import rank_candidates  # noqa: E402
+from app.services.retrieval.embeddings import terms  # noqa: E402
 from app.services.retrieval.candidates import (  # noqa: E402
     CandidateCatalog,
     CandidatePool,
@@ -42,6 +45,25 @@ from app.services.retrieval.vector_store import (  # noqa: E402
     LocalVectorRetriever,
     create_retriever,
 )
+from eval.task_b_context import context_for_task_b_row  # noqa: E402
+
+TASK_B_REQUIRED_GATE_SLICES = ("all", "sparse_history_1_2", "cross_domain")
+TASK_B_OPTIONAL_GATE_SLICES = ("cold_start", "context_heavy", "intent_heavy")
+TASK_B_CANDIDATE_RECALL_GATES = {
+    "all": 0.34,
+    "sparse_history_1_2": 0.3611,
+    "cross_domain": 0.5484,
+    "cold_start": 0.34,
+    "context_heavy": 0.34,
+    "intent_heavy": 0.34,
+}
+TASK_B_RANKING_GATES = {
+    "hybrid_candidate_recall@50": 0.13,
+    "hybrid_candidate_recall@100": 0.18,
+    "hybrid_ranker_hit_rate@10": 0.10,
+    "hybrid_ranker_ndcg@10": 0.0766,
+}
+EVAL_ROW_CACHE_SCHEMA_VERSION = 1
 
 
 def main() -> None:
@@ -51,14 +73,64 @@ def main() -> None:
     parser.add_argument("--processed-dir", default="data/processed")
     parser.add_argument("--collaborative-index", default="")
     parser.add_argument("--output", default="runs/eval/task_b_report.json")
+    parser.add_argument(
+        "--learned-ranker-artifact",
+        default="",
+        help="Optional Task B learned linear ranker artifact to add as a separate metric path.",
+    )
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--candidate-limit", type=int, default=200)
+    parser.add_argument(
+        "--rank-depth",
+        type=int,
+        default=0,
+        help=(
+            "Number of retrieved candidates to score with the ranker. "
+            "0 preserves full-pool ranking; use a bounded value for full-split @k gates."
+        ),
+    )
     parser.add_argument("--max-examples", type=int, default=0)
+    parser.add_argument(
+        "--shard-count",
+        type=int,
+        default=1,
+        help="Split eval rows into N deterministic shards for parallel full-split runs.",
+    )
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        default=0,
+        help="Zero-based shard index to evaluate when --shard-count is greater than 1.",
+    )
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=1000,
+        help="Print progress to stderr every N Task B rows; set 0 to disable.",
+    )
+    parser.add_argument(
+        "--context-mode",
+        choices=["none", "synthetic"],
+        default="none",
+        help=(
+            "Context to pass through retrieval/ranking. 'none' preserves the standard "
+            "next-item offline gate; 'synthetic' reuses the contextual human-eval intent builder."
+        ),
+    )
     parser.add_argument(
         "--sample-strategy",
         choices=["first", "stride"],
         default="first",
         help="How to select --max-examples rows; stride reduces first-N ordering bias.",
+    )
+    parser.add_argument(
+        "--target-mode",
+        choices=["all_interactions", "positive_recommendation"],
+        default="all_interactions",
+        help=(
+            "Which held-out Task B rows to score: all next interactions, or only "
+            "rating >= 4 positive recommendation targets."
+        ),
     )
     parser.add_argument("--build-collaborative", action="store_true")
     parser.add_argument(
@@ -78,6 +150,16 @@ def main() -> None:
     )
     parser.add_argument("--miss-output", default="")
     parser.add_argument("--max-misses", type=int, default=200)
+    parser.add_argument(
+        "--row-cache",
+        default="",
+        help="Optional JSONL cache for full Task B eval candidate pools and rankings.",
+    )
+    parser.add_argument(
+        "--rebuild-row-cache",
+        action="store_true",
+        help="Ignore an existing --row-cache and rebuild it.",
+    )
     parser.add_argument(
         "--retriever",
         choices=["legacy", "neural"],
@@ -99,6 +181,7 @@ class EvalDataset:
     items: dict[str, Item]
     item_list: list[Item]
     positives: list[str]
+    contexts: list[str]
     history_map: dict
     retriever: BM25Retriever
     vector_retriever: LocalVectorRetriever | None
@@ -111,6 +194,7 @@ class EvalDataset:
     review_term_item_ids: set[str]
     disabled_sources: set[str]
     item_profile_cache: dict
+    learned_ranker: TaskBLinearRanker | None
 
 
 @dataclass
@@ -124,6 +208,7 @@ class EvalResult:
     miss_report: dict
     hybrid_pools: list[CandidatePool]
     hybrid_ranked_ids: list[list[str]]
+    learned_ranked_ids: list[list[str]]
 
 
 class EvalDatasetBuilder:
@@ -137,12 +222,14 @@ class EvalDatasetBuilder:
             processed_dir=Path(self.args.processed_dir),
         )
         item_list = _items_with_train_popularity(items, train)
+        test_b = _filter_task_b_targets(test_b, self.args.target_mode)
         if self.args.max_examples:
             test_b = _sample_eval_rows(
                 test_b,
                 self.args.max_examples,
                 self.args.sample_strategy,
             )
+        test_b = _shard_eval_rows(test_b, self.args.shard_count, self.args.shard_index)
         disabled_sources = {
             source.strip()
             for source in self.args.disabled_sources.split(",")
@@ -150,6 +237,10 @@ class EvalDatasetBuilder:
         }
         positives = [row["item_id"] for row in test_b]
         history_map = histories_by_user(train)
+        contexts = [
+            _context_for_eval(row, history_map.get(row["user_id"], []), self.args.context_mode)
+            for row in test_b
+        ]
         retriever = BM25Retriever.from_items(item_list)
         vector_retriever = (
             None if "vector_profile" in disabled_sources else LocalVectorRetriever(item_list)
@@ -159,12 +250,14 @@ class EvalDatasetBuilder:
         popularity = _popularity_rank(train, item_list)
         train_item_counts = Counter(row["item_id"] for row in train if row["rating"] >= 4)
         collaborative_index = _load_collaborative_index(self.args, train)
+        learned_ranker = _load_learned_ranker(getattr(self.args, "learned_ranker_artifact", ""))
         return EvalDataset(
             train=train,
             test_b=test_b,
             items=items,
             item_list=item_list,
             positives=positives,
+            contexts=contexts,
             history_map=history_map,
             retriever=retriever,
             vector_retriever=vector_retriever,
@@ -177,6 +270,7 @@ class EvalDatasetBuilder:
             review_term_item_ids=_review_term_item_ids(collaborative_index),
             disabled_sources=disabled_sources,
             item_profile_cache={},
+            learned_ranker=learned_ranker,
         )
 
     def _build_neural_retriever(self, item_list: list[Item]) -> FAISSVectorStore | None:
@@ -203,11 +297,37 @@ class RecommendationEvaluator:
         self.dataset = dataset
 
     def evaluate(self) -> EvalResult:
-        base_pools, hybrid_pools, hybrid_ranked_ids, cold_start_ranked_ids = self._run_rows()
+        cached_rows = _load_eval_row_cache(self.args, self.dataset)
+        if cached_rows is None:
+            (
+                base_pools,
+                hybrid_pools,
+                hybrid_ranked_ids,
+                learned_ranked_ids,
+                cold_start_ranked_ids,
+            ) = self._run_rows()
+            _write_eval_row_cache(
+                self.args,
+                self.dataset,
+                base_pools,
+                hybrid_pools,
+                hybrid_ranked_ids,
+                learned_ranked_ids,
+                cold_start_ranked_ids,
+            )
+        else:
+            (
+                base_pools,
+                hybrid_pools,
+                hybrid_ranked_ids,
+                learned_ranked_ids,
+                cold_start_ranked_ids,
+            ) = cached_rows
         rankings = self._build_rankings(
             base_pools,
             hybrid_pools,
             hybrid_ranked_ids,
+            learned_ranked_ids,
             cold_start_ranked_ids,
         )
         metrics = self._metrics(rankings)
@@ -238,51 +358,85 @@ class RecommendationEvaluator:
             miss_report=miss_report,
             hybrid_pools=hybrid_pools,
             hybrid_ranked_ids=hybrid_ranked_ids,
+            learned_ranked_ids=learned_ranked_ids,
         )
 
     def _run_rows(
         self,
-    ) -> tuple[list[CandidatePool], list[CandidatePool], list[list[str]], list[list[str]]]:
+    ) -> tuple[
+        list[CandidatePool],
+        list[CandidatePool],
+        list[list[str]],
+        list[list[str]],
+        list[list[str]],
+    ]:
         base_pools: list[CandidatePool] = []
         hybrid_pools: list[CandidatePool] = []
         hybrid_ranked_ids: list[list[str]] = []
+        learned_ranked_ids: list[list[str]] = []
         cold_start_ranked_ids: list[list[str]] = []
 
-        for row in self.dataset.test_b:
+        for index, row in enumerate(self.dataset.test_b):
+            if self.args.progress_every and (index + 1) % self.args.progress_every == 0:
+                print(
+                    f"Task B eval progress: {index + 1}/{len(self.dataset.test_b)} rows",
+                    file=sys.stderr,
+                    flush=True,
+                )
             history = self.dataset.history_map.get(row["user_id"], [])
+            context = self.dataset.contexts[index]
             base_pool = CandidatePool(items=[])
             if not self.args.hybrid_only:
-                base_pool = self._candidate_pool(row=row, history=history, collaborative_index=None)
+                base_pool = self._candidate_pool(
+                    row=row,
+                    history=history,
+                    context=context,
+                    collaborative_index=None,
+                )
             hybrid_pool = self._candidate_pool(
                 row=row,
                 history=history,
+                context=context,
                 collaborative_index=self.dataset.collaborative_index,
             )
             base_pools.append(base_pool)
             hybrid_pools.append(hybrid_pool)
             if not self.args.candidate_recall_only:
-                hybrid_ranked_ids.append(
-                    _rank_pool(
-                        row=row,
-                        history=history,
-                        pool=hybrid_pool,
-                        limit=max(self.args.k, len(hybrid_pool.items)),
-                        item_profile_cache=self.dataset.item_profile_cache,
-                    )
+                ranked_items = _rank_pool(
+                    row=row,
+                    history=history,
+                    context=context,
+                    pool=hybrid_pool,
+                    limit=max(self.args.k, len(hybrid_pool.items)),
+                    rank_depth=self.args.rank_depth,
+                    item_profile_cache=self.dataset.item_profile_cache,
                 )
+                hybrid_ranked_ids.append([item.item_id for item in ranked_items])
+                if self.dataset.learned_ranker is not None:
+                    learned_ranked_ids.append(
+                        [
+                            item.item_id
+                            for item in self.dataset.learned_ranker.rerank(
+                                ranked_items,
+                                limit=len(ranked_items),
+                            )
+                        ]
+                    )
             if not self.args.hybrid_only and not self.args.candidate_recall_only:
-                cold_start_ranked_ids.append(self._cold_start_rank(row))
-        return base_pools, hybrid_pools, hybrid_ranked_ids, cold_start_ranked_ids
+                cold_start_ranked_ids.append(self._cold_start_rank(row, context))
+        return base_pools, hybrid_pools, hybrid_ranked_ids, learned_ranked_ids, cold_start_ranked_ids
 
     def _candidate_pool(
         self,
         row: dict,
         history: list,
+        context: str,
         collaborative_index: dict | None,
     ) -> CandidatePool:
         return _candidate_pool(
             row=row,
             history=history,
+            context=context,
             retriever=self.dataset.retriever,
             vector_retriever=self.dataset.vector_retriever,
             catalog=self.dataset.catalog,
@@ -293,9 +447,10 @@ class RecommendationEvaluator:
             neural_retriever=self.dataset.neural_retriever,
         )
 
-    def _cold_start_rank(self, row: dict) -> list[str]:
+    def _cold_start_rank(self, row: dict, context: str) -> list[str]:
         return _cold_start_rank(
             row=row,
+            context=context,
             retriever=self.dataset.retriever,
             vector_retriever=self.dataset.vector_retriever,
             catalog=self.dataset.catalog,
@@ -312,6 +467,7 @@ class RecommendationEvaluator:
         base_pools: list[CandidatePool],
         hybrid_pools: list[CandidatePool],
         hybrid_ranked_ids: list[list[str]],
+        learned_ranked_ids: list[list[str]],
         cold_start_ranked_ids: list[list[str]],
     ) -> dict[str, list[list[str]]]:
         rankings = {
@@ -321,6 +477,8 @@ class RecommendationEvaluator:
         }
         if not self.args.candidate_recall_only:
             rankings["hybrid_ranker"] = hybrid_ranked_ids
+            if learned_ranked_ids:
+                rankings["hybrid_learned_ranker"] = learned_ranked_ids
         if not self.args.hybrid_only:
             rankings.update(
                 {
@@ -402,6 +560,7 @@ class RecommendationEvaluator:
             return _slice_candidate_metrics(
                 test_b=self.dataset.test_b,
                 history_map=self.dataset.history_map,
+                contexts=self.dataset.contexts,
                 positives=self.dataset.positives,
                 candidate_ids=rankings["hybrid_candidate_recall"],
                 candidate_k=self.args.candidate_limit,
@@ -409,6 +568,7 @@ class RecommendationEvaluator:
         return _slice_metrics(
             test_b=self.dataset.test_b,
             history_map=self.dataset.history_map,
+            contexts=self.dataset.contexts,
             positives=self.dataset.positives,
             ranked_ids=hybrid_ranked_ids,
             candidate_ids=rankings["hybrid_candidate_recall"],
@@ -483,6 +643,15 @@ class EvalRunner:
             ),
             "examples": len(dataset.test_b),
             "retriever": self.args.retriever,
+            "context_mode": self.args.context_mode,
+            "target_mode": self.args.target_mode,
+            "shard": {
+                "index": self.args.shard_index,
+                "count": self.args.shard_count,
+            },
+            "target_rating_distribution": _target_rating_distribution(dataset.test_b),
+            "rank_depth": self.args.rank_depth,
+            "learned_ranker_active": dataset.learned_ranker is not None,
             "neural_retriever_active": (
                 dataset.neural_retriever is not None and dataset.neural_retriever._built
                 if dataset.neural_retriever
@@ -491,6 +660,18 @@ class EvalRunner:
             "disabled_sources": sorted(dataset.disabled_sources),
             "metrics": result.metrics,
             "slices": result.slices,
+            "promotion_gate": _task_b_promotion_gate(
+                metrics=result.metrics,
+                slices=result.slices,
+                examples=len(dataset.test_b),
+                k=self.args.k,
+                candidate_k=self.args.candidate_limit,
+                ranker_metric_prefix=(
+                    "hybrid_learned_ranker"
+                    if dataset.learned_ranker is not None
+                    else "hybrid_ranker"
+                ),
+            ),
             "retrieval_sources": result.source_counts,
             "retrieval_source_diagnostics": result.source_diagnostics,
             "retrieval_source_families": result.source_family_diagnostics,
@@ -513,6 +694,12 @@ class EvalRunner:
             for note in [
                 "Positive item is the held-out next review for each eligible user.",
                 (
+                    "Target mode is positive_recommendation, so Task B rows with rating < 4 "
+                    "were excluded from this eval."
+                    if self.args.target_mode == "positive_recommendation"
+                    else "Target mode is all_interactions, so every held-out next review is a target."
+                ),
+                (
                     "Filtered popularity removes items already seen in the user's training history."
                     if not self.args.hybrid_only
                     else ""
@@ -522,9 +709,14 @@ class EvalRunner:
                     "before ranking."
                 ),
                 (
+                    "Synthetic context mode reuses the Task B contextual human-eval intent builder."
+                    if self.args.context_mode == "synthetic"
+                    else ""
+                ),
+                (
                     "Hybrid candidates blend co-visitation, implicit item-item, user-neighbor CF, "
-                    "review-term, evidence graph, BM25, vector, category-affinity, and popularity "
-                    "sources when artifacts are available."
+                    "review-term, context-intent, evidence graph, BM25, vector, category-affinity, "
+                    "and popularity sources when artifacts are available."
                 ),
                 (
                     "Cold-start persona-only uses the derived persona without history items."
@@ -542,6 +734,12 @@ class EvalRunner:
                 "Candidate-recall-only mode skipped ranking."
                 if self.args.candidate_recall_only
                 else "",
+                (
+                    f"Shard {self.args.shard_index + 1}/{self.args.shard_count} "
+                    "of the filtered Task B rows."
+                    if self.args.shard_count > 1
+                    else ""
+                ),
                 (
                     f"Disabled retrieval sources: {', '.join(sorted(dataset.disabled_sources))}."
                     if dataset.disabled_sources
@@ -566,6 +764,207 @@ def _sample_eval_rows(rows: list[dict], max_examples: int, strategy: str) -> lis
     return rows[:max_examples]
 
 
+def _shard_eval_rows(rows: list[dict], shard_count: int, shard_index: int) -> list[dict]:
+    if shard_count < 1:
+        raise ValueError("--shard-count must be >= 1")
+    if shard_index < 0 or shard_index >= shard_count:
+        raise ValueError("--shard-index must be in [0, shard_count)")
+    if shard_count == 1:
+        return rows
+    return [row for index, row in enumerate(rows) if index % shard_count == shard_index]
+
+
+def _filter_task_b_targets(rows: list[dict], target_mode: str) -> list[dict]:
+    if target_mode == "positive_recommendation":
+        return [row for row in rows if float(row.get("rating") or 0) >= 4.0]
+    return rows
+
+
+def _target_rating_distribution(rows: list[dict]) -> dict:
+    counts = Counter()
+    for row in rows:
+        rating = float(row.get("rating") or 0)
+        bucket = "rating_4_5" if rating >= 4 else "rating_1_3"
+        counts[bucket] += 1
+    total = max(len(rows), 1)
+    return {
+        "total": len(rows),
+        **{
+            bucket: {
+                "count": count,
+                "share": rounded(count / total),
+            }
+            for bucket, count in sorted(counts.items())
+        },
+    }
+
+
+def _context_for_eval(row: dict, history: list, context_mode: str) -> str:
+    if context_mode == "synthetic":
+        return context_for_task_b_row(row, history)
+    return ""
+
+
+def _load_learned_ranker(path: str) -> TaskBLinearRanker | None:
+    if not path:
+        return None
+    artifact_path = Path(path)
+    if not artifact_path.exists():
+        raise FileNotFoundError(f"Task B learned ranker artifact not found: {artifact_path}")
+    return TaskBLinearRanker.from_json(artifact_path)
+
+
+def _load_eval_row_cache(
+    args: argparse.Namespace,
+    dataset: EvalDataset,
+) -> tuple[
+    list[CandidatePool],
+    list[CandidatePool],
+    list[list[str]],
+    list[list[str]],
+    list[list[str]],
+] | None:
+    path = Path(args.row_cache) if args.row_cache else None
+    if path is None or args.rebuild_row_cache or not path.exists():
+        return None
+    signature = _eval_row_cache_signature(args, dataset)
+    with path.open("r", encoding="utf-8") as handle:
+        header_line = handle.readline()
+        if not header_line:
+            return None
+        header = json.loads(header_line)
+        if (
+            header.get("type") != "task_b_eval_row_cache"
+            or header.get("schema_version") != EVAL_ROW_CACHE_SCHEMA_VERSION
+            or header.get("signature") != signature
+        ):
+            raise ValueError(f"Task B eval row cache config mismatch: {path}")
+        base_pools = []
+        hybrid_pools = []
+        hybrid_ranked_ids = []
+        learned_ranked_ids = []
+        cold_start_ranked_ids = []
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            base_pools.append(_pool_from_cache(row.get("base_pool") or {}, dataset.catalog))
+            hybrid_pools.append(_pool_from_cache(row.get("hybrid_pool") or {}, dataset.catalog))
+            hybrid_ranked_ids.append([str(item_id) for item_id in row.get("hybrid_ranked_ids", [])])
+            if "learned_ranked_ids" in row:
+                learned_ranked_ids.append(
+                    [str(item_id) for item_id in row.get("learned_ranked_ids", [])]
+                )
+            if "cold_start_ranked_ids" in row:
+                cold_start_ranked_ids.append(
+                    [str(item_id) for item_id in row.get("cold_start_ranked_ids", [])]
+                )
+    print(f"Loaded {len(hybrid_pools)} Task B eval rows from cache {path}", file=sys.stderr)
+    return base_pools, hybrid_pools, hybrid_ranked_ids, learned_ranked_ids, cold_start_ranked_ids
+
+
+def _write_eval_row_cache(
+    args: argparse.Namespace,
+    dataset: EvalDataset,
+    base_pools: list[CandidatePool],
+    hybrid_pools: list[CandidatePool],
+    hybrid_ranked_ids: list[list[str]],
+    learned_ranked_ids: list[list[str]],
+    cold_start_ranked_ids: list[list[str]],
+) -> None:
+    if not args.row_cache:
+        return
+    path = Path(args.row_cache)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(path.name + ".tmp")
+    header = {
+        "type": "task_b_eval_row_cache",
+        "schema_version": EVAL_ROW_CACHE_SCHEMA_VERSION,
+        "signature": _eval_row_cache_signature(args, dataset),
+        "metadata": {
+            "examples": len(dataset.test_b),
+            "items_count": len(dataset.item_list),
+        },
+    }
+    with temp_path.open("w", encoding="utf-8") as handle:
+        handle.write(json.dumps(header, ensure_ascii=True, separators=(",", ":")) + "\n")
+        for index, hybrid_pool in enumerate(hybrid_pools):
+            row = {
+                "base_pool": _pool_to_cache(base_pools[index]) if index < len(base_pools) else {},
+                "hybrid_pool": _pool_to_cache(hybrid_pool),
+                "hybrid_ranked_ids": hybrid_ranked_ids[index]
+                if index < len(hybrid_ranked_ids)
+                else [],
+            }
+            if index < len(learned_ranked_ids):
+                row["learned_ranked_ids"] = learned_ranked_ids[index]
+            if index < len(cold_start_ranked_ids):
+                row["cold_start_ranked_ids"] = cold_start_ranked_ids[index]
+            handle.write(json.dumps(row, ensure_ascii=True, separators=(",", ":")) + "\n")
+    temp_path.replace(path)
+    print(f"Wrote {len(hybrid_pools)} Task B eval rows to cache {path}", file=sys.stderr)
+
+
+def _eval_row_cache_signature(args: argparse.Namespace, dataset: EvalDataset) -> dict:
+    return {
+        "processed_dir": str(Path(args.processed_dir)),
+        "reviews": str(Path(args.reviews)),
+        "items": str(Path(args.items)),
+        "collaborative_index": str(args.collaborative_index or ""),
+        "candidate_limit": int(args.candidate_limit),
+        "rank_depth": int(args.rank_depth),
+        "max_examples": int(args.max_examples),
+        "sample_strategy": str(args.sample_strategy),
+        "shard_count": int(args.shard_count),
+        "shard_index": int(args.shard_index),
+        "target_mode": str(args.target_mode),
+        "context_mode": str(args.context_mode),
+        "retriever": str(args.retriever),
+        "hybrid_only": bool(args.hybrid_only),
+        "candidate_recall_only": bool(args.candidate_recall_only),
+        "learned_ranker_artifact": str(args.learned_ranker_artifact or ""),
+        "disabled_sources": sorted(dataset.disabled_sources),
+    }
+
+
+def _pool_to_cache(pool: CandidatePool) -> dict:
+    item_ids = [item.item_id for item in pool.items]
+    item_id_set = set(item_ids)
+    return {
+        "item_ids": item_ids,
+        "sources": {
+            item_id: values
+            for item_id, values in pool.sources.items()
+            if item_id in item_id_set
+        },
+        "source_scores": {
+            item_id: values
+            for item_id, values in pool.source_scores.items()
+            if item_id in item_id_set
+        },
+    }
+
+
+def _pool_from_cache(payload: dict, catalog: CandidateCatalog) -> CandidatePool:
+    item_ids = [str(item_id) for item_id in payload.get("item_ids", [])]
+    items = [catalog.by_id[item_id] for item_id in item_ids if item_id in catalog.by_id]
+    item_id_set = {item.item_id for item in items}
+    sources = {
+        str(item_id): [str(source) for source in values]
+        for item_id, values in (payload.get("sources") or {}).items()
+        if str(item_id) in item_id_set
+    }
+    source_scores = {
+        str(item_id): {
+            str(source): float(score)
+            for source, score in (values or {}).items()
+        }
+        for item_id, values in (payload.get("source_scores") or {}).items()
+        if str(item_id) in item_id_set
+    }
+    return CandidatePool(items=items, sources=sources, source_scores=source_scores)
+
+
 def _filtered_popularity_rank(
     row: dict,
     history_map: dict[str, list],
@@ -580,8 +979,13 @@ def _items_with_train_popularity(items: dict[str, Item], train: list[dict]) -> l
     enriched = []
     for item in items.values():
         metadata = dict(item.metadata)
+        metadata.setdefault(
+            "catalog_review_count",
+            item.metadata.get("review_count") or item.metadata.get("rating_number") or 0,
+        )
         metadata["review_count"] = counts[item.item_id]
         metadata["rating_number"] = counts[item.item_id]
+        metadata["train_positive_count"] = counts[item.item_id]
         enriched.append(item.model_copy(update={"metadata": metadata}))
     return enriched
 
@@ -611,6 +1015,7 @@ def _vector_rank(
 def _candidate_pool(
     row: dict,
     history: list,
+    context: str,
     retriever: BM25Retriever,
     vector_retriever: LocalVectorRetriever | None,
     catalog: CandidateCatalog,
@@ -626,7 +1031,7 @@ def _candidate_pool(
         user_profile=user_profile,
         history=history,
         items=item_list,
-        context="",
+        context=context,
         collaborative_index=collaborative_index,
         bm25_retriever=retriever,
         vector_retriever=vector_retriever,
@@ -640,26 +1045,33 @@ def _candidate_pool(
 def _rank_pool(
     row: dict,
     history: list,
+    context: str,
     pool: CandidatePool,
     limit: int,
+    rank_depth: int = 0,
     item_profile_cache: dict | None = None,
-) -> list[str]:
+) -> list[RecommendationItem]:
     persona = persona_from_history(history)
     user_profile = build_user_profile(persona=persona, history=history, locale=None)
+    candidate_items = pool.items
+    if rank_depth > 0:
+        candidate_items = candidate_items[: max(rank_depth, 1)]
+        limit = min(limit, len(candidate_items))
     ranked = rank_candidates(
         user_profile=user_profile,
-        context="",
-        candidate_items=pool.items,
+        context=context,
+        candidate_items=candidate_items,
         limit=limit,
         candidate_sources=pool.sources,
         candidate_source_scores=pool.source_scores,
         item_profile_cache=item_profile_cache,
     )
-    return [item.item_id for item in ranked]
+    return ranked
 
 
 def _cold_start_rank(
     row: dict,
+    context: str,
     retriever: BM25Retriever,
     vector_retriever: LocalVectorRetriever | None,
     catalog: CandidateCatalog,
@@ -676,7 +1088,7 @@ def _cold_start_rank(
         user_profile=user_profile,
         history=[],
         items=item_list,
-        context="",
+        context=context,
         bm25_retriever=retriever,
         vector_retriever=vector_retriever,
         catalog=catalog,
@@ -686,7 +1098,7 @@ def _cold_start_rank(
     )
     ranked = rank_candidates(
         user_profile=user_profile,
-        context="",
+        context=context,
         candidate_items=pool.items,
         limit=limit,
         candidate_sources=pool.sources,
@@ -1036,6 +1448,7 @@ def _miss_causes(
 def _slice_metrics(
     test_b: list[dict],
     history_map: dict[str, list],
+    contexts: list[str],
     positives: list[str],
     ranked_ids: list[list[str]],
     k: int,
@@ -1043,13 +1456,18 @@ def _slice_metrics(
     candidate_k: int = 0,
 ) -> dict[str, dict[str, float]]:
     slice_indices = {
+        "all": list(range(len(test_b))),
         "sparse_history_1_2": [],
         "medium_history_3_7": [],
         "warm_history_8_plus": [],
         "cross_domain": [],
+        "cold_start": [],
+        "context_heavy": [],
+        "intent_heavy": [],
     }
     for index, row in enumerate(test_b):
         history = history_map.get(row["user_id"], [])
+        context = contexts[index] if index < len(contexts) else ""
         history_len = len(history)
         if history_len <= 2:
             slice_indices["sparse_history_1_2"].append(index)
@@ -1057,8 +1475,16 @@ def _slice_metrics(
             slice_indices["medium_history_3_7"].append(index)
         else:
             slice_indices["warm_history_8_plus"].append(index)
+        if history_len == 0:
+            slice_indices["cold_start"].append(index)
         if _is_cross_domain(row, history):
             slice_indices["cross_domain"].append(index)
+        if context:
+            slice_indices["context_heavy"].append(index)
+            intent_name = _context_intent_name(context)
+            if intent_name:
+                slice_indices["intent_heavy"].append(index)
+                slice_indices.setdefault(f"context_intent_{intent_name}", []).append(index)
 
     return {
         name: _metrics_for_indices(
@@ -1077,18 +1503,24 @@ def _slice_metrics(
 def _slice_candidate_metrics(
     test_b: list[dict],
     history_map: dict[str, list],
+    contexts: list[str],
     positives: list[str],
     candidate_ids: list[list[str]],
     candidate_k: int,
 ) -> dict[str, dict[str, float]]:
     slice_indices = {
+        "all": list(range(len(test_b))),
         "sparse_history_1_2": [],
         "medium_history_3_7": [],
         "warm_history_8_plus": [],
         "cross_domain": [],
+        "cold_start": [],
+        "context_heavy": [],
+        "intent_heavy": [],
     }
     for index, row in enumerate(test_b):
         history = history_map.get(row["user_id"], [])
+        context = contexts[index] if index < len(contexts) else ""
         history_len = len(history)
         if history_len <= 2:
             slice_indices["sparse_history_1_2"].append(index)
@@ -1096,8 +1528,16 @@ def _slice_candidate_metrics(
             slice_indices["medium_history_3_7"].append(index)
         else:
             slice_indices["warm_history_8_plus"].append(index)
+        if history_len == 0:
+            slice_indices["cold_start"].append(index)
         if _is_cross_domain(row, history):
             slice_indices["cross_domain"].append(index)
+        if context:
+            slice_indices["context_heavy"].append(index)
+            intent_name = _context_intent_name(context)
+            if intent_name:
+                slice_indices["intent_heavy"].append(index)
+                slice_indices.setdefault(f"context_intent_{intent_name}", []).append(index)
     return {
         name: {
             "examples": len(indices),
@@ -1147,6 +1587,169 @@ def _is_cross_domain(row: dict, history: list) -> bool:
         if item.category and item.rating >= 4
     }
     return bool(positive_categories) and target_category not in positive_categories
+
+
+def _context_intent_name(context: str) -> str:
+    rule = context_intent_rule(terms(context))
+    return rule.name if rule is not None else ""
+
+
+def _task_b_promotion_gate(
+    metrics: dict[str, float],
+    slices: dict,
+    examples: int,
+    k: int,
+    candidate_k: int,
+    ranker_metric_prefix: str = "hybrid_ranker",
+) -> dict:
+    candidate_key = f"hybrid_candidate_recall@{candidate_k}"
+    checks = _all_scope_gate_checks(metrics, k, candidate_key, ranker_metric_prefix)
+    slice_availability = {}
+
+    for name in (*TASK_B_REQUIRED_GATE_SLICES, *TASK_B_OPTIONAL_GATE_SLICES):
+        values = metrics if name == "all" else slices.get(name, {})
+        slice_examples = examples if name == "all" else int(values.get("examples", 0) or 0)
+        required = name in TASK_B_REQUIRED_GATE_SLICES
+        available = slice_examples > 0
+        slice_availability[name] = {
+            "required": required,
+            "available": available,
+            "examples": slice_examples,
+        }
+        if not available:
+            if required:
+                checks.append(
+                    _gate_check(
+                        scope=name,
+                        metric=candidate_key,
+                        actual=None,
+                        threshold=TASK_B_CANDIDATE_RECALL_GATES[name],
+                        required=True,
+                        reason="required slice unavailable",
+                    )
+                )
+            continue
+        checks.append(
+            _gate_check(
+                scope=name,
+                metric=candidate_key,
+                actual=values.get(candidate_key),
+                threshold=TASK_B_CANDIDATE_RECALL_GATES[name],
+                required=True,
+            )
+        )
+
+    failed_checks = [check for check in checks if check["status"] != "pass"]
+    promotion_ready = not failed_checks
+    return {
+        "decision": "pass" if promotion_ready else "reject",
+        "promotion_ready": promotion_ready,
+        "candidate_recall_gate_k": candidate_k,
+        "ranker_gate_k": k,
+        "ranker_metric_prefix": ranker_metric_prefix,
+        "required_slices": list(TASK_B_REQUIRED_GATE_SLICES),
+        "optional_slices_if_available": list(TASK_B_OPTIONAL_GATE_SLICES),
+        "slice_availability": slice_availability,
+        "thresholds": {
+            "ranking": _ranker_gate_thresholds(ranker_metric_prefix),
+            f"candidate_recall@{candidate_k}": TASK_B_CANDIDATE_RECALL_GATES,
+            "hybrid_must_beat_filtered_popularity": [f"hit_rate@{k}", f"ndcg@{k}"],
+            "hybrid_candidate_recall_must_not_regress_vs_base": True,
+        },
+        "checks": checks,
+        "failed_checks": failed_checks,
+        "notes": [
+            "Required Task B gates are non-negotiable for all, sparse, and cross-domain slices.",
+            "Cold-start, context-heavy, and intent-heavy gates are enforced when those rows exist.",
+            "Candidate-recall-only runs cannot pass ranking gates because ranker metrics are absent.",
+        ],
+    }
+
+
+def _all_scope_gate_checks(
+    metrics: dict[str, float],
+    k: int,
+    candidate_key: str,
+    ranker_metric_prefix: str = "hybrid_ranker",
+) -> list[dict]:
+    checks = []
+    for metric, threshold in _ranker_gate_thresholds(ranker_metric_prefix).items():
+        checks.append(
+            _gate_check(
+                scope="all",
+                metric=metric,
+                actual=metrics.get(metric),
+                threshold=threshold,
+                required=True,
+            )
+        )
+
+    base_key = candidate_key.replace("hybrid_", "base_", 1)
+    if base_key in metrics:
+        checks.append(
+            _gate_check(
+                scope="all",
+                metric=candidate_key,
+                actual=metrics.get(candidate_key),
+                threshold=metrics.get(base_key),
+                required=True,
+                reason=f"must be >= {base_key}",
+            )
+        )
+
+    for metric_suffix in (f"hit_rate@{k}", f"ndcg@{k}"):
+        hybrid_key = f"{ranker_metric_prefix}_{metric_suffix}"
+        filtered_key = f"filtered_popularity_{metric_suffix}"
+        if filtered_key in metrics:
+            checks.append(
+                _gate_check(
+                    scope="all",
+                    metric=hybrid_key,
+                    actual=metrics.get(hybrid_key),
+                    threshold=metrics.get(filtered_key),
+                    required=True,
+                    reason=f"must beat {filtered_key}",
+                    strict=True,
+                )
+            )
+    return checks
+
+
+def _ranker_gate_thresholds(ranker_metric_prefix: str) -> dict[str, float]:
+    thresholds = {}
+    for metric, threshold in TASK_B_RANKING_GATES.items():
+        if metric.startswith("hybrid_ranker_"):
+            metric = metric.replace("hybrid_ranker_", f"{ranker_metric_prefix}_", 1)
+        thresholds[metric] = threshold
+    return thresholds
+
+
+def _gate_check(
+    scope: str,
+    metric: str,
+    actual: float | int | None,
+    threshold: float | int | None,
+    required: bool,
+    reason: str = "",
+    strict: bool = False,
+) -> dict:
+    if actual is None or threshold is None:
+        status = "fail"
+        reason = reason or "metric unavailable"
+    elif strict:
+        status = "pass" if actual > threshold else "fail"
+    else:
+        status = "pass" if actual >= threshold else "fail"
+    return {
+        "scope": scope,
+        "metric": metric,
+        "actual": actual,
+        "operator": ">" if strict else ">=",
+        "threshold": threshold,
+        "required": required,
+        "status": status,
+        "reason": reason,
+    }
 
 
 def _aggregate_source_counts(pools: list[CandidatePool]) -> dict[str, int]:
