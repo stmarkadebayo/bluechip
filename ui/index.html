@@ -3,30 +3,31 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bluechip-Marvid Console</title>
+    <title>Bluechip Marvid</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
       :root {
-        color-scheme: dark;
-        --bg: #030712;
-        --bg-gradient: radial-gradient(circle at top, #0f172a, #030712);
-        --surface: rgba(17, 24, 39, 0.7);
-        --surface-soft: rgba(31, 41, 55, 0.5);
-        --surface-warm: rgba(16, 185, 129, 0.05);
-        --ink: #f3f4f6;
-        --muted: #9ca3af;
-        --line: rgba(255, 255, 255, 0.08);
-        --line-strong: rgba(255, 255, 255, 0.15);
-        --teal: #10b981;
-        --teal-dark: #059669;
-        --blue: #3b82f6;
-        --amber: #f59e0b;
-        --violet: #8b5cf6;
-        --rose: #ef4444;
-        --green: #10b981;
-        --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-        --neon-glow: 0 0 15px rgba(16, 185, 129, 0.15);
+        color-scheme: light;
+        --bg: #f7f7f4;
+        --bg-gradient: #f7f7f4;
+        --surface: #ffffff;
+        --surface-soft: #f3f3ef;
+        --surface-warm: #f7f7f4;
+        --ink: #171717;
+        --muted: #6f6f67;
+        --muted-strong: #4a4a45;
+        --line: #e4e4dc;
+        --line-strong: #cfcfc7;
+        --control: #f5f5f1;
+        --control-hover: #ecece6;
+        --teal: #0f766e;
+        --teal-dark: #115e59;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --violet: #6d28d9;
+        --rose: #b91c1c;
+        --green: #16884a;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --neon-glow: none;
       }
 
       * {
@@ -47,10 +48,15 @@
         background-size: 32px 32px;
         background-position: 0 0, 16px 16px;
         color: var(--ink);
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family:
+          ui-sans-serif,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
         font-size: 14px;
         min-height: 100vh;
-        letter-spacing: -0.01em;
+        letter-spacing: 0;
       }
 
       button,
@@ -177,7 +183,7 @@
       }
 
       h1::after {
-        content: "SUBMISSION READY";
+        content: "";
         font-size: 9px;
         font-weight: 800;
         letter-spacing: 0.05em;
@@ -565,6 +571,10 @@
         min-height: 100px;
       }
 
+      .context-editor {
+        min-height: 76px;
+      }
+
       .button-row {
         margin-top: 20px;
         border-top: 1px solid var(--line);
@@ -754,7 +764,7 @@
       }
 
       .reco-card:first-child::after {
-        content: "🏆 TOP RECOMMENDATION";
+        content: "Top match";
         position: absolute;
         top: 14px;
         right: 16px;
@@ -1044,22 +1054,712 @@
         gap: 12px;
       }
 
-      /* Glow & pulsing loading animation when active */
+      /* Codex/OpenAI-inspired product surface: flat, neutral, and information-first. */
+      * {
+        transition:
+          border-color 140ms ease,
+          background-color 140ms ease,
+          color 140ms ease,
+          opacity 140ms ease;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      button {
+        min-height: 38px;
+        border-color: var(--line);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 0 14px;
+      }
+
+      button:hover {
+        border-color: var(--line-strong);
+        background: var(--control);
+        transform: none;
+        box-shadow: none;
+      }
+
+      button:active {
+        transform: none;
+      }
+
+      button.primary {
+        border: 1px solid #171717;
+        background: #171717;
+        color: #ffffff;
+        font-weight: 650;
+        box-shadow: none;
+      }
+
+      button.primary:hover {
+        background: #30302c;
+        box-shadow: none;
+      }
+
+      button.active,
+      .mode-row button.active,
+      .scenario-row button.active {
+        border-color: #171717;
+        background: #171717;
+        color: #ffffff;
+        box-shadow: none;
+      }
+
+      .wrap {
+        width: min(1480px, calc(100vw - 48px));
+      }
+
+      .topbar {
+        border-bottom-color: var(--line);
+        background: rgba(247, 247, 244, 0.92);
+        backdrop-filter: blur(14px);
+      }
+
+      .topbar-inner {
+        min-height: 78px;
+      }
+
+      .brand {
+        gap: 14px;
+      }
+
+      .brand-mark {
+        flex-basis: 42px;
+        height: 42px;
+        border: 1px solid #171717;
+        border-radius: 8px;
+        background: #171717;
+        color: #ffffff;
+        font-size: 17px;
+        font-weight: 680;
+        box-shadow: none;
+        animation: none;
+      }
+
+      h1 {
+        background: none;
+        -webkit-text-fill-color: currentColor;
+        color: var(--ink);
+        font-size: clamp(20px, 2vw, 24px);
+        font-weight: 680;
+        letter-spacing: 0;
+      }
+
+      h1::after {
+        display: none;
+      }
+
+      .subhead {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status,
+      .endpoint-pill,
+      .trace-pill,
+      .pill {
+        min-height: 24px;
+        border-radius: 999px;
+        border-color: var(--line);
+        background: var(--surface);
+        color: var(--muted-strong);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 10px;
+      }
+
+      .endpoint-pill,
+      .trace-pill {
+        font-family:
+          ui-monospace,
+          "SFMono-Regular",
+          Menlo,
+          Consolas,
+          monospace;
+        color: #2f2f2b;
+      }
+
+      .dot,
+      .dot.ok,
+      .dot.bad {
+        box-shadow: none;
+        animation: none;
+      }
+
+      main {
+        padding: 26px 0 44px;
+      }
+
+      .task-strip {
+        gap: 10px;
+        margin-bottom: 22px;
+      }
+
+      .task-cell {
+        min-height: 76px;
+        border-color: var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 15px 16px;
+        backdrop-filter: none;
+        box-shadow: var(--shadow);
+      }
+
+      .task-cell:hover {
+        border-color: var(--line-strong);
+        box-shadow: var(--shadow);
+        transform: none;
+      }
+
+      .task-cell strong {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .task-cell span {
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+
+      .method-panel {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        margin-bottom: 24px;
+        padding: 0;
+        backdrop-filter: none;
+        box-shadow: none;
+      }
+
+      .method-head {
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .method-head h2,
+      .surface-header h2 {
+        color: var(--ink);
+        font-size: 17px;
+        font-weight: 680;
+        letter-spacing: 0;
+      }
+
+      .method-head p,
+      .surface-header p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .method-grid {
+        gap: 10px;
+      }
+
+      .supporting-context {
+        margin-top: 28px;
+      }
+
+      .request-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .request-summary div {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfbf8;
+        padding: 12px 13px;
+      }
+
+      .request-summary span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .request-summary strong {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 680;
+        line-height: 1.25;
+      }
+
+      .method-item {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 14px 15px;
+        box-shadow: var(--shadow);
+      }
+
+      .method-item strong {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .method-item span {
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+
+      .workspace {
+        grid-template-columns: minmax(360px, 0.88fr) minmax(560px, 1.4fr);
+        gap: 18px;
+      }
+
+      .surface {
+        border-color: var(--line);
+        border-radius: 9px;
+        background: var(--surface);
+        backdrop-filter: none;
+        box-shadow: var(--shadow);
+      }
+
+      .surface-header {
+        padding: 20px 22px;
+        border-bottom-color: var(--line);
+        background: var(--surface);
+      }
+
+      .input-body,
+      .output-body {
+        padding: 22px;
+      }
+
+      .mode-row,
+      .scenario-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .mode-row {
+        margin-bottom: 12px;
+      }
+
+      .mode-row button,
+      .scenario-row button {
+        flex: 0 1 auto;
+        border-radius: 7px;
+        background: var(--surface);
+        border-color: var(--line);
+        color: var(--muted-strong);
+        font-size: 13px;
+        min-width: 0;
+      }
+
+      .scenario-row {
+        margin-bottom: 18px;
+        border-bottom-color: var(--line);
+        padding-bottom: 18px;
+      }
+
+      .scenario-row button:hover {
+        border-color: var(--line-strong);
+        background: var(--control);
+        box-shadow: none;
+      }
+
+      .toggle-row {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: var(--control);
+        padding: 12px 14px;
+      }
+
+      .toggle-copy strong {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .toggle-copy span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .switch span {
+        background: #d8d8d0;
+        border-color: #ccccbf;
+      }
+
+      .switch input:checked + span {
+        background: #171717;
+        border-color: #171717;
+      }
+
+      .switch input:checked + span::after {
+        background: #ffffff;
+      }
+
+      label {
+        color: var(--muted-strong);
+        font-size: 12px;
+        font-weight: 650;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      label span {
+        color: var(--muted);
+      }
+
+      textarea,
+      input {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        color: var(--ink);
+        font-size: 13.5px;
+        padding: 12px 13px;
+      }
+
+      textarea:focus,
+      input:focus,
+      button:focus-visible {
+        border-color: #171717;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.08);
+      }
+
+      .json-editor,
+      pre,
+      .raw-block {
+        font-family:
+          ui-monospace,
+          "SFMono-Regular",
+          Menlo,
+          Consolas,
+          monospace;
+      }
+
+      .json-editor {
+        background: #fbfbf8;
+        font-size: 12.5px;
+      }
+
+      .button-row {
+        border-top-color: var(--line);
+        gap: 8px;
+      }
+
+      .advanced-fields {
+        margin-top: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfbf8;
+        overflow: hidden;
+      }
+
+      .advanced-fields summary {
+        cursor: pointer;
+        padding: 12px 14px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .advanced-fields-body {
+        border-top: 1px solid var(--line);
+        padding: 0 14px 16px;
+      }
+
+      .advanced-fields .field {
+        margin-top: 14px;
+      }
+
+      .kpi-grid,
+      .quality-strip,
+      .output-grid {
+        gap: 12px;
+      }
+
+      .kpi,
+      .quality-item,
+      .evidence-box,
+      .reco-card,
+      .review-card,
+      .metric-card {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: none;
+      }
+
+      .kpi {
+        min-height: 76px;
+        padding: 13px 14px;
+      }
+
+      .kpi span,
+      .quality-item span,
+      .section-title h3 {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.03em;
+      }
+
+      .kpi strong {
+        color: var(--ink);
+        font-size: 20px;
+        font-weight: 680;
+      }
+
+      .quality-item strong {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .quality-item.ok,
+      .quality-item.warn {
+        background: #ffffff;
+      }
+
+      .quality-item.ok {
+        border-left: 3px solid var(--green);
+      }
+
+      .quality-item.warn {
+        border-left: 3px solid var(--amber);
+      }
+
+      .quality-item.ok span {
+        color: var(--green);
+      }
+
+      .quality-item.warn span {
+        color: var(--amber);
+      }
+
+      .empty {
+        border-color: var(--line-strong);
+        border-radius: 8px;
+        background: #fbfbf8;
+        color: var(--muted);
+      }
+
+      .reco-card:hover,
+      .review-card:hover {
+        border-color: var(--line-strong);
+        box-shadow: none;
+      }
+
+      .reco-card:first-child {
+        border-color: #b7d6c6;
+        background: #ffffff;
+        box-shadow: none;
+      }
+
+      .reco-card:first-child::after {
+        content: "Top match";
+        top: 14px;
+        right: 14px;
+        border-color: #d8e8df;
+        border-radius: 999px;
+        background: #f4faf6;
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0;
+      }
+
+      .rank {
+        flex-basis: 32px;
+        height: 32px;
+        border-color: var(--line);
+        border-radius: 7px;
+        background: var(--control);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .reco-card:first-child .rank {
+        background: #f4faf6;
+        color: var(--green);
+        border-color: #d8e8df;
+      }
+
+      .reco-card h3,
+      .review-card h3,
+      .evidence-box h4 {
+        color: var(--ink);
+        font-weight: 650;
+      }
+
+      .score {
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 680;
+      }
+
+      .reco-card:first-child .score {
+        text-shadow: none;
+      }
+
+      .reason,
+      .review-body {
+        color: var(--ink);
+      }
+
+      .tradeoff,
+      .evidence-box p,
+      .trace-step span {
+        color: var(--muted);
+      }
+
+      .tradeoff {
+        border-left-color: var(--line-strong);
+      }
+
+      .chip {
+        min-height: 24px;
+        border-color: var(--line);
+        border-radius: 999px;
+        background: #fbfbf8;
+        color: var(--muted-strong);
+        font-size: 11.5px;
+        font-weight: 550;
+        padding: 2px 9px;
+      }
+
+      .chip.source,
+      .chip.signal {
+        border-color: var(--line);
+        background: #fbfbf8;
+        color: var(--muted-strong);
+      }
+
+      .component {
+        color: var(--muted);
+      }
+
+      .bar {
+        height: 5px;
+        border: 0;
+        background: #ebebe4;
+      }
+
+      .bar span {
+        background: #171717;
+      }
+
+      .trace-list {
+        border-left-color: var(--line);
+      }
+
+      .trace-step {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .trace-step:hover {
+        border-color: var(--line-strong);
+        background: #ffffff;
+        transform: none;
+      }
+
+      .trace-step::before {
+        border-color: var(--surface);
+        background: var(--line-strong);
+        box-shadow: none;
+      }
+
+      .trace-step.ok::before {
+        background: var(--green);
+        box-shadow: none;
+      }
+
+      .trace-step.failed::before {
+        background: var(--rose);
+        box-shadow: none;
+      }
+
+      .trace-step strong {
+        color: var(--muted-strong);
+        font-weight: 650;
+        letter-spacing: 0.03em;
+      }
+
+      .trace-step.failed strong {
+        color: var(--rose);
+      }
+
+      .review-body {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: #fbfbf8;
+      }
+
+      .raw-block {
+        border-color: var(--line);
+        border-radius: 8px;
+        background: #fbfbf8;
+      }
+
+      .raw-block summary {
+        background: #ffffff;
+        color: var(--ink);
+        font-weight: 650;
+      }
+
+      pre {
+        color: var(--muted-strong);
+      }
+
+      .error {
+        border-color: #f0c0c0;
+        background: #fff8f8;
+        color: var(--rose);
+      }
+
+      .pulse-running,
+      button.primary.pulse-running {
+        animation: none;
+        border-color: #171717 !important;
+        background: #30302c;
+        color: #ffffff;
+        box-shadow: none;
+      }
+
+      /* Loading state keeps movement subtle so the console stays calm. */
       @keyframes pulse-glow {
         0% {
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+          opacity: 1;
         }
         50% {
-          box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+          opacity: 0.84;
         }
         100% {
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+          opacity: 1;
         }
       }
 
       .pulse-running {
-        animation: pulse-glow 1.5s infinite;
-        border-color: var(--teal) !important;
+        animation: pulse-glow 1.4s ease-in-out infinite;
+        border-color: #171717 !important;
+        background: #30302c;
+        color: #ffffff;
+        box-shadow: none;
       }
 
       @media (max-width: 1100px) {
@@ -1069,6 +1769,7 @@
         }
 
         .task-strip,
+        .request-summary,
         .kpi-grid,
         .quality-strip,
         .method-grid {
@@ -1098,6 +1799,7 @@
         }
 
         .task-strip,
+        .request-summary,
         .kpi-grid,
         .quality-strip,
         .method-grid,
@@ -1136,8 +1838,8 @@
         <div class="brand">
           <div class="brand-mark">BM</div>
           <div>
-            <h1>Bluechip-Marvid Console</h1>
-            <p class="subhead">Evidence-first user intelligence for Task A review simulation and Task B recommendations.</p>
+            <h1>Bluechip Marvid</h1>
+            <p class="subhead">Two-task agent demo: Task B recommends products, Task A simulates a customer review.</p>
           </div>
         </div>
         <div class="header-actions">
@@ -1151,59 +1853,12 @@
     </header>
 
     <main class="wrap">
-      <div class="task-strip" aria-label="Task visibility">
-        <div class="task-cell">
-          <strong>Task B: Candidate Ranking</strong>
-          <span id="task-b-state">Active demo flow</span>
-        </div>
-        <div class="task-cell">
-          <strong>Task A: Rating + Review</strong>
-          <span id="task-a-state">Ready from same profile inputs</span>
-        </div>
-        <div class="task-cell">
-          <strong>Evidence Sources</strong>
-          <span id="source-state">Candidate sources and score components shown after run</span>
-        </div>
-        <div class="task-cell">
-          <strong>Traceability</strong>
-          <span id="trace-state">Runtime traces, validation, latency, and model versions</span>
-        </div>
-      </div>
-
-      <section class="method-panel" aria-label="Implemented methods and evidence">
-        <div class="method-head">
-          <div>
-            <h2>Implemented Algorithms & Evidence</h2>
-            <p>Production-style recommender patterns, review-aware user modeling, grounded generation, and auditable metrics in one runtime.</p>
-          </div>
-          <span class="pill">Evidence-first, late-LLM</span>
-        </div>
-        <div class="method-grid">
-          <div class="method-item">
-            <strong>Two-stage retrieval/ranking</strong>
-            <span>YouTube-style candidate generation before hybrid top-10 scoring.</span>
-          </div>
-          <div class="method-item">
-            <strong>Item-to-item + co-engagement</strong>
-            <span>Amazon-style item-neighbor signals plus implicit baseline comparisons.</span>
-          </div>
-          <div class="method-item">
-            <strong>Review-aware profiles</strong>
-            <span>DeepCoNN/NARRE-inspired aspect evidence without black-box neural attention.</span>
-          </div>
-          <div class="method-item">
-            <strong>Grounded explanations</strong>
-            <span>RAG-style bounded evidence, deterministic fallback, and validation traces.</span>
-          </div>
-        </div>
-      </section>
-
       <div class="workspace">
         <section class="surface" aria-label="Demo inputs">
           <div class="surface-header">
             <div>
-              <h2 id="input-title">Task B Recommendation</h2>
-              <p id="input-subtitle">Cold-start and cross-domain examples use the same ranking endpoint.</p>
+              <h2 id="input-title">Task B recommendation request</h2>
+              <p id="input-subtitle">Rank products for a user profile and current context.</p>
             </div>
             <span id="endpoint-pill" class="endpoint-pill">POST /api/recommend</span>
           </div>
@@ -1212,13 +1867,28 @@
             <div class="mode-row" role="tablist" aria-label="Demo mode">
               <button id="mode-recommend" class="active" type="button" data-mode="recommend">Task B Recommend</button>
               <button id="mode-review" type="button" data-mode="review">Task A Review</button>
-              <button id="mode-runtime" type="button" data-mode="runtime">Runtime Trace</button>
+              <button id="mode-runtime" type="button" data-mode="runtime">Runtime</button>
             </div>
 
             <div class="scenario-row" aria-label="Scenario presets">
-              <button id="scenario-cold" class="active" type="button" data-scenario="cold">Cold-start Dinner</button>
-              <button id="scenario-cross" type="button" data-scenario="cross">Cross-domain Gift</button>
-              <button id="scenario-review" type="button" data-scenario="review">Strict Reviewer</button>
+              <button id="scenario-cold" class="active" type="button" data-scenario="cold">Cold start</button>
+              <button id="scenario-cross" type="button" data-scenario="cross">Gift transfer</button>
+              <button id="scenario-review" type="button" data-scenario="review">Strict reviewer</button>
+            </div>
+
+            <div class="request-summary" aria-label="Active request summary">
+              <div>
+                <span>Task</span>
+                <strong id="request-mode-label">Task B</strong>
+              </div>
+              <div>
+                <span>Preset</span>
+                <strong id="request-scenario-label">Cold start</strong>
+              </div>
+              <div>
+                <span>State</span>
+                <strong id="request-status-label">Ready</strong>
+              </div>
             </div>
 
             <div id="request-fields">
@@ -1229,34 +1899,39 @@
 
               <div id="context-field" class="field">
                 <label for="context">Current context <span>Task B</span></label>
-                <input id="context" />
+                <textarea id="context" class="context-editor"></textarea>
               </div>
 
-              <div class="field">
-                <label for="history">User history JSON <span>reviews and ratings</span></label>
-                <textarea id="history" class="json-editor compact-editor"></textarea>
-              </div>
+              <details class="advanced-fields">
+                <summary>Request data</summary>
+                <div class="advanced-fields-body">
+                  <div class="field">
+                    <label for="history">User history JSON <span>reviews and ratings</span></label>
+                    <textarea id="history" class="json-editor compact-editor"></textarea>
+                  </div>
 
-              <div class="toggle-row">
-                <div class="toggle-copy">
-                  <strong>LLM profile enhancement</strong>
-                  <span>Request bounded LLM enrichment for profile terms and aspects when a provider is configured.</span>
+                  <div class="toggle-row">
+                    <div class="toggle-copy">
+                      <strong>LLM profile enhancement</strong>
+                      <span>Request bounded LLM enrichment for profile terms and aspects when a provider is configured.</span>
+                    </div>
+                    <label class="switch" for="enhance-llm" aria-label="Toggle LLM profile enhancement">
+                      <input id="enhance-llm" type="checkbox" />
+                      <span></span>
+                    </label>
+                  </div>
+
+                  <div id="candidate-field" class="field">
+                    <label for="candidate-items">Candidate items JSON <span>Task B product pool</span></label>
+                    <textarea id="candidate-items" class="json-editor"></textarea>
+                  </div>
+
+                  <div id="target-field" class="field" hidden>
+                    <label for="target-item">Target item JSON <span>Task A product</span></label>
+                    <textarea id="target-item" class="json-editor"></textarea>
+                  </div>
                 </div>
-                <label class="switch" for="enhance-llm" aria-label="Toggle LLM profile enhancement">
-                  <input id="enhance-llm" type="checkbox" />
-                  <span></span>
-                </label>
-              </div>
-
-              <div id="candidate-field" class="field">
-                <label for="candidate-items">Candidate items JSON <span>Task B product pool</span></label>
-                <textarea id="candidate-items" class="json-editor"></textarea>
-              </div>
-
-              <div id="target-field" class="field" hidden>
-                <label for="target-item">Target item JSON <span>Task A product</span></label>
-                <textarea id="target-item" class="json-editor"></textarea>
-              </div>
+              </details>
             </div>
 
             <div class="button-row">
@@ -1270,8 +1945,8 @@
         <section class="surface" aria-label="Demo outputs">
           <div class="surface-header">
             <div>
-              <h2 id="result-title">Recommendation Output</h2>
-              <p id="result-subtitle">Ranked products, explanations, source signals, and trace steps.</p>
+              <h2 id="result-title">Task B result</h2>
+              <p id="result-subtitle">Ranked products with reasons, evidence, and trace steps.</p>
             </div>
             <span id="trace-pill" class="trace-pill">No trace yet</span>
           </div>
@@ -1286,7 +1961,7 @@
                   <h3 id="primary-title">Products</h3>
                   <span id="result-count" class="pill">0 results</span>
                 </div>
-                <div id="primary-output" class="empty">Select a scenario and run the active task.</div>
+                <div id="primary-output" class="empty">Run Task B to rank candidate products.</div>
               </div>
 
               <div class="output-section">
@@ -1308,6 +1983,55 @@
               <summary>Raw response JSON</summary>
               <pre id="raw-output">{}</pre>
             </details>
+          </div>
+        </section>
+      </div>
+
+      <div class="supporting-context">
+        <div class="task-strip" aria-label="Task visibility">
+          <div class="task-cell">
+            <strong>Task B Recommendation</strong>
+            <span id="task-b-state">Active demo flow</span>
+          </div>
+          <div class="task-cell">
+            <strong>Task A Review simulation</strong>
+            <span id="task-a-state">Uses the same profile evidence</span>
+          </div>
+          <div class="task-cell">
+            <strong>Evidence</strong>
+            <span id="source-state">Sources and score components after each run</span>
+          </div>
+          <div class="task-cell">
+            <strong>Traceability</strong>
+            <span id="trace-state">Validation, latency, model versions, and trace steps</span>
+          </div>
+        </div>
+
+        <section class="method-panel" aria-label="Implemented methods and evidence">
+          <div class="method-head">
+            <div>
+              <h2>Methods and evidence</h2>
+              <p>Retrieval, ranking, profile modeling, generation, and validation are surfaced directly in the demo runtime.</p>
+            </div>
+            <span class="pill">Evidence-first runtime</span>
+          </div>
+          <div class="method-grid">
+            <div class="method-item">
+              <strong>Retrieve, then rank</strong>
+              <span>Candidate generation runs before hybrid top-10 scoring.</span>
+            </div>
+            <div class="method-item">
+              <strong>Item-neighbor signals</strong>
+              <span>Co-engagement, item similarity, and baseline comparisons.</span>
+            </div>
+            <div class="method-item">
+              <strong>Review-aware profiles</strong>
+              <span>Aspect evidence extracted from history and current context.</span>
+            </div>
+            <div class="method-item">
+              <strong>Grounded explanations</strong>
+              <span>Bounded evidence, deterministic fallback, and validation traces.</span>
+            </div>
           </div>
         </section>
       </div>
@@ -1524,23 +2248,35 @@
         $("target-field").hidden = !isReview;
         $("profile-button").disabled = mode === "runtime";
 
+        $("request-mode-label").textContent =
+          mode === "recommend" ? "Task B" : mode === "review" ? "Task A" : "Runtime";
+        if (mode === "runtime") {
+          $("request-scenario-label").textContent = "Recent traces";
+        } else {
+          $("request-scenario-label").textContent = {
+            cold: "Cold start",
+            cross: "Gift transfer",
+            review: "Strict reviewer"
+          }[state.scenario];
+        }
+        $("request-status-label").textContent = "Ready";
         $("input-title").textContent =
-          mode === "recommend" ? "Task B Recommendation" : mode === "review" ? "Task A Review Simulation" : "Runtime Trace";
+          mode === "recommend" ? "Task B recommendation request" : mode === "review" ? "Task A review request" : "Runtime request";
         $("input-subtitle").textContent =
           mode === "recommend"
-            ? "Cold-start and cross-domain examples use the same ranking endpoint."
+            ? "Rank products for a user profile and current context."
             : mode === "review"
-              ? "Rating prediction and review generation share the user profile evidence."
-              : "Trace and metric records from the local FastAPI process.";
+              ? "User profile and target item for predicting a rating and review."
+              : "Request recent metrics and traces from the local FastAPI process.";
         $("endpoint-pill").textContent =
           mode === "recommend" ? "POST /api/recommend" : mode === "review" ? "POST /api/simulate-review" : "GET /api/metrics";
         $("run-button").textContent =
-          mode === "recommend" ? "Run Task B" : mode === "review" ? "Run Task A" : "Refresh Runtime";
+          mode === "recommend" ? "Run Task B" : mode === "review" ? "Run Task A" : "Refresh runtime";
         $("result-title").textContent =
-          mode === "recommend" ? "Recommendation Output" : mode === "review" ? "Review Simulation Output" : "Runtime Output";
+          mode === "recommend" ? "Task B result" : mode === "review" ? "Task A result" : "Runtime result";
         $("result-subtitle").textContent =
           mode === "recommend"
-            ? "Ranked products, explanations, source signals, and trace steps."
+            ? "Ranked products with reasons, evidence, and trace steps."
             : mode === "review"
               ? "Predicted rating, generated review, validation, and trace steps."
               : "Aggregate metrics and recent request traces.";
@@ -1562,10 +2298,20 @@
         $("history").value = pretty(example.history || []);
         $("candidate-items").value = pretty(example.candidateItems || []);
         $("target-item").value = pretty(example.targetItem || {});
+        $("request-scenario-label").textContent = {
+          cold: "Cold start",
+          cross: "Gift transfer",
+          review: "Strict reviewer"
+        }[name];
         renderIdle(example.mode, name);
       }
 
       function setLoading(label) {
+        setResultStatsVisible(false);
+        $("request-status-label").textContent = "Running";
+        for (const button of document.querySelectorAll("[data-mode], [data-scenario]")) {
+          button.disabled = true;
+        }
         $("run-button").disabled = true;
         $("run-button").classList.add("pulse-running");
         $("profile-button").disabled = true;
@@ -1577,10 +2323,14 @@
       }
 
       function clearLoading() {
+        for (const button of document.querySelectorAll("[data-mode], [data-scenario]")) {
+          button.disabled = false;
+        }
         $("run-button").disabled = false;
         $("run-button").classList.remove("pulse-running");
         $("profile-button").disabled = state.mode === "runtime";
         $("trace-button").disabled = false;
+        $("request-status-label").textContent = "Ready";
       }
 
       function setRaw(payload) {
@@ -1588,29 +2338,26 @@
         $("raw-output").textContent = pretty(payload || {});
       }
 
+      function setResultStatsVisible(visible) {
+        $("quality-strip").hidden = !visible;
+        $("kpi-grid").hidden = !visible;
+      }
+
       function renderIdle(mode, scenario) {
-        const scenarioLabel = {
-          cold: "Cold-start Dinner",
-          cross: "Cross-domain Gift",
-          review: "Strict Reviewer"
-        }[scenario];
-        $("kpi-grid").innerHTML = renderKpis([
-          ["Mode", mode === "recommend" ? "Task B" : "Task A"],
-          ["Scenario", scenarioLabel],
-          ["Endpoint", mode === "recommend" ? "/api/recommend" : "/api/simulate-review"],
-          ["Status", "Ready"]
-        ]);
-        renderQualityStrip([
-          ["Generation", mode === "review" ? "Human-style review path" : "Conversational reasons"],
-          ["LLM profile", $("enhance-llm").checked ? "Requested" : "Off by default"],
-          ["Fallback", "Deterministic, varied shape"]
-        ]);
+        setResultStatsVisible(false);
+        $("kpi-grid").innerHTML = "";
+        $("quality-strip").innerHTML = "";
         $("result-count").textContent = "0 results";
         $("evidence-status").textContent = "Waiting";
         $("trace-count").textContent = "0 steps";
         $("trace-pill").textContent = "No trace yet";
         $("primary-output").className = "empty";
-        $("primary-output").textContent = "Run the active task to populate this panel.";
+        $("primary-output").textContent =
+          mode === "recommend"
+            ? "Run Task B to rank candidate products."
+            : mode === "review"
+              ? "Run Task A to simulate a rating and review."
+              : "Refresh runtime to inspect recent traces.";
         $("evidence-output").innerHTML = "";
         $("trace-output").innerHTML = "";
         setRaw({});
@@ -1797,6 +2544,7 @@
       }
 
       function renderRecommendation(data, profile) {
+        setResultStatsVisible(true);
         const recommendations = data.recommendations || [];
         const top = recommendations[0];
         const diagnostics = data.candidate_diagnostics || {};
@@ -1859,6 +2607,7 @@
       }
 
       function renderReview(data, profile) {
+        setResultStatsVisible(true);
         $("trace-pill").textContent = data.trace_id ? `trace ${data.trace_id}` : "No trace id";
         $("result-count").textContent = "1 review";
         $("evidence-status").textContent = data.validation && data.validation.is_consistent ? "validated" : "warning";
@@ -1905,6 +2654,7 @@
       }
 
       function renderMetrics(metrics, traces) {
+        setResultStatsVisible(true);
         $("trace-pill").textContent = `${traces.length} recent traces`;
         $("result-count").textContent = `${traces.length} traces`;
         $("evidence-status").textContent = "runtime";
@@ -1965,14 +2715,19 @@
       async function loadMetrics() {
         setMode("runtime");
         setLoading("Loading runtime metrics and recent traces...");
-        const [metrics, traces] = await Promise.all([api("/api/metrics"), api("/api/traces?limit=8")]);
-        renderMetrics(metrics, traces);
+        try {
+          const [metrics, traces] = await Promise.all([api("/api/metrics"), api("/api/traces?limit=8")]);
+          renderMetrics(metrics, traces);
+        } finally {
+          clearLoading();
+        }
       }
 
       async function previewProfile() {
         const history = parseJsonField("history", []);
         setLoading("Profiling user evidence...");
         const data = await api("/api/profile-user", profilePayload(history));
+        setResultStatsVisible(true);
         $("trace-pill").textContent = "profile preview";
         $("result-count").textContent = "1 profile";
         $("evidence-status").textContent = "profiled";
@@ -2014,6 +2769,7 @@
       }
 
       function renderError(error) {
+        setResultStatsVisible(false);
         $("primary-output").className = "empty error";
         $("primary-output").textContent = error.message || String(error);
         $("evidence-output").innerHTML = "";
