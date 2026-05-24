@@ -37,6 +37,7 @@ SOURCE_PRIORITIES = {
     "category_affinity_popular": 0.83,
     "category_popular": 0.81,
     "bm25_profile": 0.78,
+    "description_fallback": 0.76,  # NEW: Fallback for items with no explicit path
     "global_popular": 0.76,
     "vector_profile": 0.74,
     "graph_walk": 0.735,
@@ -493,6 +494,9 @@ def generate_candidate_pool(
     aspect_share = 0.26 if len(history) <= 2 else 0.16
     if use_beauty_exploration:
         aspect_share = max(aspect_share, 0.30 if len(history) <= 2 else 0.22)
+    # IMPROVED: More aggressive aspect retrieval for very sparse users
+    if len(history) <= 1:
+        aspect_share = max(aspect_share, 0.35)
     aspect_budget = max(1, int(limit * aspect_share))
     aspect_added = 0
     for item, score, source in _aspect_profile_candidates(
@@ -545,6 +549,9 @@ def generate_candidate_pool(
 
     if len(history) <= 2:
         tail_budget = max(1, int(limit * 0.08))
+        # IMPROVED: More aggressive for very sparse users
+        if len(history) <= 1:
+            tail_budget = max(1, int(limit * 0.16))
         tail_added = 0
         for item, score, source in _sparse_category_tail_candidates(user_profile, catalog, limit):
             had_source = source in sources.get(item.item_id, [])
@@ -555,6 +562,9 @@ def generate_candidate_pool(
                 break
 
     category_affinity_budget = max(1, int(limit * (0.42 if len(history) <= 2 else 0.30)))
+    # IMPROVED: Much more aggressive for very sparse users (1 or fewer items)
+    if len(history) <= 1:
+        category_affinity_budget = max(1, int(limit * 0.55))
     category_affinity_added = 0
     for item, score in _category_affinity_candidates(user_profile, catalog, limit):
         had_source = "category_affinity_popular" in sources.get(item.item_id, [])
@@ -584,6 +594,24 @@ def generate_candidate_pool(
     for index, item in enumerate(fallback[:fallback_budget]):
         rank_score = 1.0 - (index / max(fallback_budget, 1))
         add_candidate(item, "global_popular", max(rank_score, _quality_popularity_score(item)))
+
+    # NEW: Description-based fallback for items with no explicit retrieval path
+    # This helps catch items that should match but don't have neighbor/term connections
+    description_budget = max(1, int(limit * 0.40))
+    description_added = 0
+    for item, score in _description_fallback_candidates(
+        user_profile=user_profile,
+        history=history,
+        catalog=catalog,
+        query_terms=query_terms,
+        limit=max(limit * 2, 500),
+    ):
+        had_source = "description_fallback" in sources.get(item.item_id, [])
+        add_candidate(item, "description_fallback", score)
+        if item.item_id not in history_item_ids and not had_source:
+            description_added += 1
+        if description_added >= description_budget:
+            break
 
     limited = _select_balanced_candidates(selected, sources, source_scores, limit)
     limited_ids = {item.item_id for item in limited}
@@ -631,7 +659,12 @@ def _category_affinity_candidates(
         )
         quality = (item.average_rating or 3.5) / 5
         category_weight = category_weights[item.category]
+        
+        # IMPROVED: Boost Beauty items if Beauty is in user preferences
+        category_boost = 1.15 if item.category in BEAUTY_CATEGORIES and "All_Beauty" in user_profile.preferred_categories else 1.0
+        
         score = (0.50 * category_weight) + (0.35 * popularity_score) + (0.15 * quality)
+        score = score * category_boost
         scored.append((item, round(min(max(score, 0.0), 1.0), 4)))
     scored.sort(key=lambda row: row[1], reverse=True)
     return scored
@@ -755,13 +788,25 @@ def _sparse_category_tail_candidates(
 
 
 def _beauty_taxonomy_budget(limit: int, history_size: int) -> int:
-    share = 0.16 if history_size <= 2 else 0.12
-    return min(180, max(6, int(limit * share)))
+    # IMPROVED: More aggressive for sparse Beauty users
+    if history_size <= 1:
+        share = 0.28  # Was implicitly lower
+    elif history_size <= 2:
+        share = 0.16
+    else:
+        share = 0.12
+    return min(250, max(8, int(limit * share)))
 
 
 def _beauty_taxonomy_window_budget(limit: int, history_size: int) -> int:
-    share = 0.12 if history_size <= 2 else 0.08
-    return min(140, max(8, int(limit * share)))
+    # IMPROVED: More aggressive for sparse Beauty users
+    if history_size <= 1:
+        share = 0.20
+    elif history_size <= 2:
+        share = 0.12
+    else:
+        share = 0.08
+    return min(200, max(10, int(limit * share)))
 
 
 def _beauty_taxonomy_candidates(
@@ -1080,6 +1125,78 @@ def _beauty_token_boost(token: str) -> float:
         "wig",
     }
     return 1.35 if token in strong_terms else 1.0
+
+
+def _description_fallback_candidates(
+    user_profile: UserProfile,
+    history: list[UserHistoryItem],
+    catalog: CandidateCatalog,
+    query_terms: list[str],
+    limit: int,
+) -> list[tuple[Item, float]]:
+    """
+    Fallback retrieval for items matching user interests but with no explicit neighbor/term path.
+    This improves recall for sparse users and items without collaborative signal.
+    """
+    category_weights = _category_weights(user_profile)
+    if not category_weights:
+        # If no category preference, use all categories but with lower weight
+        category_weights = {cat: 0.5 for cat in catalog.by_category_popular.keys()}
+    
+    # Build a richer query with history terms and expansions
+    fallback_terms = set(query_terms)
+    
+    # Add terms from positive history items
+    for item in history:
+        if item.rating >= 3:
+            fallback_terms.update(
+                token for token in terms(embedding_text(item.item_name, item.category))
+                if token not in ASPECT_STOPWORDS
+            )
+    
+    # Expand with synonym-like terms
+    if _looks_like_beauty_query(query_terms) or any(
+        item.category in BEAUTY_CATEGORIES and item.rating >= 3 for item in history
+    ):
+        # Add related beauty terms
+        fallback_terms.update({"cream", "lotion", "product", "care", "treatment"})
+    
+    # Score items by description/metadata match
+    candidate_scores: Counter[str] = Counter()
+    candidate_items: dict[str, Item] = {}
+    
+    for category, category_weight in category_weights.items():
+        category_items = catalog.by_category_popular.get(category, [])[:limit]
+        
+        for rank, item in enumerate(category_items):
+            item_terms = catalog.item_terms.get(item.item_id, set())
+            # Calculate overlap with fallback terms
+            overlap = len(item_terms & fallback_terms)
+            if overlap > 0:
+                candidate_items[item.item_id] = item
+                # Score based on overlap, quality, and popularity
+                quality = (item.average_rating or 3.5) / 5
+                popularity = int(item.metadata.get("rating_number") or 
+                                item.metadata.get("review_count") or 0)
+                popularity_score = min(math.log1p(popularity) / math.log1p(100), 1.0)
+                
+                score = (
+                    category_weight * 0.50 +  # Category affinity
+                    (overlap / max(len(fallback_terms), 1)) * 0.25 +  # Term overlap
+                    quality * 0.15 +  # Quality
+                    popularity_score * 0.10  # Popularity
+                )
+                candidate_scores[item.item_id] += score
+    
+    if not candidate_scores:
+        return []
+    
+    # Sort by score and return
+    scored = [
+        (candidate_items[item_id], round(min(max(score, 0.0), 1.0), 4))
+        for item_id, score in candidate_scores.most_common(limit)
+    ]
+    return scored
 
 
 def _popularity_quality_key(item: Item) -> tuple[int, float, str]:

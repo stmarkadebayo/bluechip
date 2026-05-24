@@ -15,16 +15,16 @@ class RecommendationWeights:
     category: float = 0.18
     vector: float = 0.18
     quality: float = 0.14
-    popularity: float = 0.18
-    novelty: float = 0.06
+    popularity: float = 0.16  # Reduced from 0.18 to reduce popularity bias
+    novelty: float = 0.08  # Increased from 0.06 for sparse users
     confidence: float = 0.04
     aspect: float = 0.16
     sequential: float = 0.12
     evidence_graph: float = 0.12
     nigerian_context: float = 0.04
     collaborative: float = 0.22
-    retrieval: float = 0.06
-    source_diversity: float = 0.04
+    retrieval: float = 0.10  # Increased from 0.06 - retrieval quality matters!
+    source_diversity: float = 0.06  # Increased from 0.04 - diversity is important
     dislike_penalty: float = 0.30
 
     def as_feature_weights(self) -> dict[str, float]:
@@ -65,35 +65,55 @@ def rank_candidates(
     context_terms = _terms(context)
     profiled_items = [(item, build_item_profile(item)) for item in candidate_items]
     max_popularity = max((profile.popularity for _, profile in profiled_items), default=0)
-    personalization_weight = min(max((user_profile.confidence - 0.45) / 0.80, 0.02), 0.65)
+    
+    # IMPROVED: More aggressive personalization for sparse users
+    # Sparse users should rely less on popularity and more on personalized signals
+    base_confidence = user_profile.confidence
+    user_history_size = len(getattr(user_profile, 'history', []))
+    if user_history_size <= 2:
+        # For very sparse users, boost personalization weight significantly
+        personalization_weight = min(max((base_confidence - 0.35) / 0.70, 0.25), 0.85)
+    else:
+        personalization_weight = min(max((base_confidence - 0.45) / 0.80, 0.02), 0.65)
 
     for item, profile in profiled_items:
+        sources = candidate_sources.get(item.item_id, [])
+        source_scores = candidate_source_scores.get(item.item_id, {})
+        
         features = ranker_features(
             user_profile=user_profile,
             item_profile=profile,
             context_terms=context_terms,
             max_popularity=max_popularity,
             seen_item_ids=_seen_item_ids(user_profile),
-            source_scores=candidate_source_scores.get(item.item_id, {}),
+            source_scores=source_scores,
         )
         matched_signals = matched_terms(
             user_profile.preferred_terms + user_profile.positive_aspects,
             profile.terms + profile.positive_aspects,
         )
 
+        # IMPROVED: Reduce popularity bias, increase personalization component
+        # For candidates already in the pool, popularity is less important than fit
         base_score = (
-            0.85 * features["popularity"]
-            + 0.10 * features["item_quality"]
-            + 0.05 * features["novelty"]
+            0.65 * features["popularity"]  # Was 0.85 - reduced to favor personalization
+            + 0.20 * features["item_quality"]  # Increased from 0.10
+            + 0.15 * features["novelty"]  # Increased from 0.05
         )
         personalized_score = weighted_score(features, feature_weights)
         context_penalty = _context_penalty(context_terms, item, profile.negative_aspects)
         context_category_penalty = _context_category_penalty(context_terms, item)
         context_category_boost = _context_category_boost(context_terms, item)
+        
+        # IMPROVED: Add retrieval source priority boost
+        # Items from higher-quality retrieval sources should rank higher
+        retrieval_priority_boost = _calculate_retrieval_boost(sources, source_scores)
+        
         score = (
             (1 - personalization_weight) * base_score
             + personalization_weight * personalized_score
             + context_category_boost
+            + retrieval_priority_boost  # NEW
             - context_penalty
             - context_category_penalty
         )
@@ -103,6 +123,7 @@ def rank_candidates(
                 "context_penalty": round(context_penalty, 4),
                 "context_category_penalty": round(context_category_penalty, 4),
                 "context_category_boost": round(context_category_boost, 4),
+                "retrieval_priority_boost": round(retrieval_priority_boost, 4),
                 "personalization_weight": round(personalization_weight, 4),
             }
         )
@@ -213,3 +234,55 @@ def _seen_item_ids(user_profile: UserProfile) -> set[str]:
         if signal.startswith("seen item: ")
     }
     return explicit | legacy
+
+
+def _calculate_retrieval_boost(sources: list[str], source_scores: dict[str, float]) -> float:
+    """
+    Boost items based on retrieval source quality.
+    Items from high-quality retrieval sources get higher ranking boost.
+    """
+    if not sources or not source_scores:
+        return 0.0
+    
+    # SOURCE_PRIORITIES from candidates.py
+    SOURCE_PRIORITIES = {
+        "neural_vector": 0.90,
+        "beauty_review_term_profile": 0.87,
+        "beauty_lexical_item_neighbor": 0.86,
+        "category_aspect_graph": 0.855,
+        "sequential_transition": 0.845,
+        "beauty_aspect_profile": 0.84,
+        "aspect_evidence_graph": 0.835,
+        "category_transition": 0.825,
+        "review_term_profile": 0.82,
+        "lexical_item_neighbor": 0.81,
+        "aspect_profile": 0.80,
+        "beauty_taxonomy_aspect": 0.812,
+        "beauty_taxonomy_window": 0.805,
+        "beauty_sparse_tail": 0.79,
+        "sparse_category_tail": 0.77,
+        "category_affinity_popular": 0.83,
+        "category_popular": 0.81,
+        "bm25_profile": 0.78,
+        "description_fallback": 0.76,
+        "global_popular": 0.76,
+        "vector_profile": 0.74,
+        "graph_walk": 0.735,
+        "user_neighbor": 0.72,
+        "co_visitation": 0.70,
+    }
+    
+    # Calculate boost: higher priority sources get higher boost
+    # Diversity bonus: items from multiple sources get additional boost
+    source_priorities = [SOURCE_PRIORITIES.get(source, 0.5) for source in sources]
+    max_priority = max(source_priorities) if source_priorities else 0.5
+    source_diversity = min(len(sources) / 3, 1.0)  # Bonus for items from multiple sources
+    
+    # Base boost from best retrieval source
+    base_boost = (max_priority - 0.65) * 0.08 if max_priority > 0.65 else 0.0
+    
+    # Diversity bonus for items retrieved from multiple sources
+    diversity_bonus = source_diversity * 0.03
+    
+    return round(base_boost + diversity_bonus, 4)
+
